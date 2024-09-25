@@ -1,3 +1,4 @@
+
 """
 ai_config_manager.py
 
@@ -16,11 +17,7 @@ Example usage:
     config = configparser.ConfigParser()
     set_default_ai_config(config)
 
-<<<<<<< HEAD
     model = get_model_from_config(config, config_path)
-=======
-    model = get_model_from_config(config)
->>>>>>> 6510b3b (Before module clean up)
 """
 
 import os
@@ -46,10 +43,7 @@ def set_default_ai_config(config: configparser.ConfigParser) -> None:
     config.set("openai", "model", config.get("openai", "model", fallback="gpt-4"))
     config.set("openai", "api_key", config.get("openai", "api_key", fallback="OPENAI_API_KEY"))
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 6510b3b (Before module clean up)
     # if not config.has_section("copilot"):
     #     config.add_section("copilot")
     # config.set("copilot", "model", config.get("copilot", "model", fallback=""))
@@ -78,20 +72,13 @@ def set_default_model_configs(config: configparser.ConfigParser) -> None:
     config.set("gpt-3.5-turbo", "tokens_per_day", config.get("gpt-3.5-turbo", "tokens_per_day", fallback="20000000"))
 
 
-<<<<<<< HEAD
 def get_model_from_config(config: configparser.ConfigParser, config_path: str) -> Optional['OpenAIModel']:
-=======
-def get_model_from_config(config: configparser.ConfigParser) -> Optional['OpenAIModel']:
->>>>>>> 6510b3b (Before module clean up)
     """
     Initializes and returns an AI model based on the configuration.
 
     Args:
         config (configparser.ConfigParser): The configuration object.
-<<<<<<< HEAD
         config_path (str): The path to the configuration file.
-=======
->>>>>>> 6510b3b (Before module clean up)
 
     Returns:
         Optional[OpenAIModel]: An instance of OpenAIModel if AI usage is enabled, otherwise None.
@@ -99,11 +86,7 @@ def get_model_from_config(config: configparser.ConfigParser) -> Optional['OpenAI
     Raises:
         ValueError: If the AI provider specified in the config is unsupported.
     """
-<<<<<<< HEAD
     from ai_utilities.ai_integration import OpenAIModel
-=======
-    from ai_utilities.ai_integration import OpenAIModel  # Adjust the import path as necessary
->>>>>>> 6510b3b (Before module clean up)
 
     use_ai = config.getboolean('AI', 'use_ai')
     if not use_ai:
@@ -136,11 +119,36 @@ def get_model_from_config(config: configparser.ConfigParser) -> Optional['OpenAI
         logging.debug(f"Initializing OpenAIModel with model: {model_name}")
         logging.debug(f"OpenAI API Key: {api_key[:4]}****")
 
-<<<<<<< HEAD
         return OpenAIModel(api_key=api_key, model=model_name, config=config, config_path=config_path)
-=======
-        return OpenAIModel(api_key=api_key, model=model_name, config=config)
->>>>>>> 6510b3b (Before module clean up)
     else:
         logging.error(f"Unsupported AI provider: {ai_provider}")
         raise ValueError(f"Unsupported AI provider: {ai_provider}")
+
+def main():
+    # Set up logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # Create a configuration parser
+    config = configparser.ConfigParser()
+
+    # Set default AI configuration values
+    set_default_ai_config(config)
+
+    # Optionally, set default model configurations
+    set_default_model_configs(config)
+
+    # Specify the path for the configuration (you can modify this as needed)
+    config_path = "../config.ini"  # Update to your actual path
+
+    # Retrieve model based on the configuration
+    model = get_model_from_config(config, config_path)
+
+    if model:
+        logging.info("Model successfully initialized.")
+        # You can now use the model for further tasks
+    else:
+        logging.warning("No model initialized; AI usage is disabled or configuration is invalid.")
+
+
+if __name__ == "__main__":
+    main()
