@@ -30,14 +30,13 @@ Example usage:
 import logging
 import configparser
 import os
-import psutil
 import time
 from typing import Optional, Protocol, Dict, Any, List, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Third-Party Library Imports
 from openai import OpenAIError
-import config_utilities
+import psutil
 from config_utilities.config_manager import load_and_validate_config, save_config
 
 # Local application Imports

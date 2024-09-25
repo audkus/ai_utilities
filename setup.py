@@ -7,6 +7,7 @@ setup(
     install_requires=[
         'openai',
         'config_utilities @ git+https://github.com/audkus/config_utilities.git',
+        'psutil',
     ],
     description='Utilities for AI configuration management and integration.',
     author='Steffen S. Rasmussen',
