@@ -1,3 +1,4 @@
+
 """
 rate_limiter.py
 
@@ -36,10 +37,7 @@ import threading
 import json
 import os
 import time
-<<<<<<< HEAD
 import datetime
-=======
->>>>>>> 6510b3b (Before module clean up)
 from datetime import datetime
 from typing import Optional
 
@@ -66,11 +64,7 @@ class RateLimiter:
     """
 
     def __init__(self, module_name: str, rpm: int, tpm: int, tpd: int,
-<<<<<<< HEAD
                  config_path: str, ask_ai_statistics_file_name: str = "ai_statistics.json") -> None:
-=======
-                 ai_stats_file: str = "ai_stats_file.json") -> None:
->>>>>>> 6510b3b (Before module clean up)
         """
         Initializes the RateLimiter with specified limits and loads the current usage statistics
         from the provided stats file. The class ensures that rate limits on requests and tokens
@@ -81,27 +75,18 @@ class RateLimiter:
             rpm (int): The maximum number of requests allowed per minute.
             tpm (int): The maximum number of tokens allowed per minute.
             tpd (int): The maximum number of tokens allowed per day.
-<<<<<<< HEAD
             ask_ai_statistics_file_name (str, optional): Path to the file where usage statistics are stored.
                                            Defaults to "ai_statistics.json".
-=======
-            ai_stats_file (str, optional): Path to the file where usage statistics are stored.
-                                           Defaults to "ai_stats_file.json".
->>>>>>> 6510b3b (Before module clean up)
         """
         self.module_name = module_name
         self.rpm = rpm
         self.tpm = tpm
         self.tpd = tpd
-<<<<<<< HEAD
 
         # Derive the path for the stats file based on the config directory
         config_dir = os.path.dirname(config_path)
         self.ai_stats_file = os.path.join(config_dir, ask_ai_statistics_file_name)
 
-=======
-        self.ai_stats_file = ai_stats_file
->>>>>>> 6510b3b (Before module clean up)
         self.requests_made = 0
         self.tokens_used = 0
         self.tokens_used_today = 0
@@ -225,3 +210,24 @@ class RateLimiter:
         thread = threading.Thread(target=reset)
         thread.daemon = True
         thread.start()
+
+def main():
+    # Initialize rate limiter with specific limits for API usage
+    rate_limiter = RateLimiter(module_name="gpt-4", rpm=60, tpm=1000, tpd=10000, config_path="./config.ini")
+
+    # Start the background thread to reset the per-minute counters
+    rate_limiter.start_reset_timer()
+
+    # Simulate API calls
+    for _ in range(10):  # Example: making 10 requests
+        tokens = 500  # Each request uses 500 tokens
+        if rate_limiter.can_proceed(tokens):
+            rate_limiter.record_usage(tokens)
+            print(f"Request with {tokens} tokens can proceed.")
+        else:
+            print(f"Rate limit exceeded for {tokens} tokens.")
+
+        time.sleep(5)  # Simulate a wait time between requests
+
+if __name__ == "__main__":
+    main()
