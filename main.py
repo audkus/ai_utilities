@@ -1,4 +1,4 @@
-from ai_utilities.ai_integration import ask_ai
+from ai_utilities_audkus.ai_integration import ask_ai
 
 
 def main() -> None:
