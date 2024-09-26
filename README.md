@@ -75,11 +75,7 @@ pip install psutil
 The `config_utilities` package is used to handle the configuration management in this project, ensuring that settings such as AI provider configurations and logging setups are consistent across different parts of the app.
 
 #### Source:
-This library is located in a separate repository: [config_utilities @ GitHub](https://github.com/audkus/config_utilities.git). It can be installed directly via pip:
-
-```bash
-pip install git+https://github.com/audkus/config_utilities.git
-```
+This library is located in a separate repository: [config_utilities @ GitHub](https://github.com/audkus/config_utilities.git). It is automatically installed as a dependency when you install `ai_utilities`.
 
 #### Key Features of `config_utilities`:
 - **Configuration Loading**: Ensures that the app loads and validates the configuration from a central `config.ini` file.
@@ -88,7 +84,7 @@ pip install git+https://github.com/audkus/config_utilities.git
 
 #### Installation:
 
-The `config_utilities` package is installed as a dependency for this project, but you can manually install it via pip:
+You do not need to manually install `config_utilities` as it is automatically installed as part of `ai_utilities`. However, if you want to install it separately, you can do so via pip:
 
 ```bash
 pip install git+https://github.com/audkus/config_utilities.git
