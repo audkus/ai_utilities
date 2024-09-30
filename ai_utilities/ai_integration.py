@@ -39,8 +39,8 @@ import psutil
 from config_utilities import load_and_validate_config, save_config
 
 # Local application Imports
-from ai_config_manager import get_model_from_config, set_default_ai_config, set_default_model_configs
-from rate_limiter import RateLimiter
+from .ai_config_manager import get_model_from_config, set_default_ai_config, set_default_model_configs
+from .rate_limiter import RateLimiter
 
 # Global model instance
 _model: Optional['AIModel'] = None
