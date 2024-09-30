@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'openai',
-        'config_utilities @ git+https://github.com/audkus/config_utilities.git',
+        'config_utilities',
         'psutil',
     ],
     description='Utilities for AI configuration management and integration.',
