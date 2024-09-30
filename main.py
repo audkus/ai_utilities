@@ -1,18 +1,18 @@
-from ai_utilities_audkus.ai_integration import ask_ai
+from ai_utilities.ai_integration import ask_ai
 
 
 def main() -> None:
     """
     Example usage of the ai_integration module.
     """
-    prompt_single_text = "What are the current top 2 trends in AI?"
+    prompt_single_text = "Who was the first human to walk on the moon?"
     result_single_text = ask_ai(prompt_single_text)
     print(f'Example with a single prompt:\n{result_single_text}')
 
     prompts_multiple_text = [
-        "Hello, how are you?",
-        "What are your plans for today?",
-        "Tell me about your favorite book."
+        "How do you merge two sorted lists in Python without using built-in functions?",
+        "What is Kant’s categorical imperative in simple terms?",
+        "What is the Fibonacci sequence, and how is it calculated?"
     ]
     results_multiple_text = ask_ai(prompts_multiple_text)
     print(f'Example with multiple prompts:')

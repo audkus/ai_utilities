@@ -86,7 +86,7 @@ def get_model_from_config(config: configparser.ConfigParser, config_path: str) -
     Raises:
         ValueError: If the AI provider specified in the config is unsupported.
     """
-    from ai_utilities_audkus.ai_integration import OpenAIModel
+    from ai_utilities.ai_integration import OpenAIModel
 
     use_ai = config.getboolean('AI', 'use_ai')
     if not use_ai:

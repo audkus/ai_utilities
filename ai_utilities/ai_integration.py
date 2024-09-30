@@ -1,4 +1,3 @@
-
 """
 ai_integration.py
 
@@ -37,15 +36,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Third-Party Library Imports
 from openai import OpenAIError
 import psutil
-from config_utilities.config_manager import load_and_validate_config, save_config
+from config_utilities import load_and_validate_config, save_config
 
 # Local application Imports
-from ai_utilities_audkus.ai_config_manager import get_model_from_config, set_default_ai_config, set_default_model_configs
-from ai_utilities_audkus.rate_limiter import RateLimiter
+from ai_config_manager import get_model_from_config, set_default_ai_config, set_default_model_configs
+from rate_limiter import RateLimiter
 
 # Global model instance
 _model: Optional['AIModel'] = None
 _thread_pool: Optional[ThreadPoolExecutor] = None  # _thread_pool is defined at module level
+
 
 # Set up logging configuration
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -75,6 +75,7 @@ class AIModel(Protocol):
         ask_ai(prompt: str, return_format: str = 'text') -> Optional[str]:
             Sends a prompt to the AI model and returns the response.
     """
+
     def ask_ai(self, prompt: str, return_format: str = 'text') -> Optional[str]:
         pass
 
