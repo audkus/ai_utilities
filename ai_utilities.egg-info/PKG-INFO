@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: ai_utilities
-Version: 0.2.2
+Version: 0.2.3
 Summary: Utilities for AI configuration management and integration.
 Home-page: https://github.com/audkus/ai_utilities.git
 Author: Steffen S. Rasmussen
@@ -53,6 +53,8 @@ To use OpenAI's models, you will need an API key from OpenAI. To set this up:
      ```bash
      setx OPENAI_API_KEY "your-api-key-here"
      ```
+
+**N.B.** You probably need to restart your IDE for this to take effect.
 
 #### Licensing and Usage Limits
 

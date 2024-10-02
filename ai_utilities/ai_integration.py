@@ -257,6 +257,77 @@ def monitor_memory_threshold(threshold: float) -> bool:
     return memory_info.percent / 100.0 < threshold
 
 
+# def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[str, List[str], None]:
+#     """
+#     Sends a prompt or list of prompts to the global AI model and returns the response(s).
+#
+#     Args:
+#         prompt (Union[str, List[str]]): The prompt(s) to send to the AI model.
+#         return_format (str): The format of the returned response ('text' or 'json').
+#
+#     Returns:
+#         Union[str, List[str], None]: The AI model's response(s), formatted as specified,
+#                                        or None if AI usage is disabled.
+#     """
+#     return_format = return_format.strip().lower()
+#
+#     global _model, _thread_pool
+#
+#     # Initialize model and thread pool if not already initialized
+#     if _model is None:
+#         config = configparser.ConfigParser()
+#         config.read('config.ini')
+#         if initialize_model(config) is None:
+#             logging.debug("AI model initialization skipped because AI usage is disabled.")
+#             return None
+#
+#     if _thread_pool is None:
+#         initialize_thread_pool(config)
+#
+#     # Convert single prompt to list if necessary
+#     if isinstance(prompt, str):
+#         prompts: List[str] = [prompt]
+#     elif isinstance(prompt, list):
+#         prompts = prompt
+#     else:
+#         raise TypeError("Prompt must be a string or a list of strings")
+#
+#     # Monitor memory usage before submitting tasks
+#     memory_threshold: float = 0.8
+#     monitor_memory_usage(memory_threshold)
+#
+#     # Use threading for multiple prompts
+#     if len(prompts) > 1:
+#         futures: List[Any] = []
+#         for prompt in prompts:
+#             future = _thread_pool.submit(_model.ask_ai, prompt, return_format)
+#             futures.append(future)
+#
+#         results: List[Optional[str]] = []
+#         for future in as_completed(futures):
+#             try:
+#                 result = future.result()
+#                 results.append(result)
+#             except OpenAIError as e:
+#                 error_message = get_error_message(e)
+#                 logging.error(f"OpenAIError: {error_message}")
+#                 results.append(f"Error: {error_message}")
+#             except Exception as e:
+#                 logging.error(f"Unexpected error in AI threaded request: {str(e)}")
+#                 results.append(f"Error: {str(e)}")
+#
+#         return results
+#     else:
+#         try:
+#             return _model.ask_ai(prompts[0], return_format)
+#         except OpenAIError as e:
+#             error_message = get_error_message(e)
+#             logging.error(f"OpenAIError: {error_message}")
+#             raise
+#         except Exception as e:
+#             logging.error(f"Unexpected error in AI request: {str(e)}")
+#             raise
+
 def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[str, List[str], None]:
     """
     Sends a prompt or list of prompts to the global AI model and returns the response(s).
@@ -298,13 +369,11 @@ def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[
 
     # Use threading for multiple prompts
     if len(prompts) > 1:
-        futures: List[Any] = []
-        for prompt in prompts:
-            future = _thread_pool.submit(_model.ask_ai, prompt, return_format)
-            futures.append(future)
+        # Create a dictionary to store the prompt and its corresponding future
+        futures_map = {prompt: _thread_pool.submit(_model.ask_ai, prompt, return_format) for prompt in prompts}
 
         results: List[Optional[str]] = []
-        for future in as_completed(futures):
+        for prompt, future in futures_map.items():
             try:
                 result = future.result()
                 results.append(result)
@@ -313,7 +382,7 @@ def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[
                 logging.error(f"OpenAIError: {error_message}")
                 results.append(f"Error: {error_message}")
             except Exception as e:
-                logging.error(f"Unexpected error in AI request: {str(e)}")
+                logging.error(f"Unexpected error in AI threaded request: {str(e)}")
                 results.append(f"Error: {str(e)}")
 
         return results
@@ -366,27 +435,29 @@ def main() -> None:
     """
     Example usage of the ai_integration module.
     """
-    prompt_single_text = "What are the current top 2 trends in AI?"
+    prompt_single_text = "Who was the first human to walk on the moon?"
     result_single_text = ask_ai(prompt_single_text)
-    print(f'Example with a single prompt:\n{result_single_text}')
+    print(f'# Example with a single prompt:\nQuestion: {prompt_single_text}:\nAnswer:{result_single_text}\n')
 
     prompts_multiple_text = [
-        "Hello, how are you?",
-        "What are your plans for today?",
-        "Tell me about your favorite book."
+        "Who was the last person to walk on the moon?",
+        "What is Kant’s categorical imperative in simple terms?",
+        "What is the Fibonacci sequence? do not include examples"
     ]
+
+    print(f'# Example with multiple prompts:\n{prompts_multiple_text}\n')
     results_multiple_text = ask_ai(prompts_multiple_text)
-    print(f'Example with multiple prompts:')
+
     if results_multiple_text:
-        for result in results_multiple_text:
-            print(result)
+        for question, result in zip(prompts_multiple_text, results_multiple_text):
+            print(f"Question: {question}")
+            print(f"Answer: {result}\n")
 
-    prompt_single = "What are the current top 2 trends in AI, just the title? Please return the answer as a JSON format"
-
+    print(f'\n# Example with a single prompt in JSON format:\n')
+    prompt_single = "What are the current top 5 trends in AI, just the title? Please return the answer as a JSON format"
     return_format = "json"
-
     result_single_json = ask_ai(prompt_single, return_format)
-    print(f'\nExample with a single prompt in JSON format: \n{result_single_json}')
+    print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
 
 
 if __name__ == "__main__":
