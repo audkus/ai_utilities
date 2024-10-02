@@ -27,7 +27,7 @@ def main() -> None:
     prompt_single = "What are the current top 5 trends in AI, just the title? Please return the answer as a JSON format"
     return_format = "json"
     result_single_json = ask_ai(prompt_single, return_format)
-    print(f'Question: {prompt_single}\nAnswer: {result_single_json}')
+    print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
 
 
 if __name__ == "__main__":

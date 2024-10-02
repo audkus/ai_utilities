@@ -1,4 +1,3 @@
-
 """
 rate_limiter.py
 
@@ -211,6 +210,7 @@ class RateLimiter:
         thread.daemon = True
         thread.start()
 
+
 def main():
     # Initialize rate limiter with specific limits for API usage
     rate_limiter = RateLimiter(module_name="gpt-4", rpm=60, tpm=1000, tpd=10000, config_path="./config.ini")
@@ -228,6 +228,7 @@ def main():
             print(f"Rate limit exceeded for {tokens} tokens.")
 
         time.sleep(5)  # Simulate a wait time between requests
+
 
 if __name__ == "__main__":
     main()

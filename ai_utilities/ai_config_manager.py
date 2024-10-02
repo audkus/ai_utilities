@@ -1,4 +1,3 @@
-
 """
 ai_config_manager.py
 
@@ -42,7 +41,6 @@ def set_default_ai_config(config: configparser.ConfigParser) -> None:
         config.add_section("openai")
     config.set("openai", "model", config.get("openai", "model", fallback="gpt-4"))
     config.set("openai", "api_key", config.get("openai", "api_key", fallback="OPENAI_API_KEY"))
-
 
     # if not config.has_section("copilot"):
     #     config.add_section("copilot")
@@ -103,6 +101,7 @@ def get_model_from_config(config: configparser.ConfigParser, config_path: str) -
         try:
             api_key = os.getenv(config.get('openai', 'api_key'))
             if not api_key:
+                logging.error("API key not found in environment variables.")
                 raise ValueError("API key not found in environment variables.")
         except Exception as e:
             logging.error(f"Failed to retrieve OpenAI API key: {e}")
@@ -123,6 +122,7 @@ def get_model_from_config(config: configparser.ConfigParser, config_path: str) -
     else:
         logging.error(f"Unsupported AI provider: {ai_provider}")
         raise ValueError(f"Unsupported AI provider: {ai_provider}")
+
 
 def main():
     # Set up logging

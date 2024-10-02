@@ -41,6 +41,8 @@ To use OpenAI's models, you will need an API key from OpenAI. To set this up:
      setx OPENAI_API_KEY "your-api-key-here"
      ```
 
+**N.B.** You probably need to restart your IDE for this to take effect.
+
 #### Licensing and Usage Limits
 
 - OpenAI's GPT models are licensed under OpenAI’s [terms of service](https://beta.openai.com/terms).
