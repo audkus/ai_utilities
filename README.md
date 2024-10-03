@@ -293,6 +293,32 @@ if model:
     print(model.ask_ai("Tell me a joke"))
 ```
 
+### Function: `is_ai_usage_enabled`
+
+Checks if AI usage is enabled based on the use_ai setting in the config.ini file.
+
+**Parameters:**
+- `config` (`configparser.ConfigParser`): Configuration object containing settings.
+
+**Returns:**
+- `bool`: `True` if AI usage is enabled in the configuration, `False` otherwise.
+
+**Example Usage:**
+```python
+import configparser
+from ai_integration import is_ai_usage_enabled
+
+# Load configuration from file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Check if AI usage is enabled
+if is_ai_usage_enabled(config):
+    print("AI usage is enabled.")
+else:
+    print("AI usage is disabled.")
+```
+
 ---
 
 ## Rate Limiting (Internal)
