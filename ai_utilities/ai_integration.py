@@ -30,6 +30,8 @@ import logging
 import configparser
 import os
 import time
+import threading
+import sys
 from typing import Optional, Protocol, Dict, Any, List, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -44,7 +46,8 @@ from .rate_limiter import RateLimiter
 
 # Global model instance
 _model: Optional['AIModel'] = None
-_thread_pool: Optional[ThreadPoolExecutor] = None  # _thread_pool is defined at module level
+_thread_pool: Optional[ThreadPoolExecutor] = None
+_config: Optional[configparser.ConfigParser] = None
 
 
 # Set up logging configuration
@@ -142,7 +145,6 @@ class OpenAIModel:
             # Directly return the response based on the specified format
             if response and return_format.lower() == 'json':
                 response = self.clean_response(response)
-                print(f'response: {response}')
                 logging.debug(f"Cleaned JSON response: {response}")
 
             self.rate_limiter.record_usage(tokens)
@@ -195,7 +197,7 @@ def handle_ai_responses(futures: List[Any]) -> None:
             logging.error(f"Error in AI request: {e}")
 
 
-def initialize_model(config: configparser.ConfigParser) -> Optional[ThreadPoolExecutor]:
+def initialize_model(config: Optional[configparser.ConfigParser] = None) -> Optional[ThreadPoolExecutor]:
     """
     Initializes the global AI model based on the configuration.
 
@@ -206,7 +208,15 @@ def initialize_model(config: configparser.ConfigParser) -> Optional[ThreadPoolEx
         Optional[ThreadPoolExecutor]: A ThreadPoolExecutor instance for concurrent task execution,
                                        or None if AI usage is disabled.
     """
-    global _model, _thread_pool
+    global _model, _thread_pool, _config
+
+    # Load the config if it's not already loaded
+    if _config is None:
+        _config = configparser.ConfigParser()
+        _config.read('config.ini')
+
+    config = _config  # Use the global config for further operations
+
     _thread_pool = initialize_thread_pool(config)
 
     # Ensure AI and model-specific configurations are set
@@ -328,6 +338,94 @@ def monitor_memory_threshold(threshold: float) -> bool:
 #             logging.error(f"Unexpected error in AI request: {str(e)}")
 #             raise
 
+# def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[str, List[str], None]:
+#     """
+#     Sends a prompt or list of prompts to the global AI model and returns the response(s).
+#
+#     Args:
+#         prompt (Union[str, List[str]]): The prompt(s) to send to the AI model.
+#         return_format (str): The format of the returned response ('text' or 'json').
+#
+#     Returns:
+#         Union[str, List[str], None]: The AI model's response(s), formatted as specified,
+#                                        or None if AI usage is disabled.
+#     """
+#     return_format = return_format.strip().lower()
+#
+#     global _model, _thread_pool
+#
+#     # Initialize model and thread pool if not already initialized
+#     if _model is None:
+#         config = configparser.ConfigParser()
+#         config.read('config.ini')
+#         if initialize_model(config) is None:
+#             logging.debug("AI model initialization skipped because AI usage is disabled.")
+#             return None
+#
+#     if _thread_pool is None:
+#         initialize_thread_pool(config)
+#
+#     # Convert single prompt to list if necessary
+#     if isinstance(prompt, str):
+#         prompts: List[str] = [prompt]
+#     elif isinstance(prompt, list):
+#         prompts = prompt
+#     else:
+#         raise TypeError("Prompt must be a string or a list of strings")
+#
+#     # Monitor memory usage before submitting tasks
+#     memory_threshold: float = 0.8
+#     monitor_memory_usage(memory_threshold)
+#
+#     # Use threading for multiple prompts
+#     if len(prompts) > 1:
+#         # Create a dictionary to store the prompt and its corresponding future
+#         futures_map = {prompt: _thread_pool.submit(_model.ask_ai, prompt, return_format) for prompt in prompts}
+#
+#         results: List[Optional[str]] = []
+#         for prompt, future in futures_map.items():
+#             try:
+#                 result = future.result()
+#                 results.append(result)
+#             except OpenAIError as e:
+#                 error_message = get_error_message(e)
+#                 logging.error(f"OpenAIError: {error_message}")
+#                 results.append(f"Error: {error_message}")
+#             except Exception as e:
+#                 logging.error(f"Unexpected error in AI threaded request: {str(e)}")
+#                 results.append(f"Error: {str(e)}")
+#
+#         return results
+#     else:
+#         try:
+#             return _model.ask_ai(prompts[0], return_format)
+#         except OpenAIError as e:
+#             error_message = get_error_message(e)
+#             logging.error(f"OpenAIError: {error_message}")
+#             raise
+#         except Exception as e:
+#             logging.error(f"Unexpected error in AI request: {str(e)}")
+#             raise
+
+def timer(stop_timer: threading.Event, waiting_message: str) -> None:
+    """
+    Displays a timer in the format specified by the waiting_message while waiting for the AI response.
+
+    Args:
+        stop_timer (threading.Event): Event to stop the timer when the AI response is received.
+        waiting_message (str): Customizable message to display for the timer.
+    """
+    start_time = time.time()
+    while not stop_timer.is_set():
+        elapsed_time = int(time.time() - start_time)
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        sys.stdout.write(f"\r{waiting_message.format(hours=hours, minutes=minutes, seconds=seconds)}")
+        sys.stdout.flush()
+        time.sleep(1)
+    sys.stdout.write("\n")  # Move to the next line when the timer stops
+
+
 def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[str, List[str], None]:
     """
     Sends a prompt or list of prompts to the global AI model and returns the response(s).
@@ -342,18 +440,21 @@ def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[
     """
     return_format = return_format.strip().lower()
 
-    global _model, _thread_pool
+    global _model, _thread_pool, _config
 
-    # Initialize model and thread pool if not already initialized
+    # Initialize model, thread pool, and config if not already initialized
     if _model is None:
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-        if initialize_model(config) is None:
+        if initialize_model() is None:
             logging.debug("AI model initialization skipped because AI usage is disabled.")
             return None
 
     if _thread_pool is None:
-        initialize_thread_pool(config)
+        initialize_thread_pool(_config)
+
+    # Load the messages from the global config file
+    messages = get_messages_from_config(_config)
+    waiting_message = messages['waiting_message']
+    processing_message = messages['processing_message']
 
     # Convert single prompt to list if necessary
     if isinstance(prompt, str):
@@ -367,35 +468,44 @@ def ask_ai(prompt: Union[str, List[str]], return_format: str = 'text') -> Union[
     memory_threshold: float = 0.8
     monitor_memory_usage(memory_threshold)
 
-    # Use threading for multiple prompts
-    if len(prompts) > 1:
-        # Create a dictionary to store the prompt and its corresponding future
-        futures_map = {prompt: _thread_pool.submit(_model.ask_ai, prompt, return_format) for prompt in prompts}
+    # Use threading for the timer
+    stop_timer = threading.Event()
+    timer_thread = threading.Thread(target=timer, args=(stop_timer, waiting_message))
+    timer_thread.start()
 
-        results: List[Optional[str]] = []
-        for prompt, future in futures_map.items():
-            try:
-                result = future.result()
-                results.append(result)
-            except OpenAIError as e:
-                error_message = get_error_message(e)
-                logging.error(f"OpenAIError: {error_message}")
-                results.append(f"Error: {error_message}")
-            except Exception as e:
-                logging.error(f"Unexpected error in AI threaded request: {str(e)}")
-                results.append(f"Error: {str(e)}")
+    try:
+        if len(prompts) > 1:
+            # Create a dictionary to store the prompt and its corresponding future
+            futures_map = {prompt: _thread_pool.submit(_model.ask_ai, prompt, return_format) for prompt in prompts}
 
-        return results
-    else:
-        try:
-            return _model.ask_ai(prompts[0], return_format)
-        except OpenAIError as e:
-            error_message = get_error_message(e)
-            logging.error(f"OpenAIError: {error_message}")
-            raise
-        except Exception as e:
-            logging.error(f"Unexpected error in AI request: {str(e)}")
-            raise
+            results: List[Optional[str]] = []
+            for prompt, future in futures_map.items():
+                try:
+                    result = future.result()
+                    results.append(result)
+                except OpenAIError as e:
+                    error_message = get_error_message(e)
+                    logging.error(f"OpenAIError: {error_message}")
+                    results.append(f"Error: {error_message}")
+                except Exception as e:
+                    logging.error(f"Unexpected error in AI threaded request: {str(e)}")
+                    results.append(f"Error: {str(e)}")
+            return results
+        else:
+            result = _model.ask_ai(prompts[0], return_format)
+            return result
+    except OpenAIError as e:
+        error_message = get_error_message(e)
+        logging.error(f"OpenAIError: {error_message}")
+        raise
+    except Exception as e:
+        logging.error(f"Unexpected error in AI request: {str(e)}")
+        raise
+    finally:
+        # Stop the timer thread when AI response is done
+        stop_timer.set()
+        timer_thread.join()
+        sys.stdout.write(f"\n{processing_message}\n")
 
 
 def is_ai_usage_enabled(config: configparser.ConfigParser) -> bool:
@@ -431,9 +541,30 @@ def monitor_memory_usage(threshold: float) -> None:
         time.sleep(5)  # Wait for 5 seconds and check memory again
 
 
+def get_messages_from_config(config: configparser.ConfigParser) -> dict:
+    """
+    Load customizable waiting and processing messages from the config file.
+
+    Args:
+        config (configparser.ConfigParser): The configuration object.
+
+    Returns:
+        dict: A dictionary containing 'waiting_message' and 'processing_message'.
+    """
+    waiting_message = config.get('AI', 'waiting_message', fallback="Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]")
+    processing_message = config.get('AI', 'processing_message', fallback="AI response received. Processing...")
+
+    return {
+        'waiting_message': waiting_message,
+        'processing_message': processing_message
+    }
+
+
 def main() -> None:
     """
     Example usage of the ai_integration module.
+
+    To execute use prompt terminal: python -m ai_utilities.ai_integration
     """
     prompt_single_text = "Who was the first human to walk on the moon?"
     result_single_text = ask_ai(prompt_single_text)
@@ -457,7 +588,7 @@ def main() -> None:
     prompt_single = "What are the current top 5 trends in AI, just the title? Please return the answer as a JSON format"
     return_format = "json"
     result_single_json = ask_ai(prompt_single, return_format)
-    print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
+    print(f'\nQuestion: {prompt_single}\nAnswer: \n{result_single_json}')
 
 
 if __name__ == "__main__":

@@ -36,6 +36,11 @@ def set_default_ai_config(config: configparser.ConfigParser) -> None:
         config.add_section("AI")
     config.set("AI", "use_ai", config.get("AI", "use_ai", fallback="true"))
     config.set("AI", "ai_provider", config.get("AI", "ai_provider", fallback="openai"))
+    config.set("AI", "waiting_message",
+               config.get("AI", "waiting_message",
+                          fallback="Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]"))
+    config.set("AI", "processing_message", config.get("AI", "processing_message",
+                                                      fallback="AI response received. Processing..."))
 
     if not config.has_section("openai"):
         config.add_section("openai")
