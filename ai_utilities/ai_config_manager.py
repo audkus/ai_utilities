@@ -75,13 +75,68 @@ def set_default_model_configs(config: configparser.ConfigParser) -> None:
     config.set("gpt-3.5-turbo", "tokens_per_day", config.get("gpt-3.5-turbo", "tokens_per_day", fallback="20000000"))
 
 
-def get_model_from_config(config: configparser.ConfigParser, config_path: str) -> Optional['OpenAIModel']:
+# def get_model_from_config(config: configparser.ConfigParser, config_path: str) -> Optional['OpenAIModel']:
+#     """
+#     Initializes and returns an AI model based on the configuration.
+#
+#     Args:
+#         config (configparser.ConfigParser): The configuration object.
+#         config_path (str): The path to the configuration file.
+#
+#     Returns:
+#         Optional[OpenAIModel]: An instance of OpenAIModel if AI usage is enabled, otherwise None.
+#
+#     Raises:
+#         ValueError: If the AI provider specified in the config is unsupported.
+#     """
+#     from ai_utilities.ai_integration import OpenAIModel
+#
+#     use_ai = config.getboolean('AI', 'use_ai')
+#     if not use_ai:
+#         logging.info("AI usage is disabled in the configuration.")
+#         return None
+#
+#     ai_provider = config.get('AI', 'ai_provider')
+#     logging.debug(f"Configured AI provider: {ai_provider}")
+#
+#     if ai_provider.lower() == 'none':
+#         logging.warning('No ai_provider set in config.ini section [AI]')
+#         return None
+#     elif ai_provider == 'openai':
+#         try:
+#             api_key = os.getenv(config.get('openai', 'api_key'))
+#             if not api_key:
+#                 logging.error("API key not found in environment variables.")
+#                 raise ValueError("API key not found in environment variables.")
+#         except Exception as e:
+#             logging.error(f"Failed to retrieve OpenAI API key: {e}")
+#             return None
+#
+#         try:
+#             model_name = config.get('openai', 'model')
+#             if not model_name:
+#                 raise ValueError("Model name not found in the config.")
+#         except Exception as e:
+#             logging.error(f"Failed to retrieve OpenAI model name: {e}")
+#             return None
+#
+#         logging.debug(f"Initializing OpenAIModel with model: {model_name}")
+#         logging.debug(f"OpenAI API Key: {api_key[:4]}****")
+#
+#         return OpenAIModel(api_key=api_key, model=model_name, config=config, config_path=config_path)
+#     else:
+#         logging.error(f"Unsupported AI provider: {ai_provider}")
+#         raise ValueError(f"Unsupported AI provider: {ai_provider}")
+
+def get_model_from_config(config: configparser.ConfigParser, config_path: str, model: Optional[str] = None) -> Optional[
+    'OpenAIModel']:
     """
     Initializes and returns an AI model based on the configuration.
 
     Args:
         config (configparser.ConfigParser): The configuration object.
         config_path (str): The path to the configuration file.
+        model (Optional[str]): The model to use. If None, the model from the config will be used.
 
     Returns:
         Optional[OpenAIModel]: An instance of OpenAIModel if AI usage is enabled, otherwise None.
@@ -113,9 +168,10 @@ def get_model_from_config(config: configparser.ConfigParser, config_path: str) -
             return None
 
         try:
-            model_name = config.get('openai', 'model')
+            # Use the overridden model if provided, otherwise fall back to the config.
+            model_name = model if model else config.get('openai', 'model')
             if not model_name:
-                raise ValueError("Model name not found in the config.")
+                raise ValueError("Model name not found in the config or overridden model name is empty.")
         except Exception as e:
             logging.error(f"Failed to retrieve OpenAI model name: {e}")
             return None
