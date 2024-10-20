@@ -264,6 +264,8 @@ The default configuration file looks like this:
 [AI]
 use_ai = true
 ai_provider = openai
+waiting_message = Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]
+processing_message = AI response received. Processing...
 
 [openai]
 model = gpt-4
