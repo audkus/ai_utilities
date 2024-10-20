@@ -320,7 +320,35 @@ if is_ai_usage_enabled(config):
 else:
     print("AI usage is disabled.")
 ```
+### Customizing Messages
+You can customize the messages displayed during the AI prompt process:
 
+**waiting_message:** This message is shown while the app waits for the AI to return a response. You can include a timer in this message to show the elapsed time in the format of hours, minutes, and seconds.
+
+**processing_message:** Once the AI response has been received, this message is displayed to indicate that the processing is complete.
+
+These messages can be customized in the [AI] section of the config.ini file.
+
+**Example:**
+```[AI]
+use_ai = true
+ai_provider = openai
+waiting_message = Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]
+processing_message = AI response received. Processing...
+```
+In the waiting_message, you can use placeholders for:
+
+- {hours:02}: The number of hours the AI has been processing (padded to 2 digits).
+- {minutes:02}: The number of minutes the AI has been processing (padded to 2 digits).
+- {seconds:02}: The number of seconds the AI has been processing (padded to 2 digits).
+These placeholders will dynamically update while waiting for the AI response, providing the user with real-time feedback on the process duration.
+
+Example output:
+```
+Waiting for AI response [00:00:05]
+AI response received. Processing...
+```
+You can customize these messages to fit your needs.
 ---
 
 ## Rate Limiting (Internal)
