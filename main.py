@@ -29,6 +29,10 @@ def main() -> None:
     result_single_json = ask_ai(prompt_single, return_format)
     print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
 
+    print(f'\n# Example using a custom model "gpt-3.5-turbo":\n')
+    prompt_custom_model = "What is the capital of France?"
+    response = ask_ai(prompt_custom_model, model="gpt-3.5-turbo")
+    print(f'\nQuestion: {prompt_custom_model}\nAnswer: \n{response}')
 
 if __name__ == "__main__":
     main()

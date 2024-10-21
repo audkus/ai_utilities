@@ -75,8 +75,8 @@ def set_default_model_configs(config: configparser.ConfigParser) -> None:
     config.set("gpt-3.5-turbo", "tokens_per_day", config.get("gpt-3.5-turbo", "tokens_per_day", fallback="20000000"))
 
 
-def get_model_from_config(config: configparser.ConfigParser, config_path: str, model: Optional[str] = None) -> Optional[
-    'OpenAIModel']:
+def get_model_from_config(config: configparser.ConfigParser, config_path: str,
+                          model: Optional[str] = None) -> Optional['OpenAIModel']:
     """
     Initializes and returns an AI model based on the configuration.
 
