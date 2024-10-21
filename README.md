@@ -132,8 +132,14 @@ if __name__ == "__main__":
 
 ### Installation
 
-You can install the project directly from GitHub:
+You can install the project directly from PyPy or from GitHub:
 
+**PyPy**
+```bash
+pip install ai_utilities
+```
+
+**GitHub**
 ```bash
 pip install git+https://github.com/audkus/ai_utilities.git
 ```
@@ -161,7 +167,7 @@ Before using the app, you need to set up the **OpenAI API key** on your computer
 
 ## Examples
 
-Below are three runnable examples that you can copy and paste directly into your project modules.
+Below are some runnable examples that you can copy and paste directly into your project modules.
 
 ### 1. Single Prompt Example
 
@@ -212,6 +218,22 @@ def main() -> None:
     prompt_json = "What are the current top 2 trends in AI, return the answer as JSON format."
     result_json = ask_ai(prompt_json, return_format="json")
     print(f'\nExample with a JSON response:\n{result_json}')
+
+if __name__ == "__main__":
+    main()
+```
+
+### 4. Using a custom AI model at runtime Example
+
+The AI used is set in the config.ini file, where you set the module to use, whenever ask_ai is called. If the requirement is to be able to use multiple models at runtime, this too can be accomplished by adding the model="<name of AI model" parameter. In the following example the model "gpt-3.5-turbo" is used.
+
+```python
+from ai_utilities.ai_integration import ask_ai
+
+def main() -> None:
+    prompt_custom_model = "What is the capital of France?"
+    response = ask_ai(prompt_custom_model, model="gpt-3.5-turbo")
+    print(f'\nQuestion: {prompt_custom_model}\nAnswer: \n{response}')
 
 if __name__ == "__main__":
     main()
