@@ -7,7 +7,8 @@ initializing AI models based on the configuration. Additionally, it enforces rat
 requests per minute (RPM), tokens per minute (TPM), and tokens per day (TPD) based on the model's
 configuration. The rate limiter generates an ai_stats_file.json to monitor AI usage.
 Responses from the AI are not validated and are returned as is. If you add the parameter "json" to the call,
-the script will ensure that only the JSON part of the answer is returned. If no JSON exists, the whole answer is returned.
+the script will ensure that only the JSON part of the answer is returned. If no JSON exists, the whole answer
+is returned.
 The script does not validate the answer.
 
 Key functionalities include:
@@ -32,7 +33,7 @@ import os
 import time
 import threading
 import sys
-from typing import Optional, Protocol, Dict, Any, List, Union
+from typing import Optional, Protocol, Any, List, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Third-Party Library Imports
@@ -220,7 +221,7 @@ def initialize_model(config: Optional[configparser.ConfigParser] = None) -> Opti
     config = _config  # Use the global config for further operations
 
     # Ensure AI and model-specific configurations are set
-    config, config_path = load_and_validate_config()  # Ensure config_path is set properly here
+    config, config_path = load_and_validate_config()
 
     # Store config_path globally for reuse in other functions
     _config_path = config_path  # Ensure the global _config_path is set
@@ -425,7 +426,8 @@ def get_messages_from_config(config: configparser.ConfigParser) -> dict:
     Returns:
         dict: A dictionary containing 'waiting_message' and 'processing_message'.
     """
-    waiting_message = config.get('AI', 'waiting_message', fallback="Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]")
+    waiting_message = config.get('AI', 'waiting_message',
+                                 fallback="Waiting for AI response [{hours:02}:{minutes:02}:{seconds:02}]")
     processing_message = config.get('AI', 'processing_message', fallback="AI response received. Processing...")
 
     return {
