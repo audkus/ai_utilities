@@ -371,6 +371,7 @@ Waiting for AI response [00:00:05]
 AI response received. Processing...
 ```
 You can customize these messages to fit your needs.
+
 ---
 
 ## Rate Limiting (Internal)
@@ -384,6 +385,68 @@ While rate limiting is handled internally, you can customize the rate limits by 
 requests_per_minute = 5000
 tokens_per_minute = 450000
 tokens_per_day = 1350000
+```
+
+---
+
+## Logging Configuration
+By default, the ai_utilities package uses Python's built-in logging module for logging events such as AI interaction status, errors, and timers. The logging system is flexible and can be customized by the developer, or it will work with default settings.
+
+- Custom Logging: If you want to configure your own logging behavior (e.g., log to a file or adjust the log level), you can set up a logger in your application before calling any of the ai_utilities functions.
+Example of custom logging configuration:
+```
+import logging
+
+# Set up logging to log to a file with DEBUG level
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='ai_utilities.log'
+)
+```
+- Default Logging: If you don't configure logging, the package will use a default logger that outputs logs to the console. This allows you to see important information like the status of AI calls and responses, without any additional configuration.
+
+- Timer Output: When interacting with AI models, a timer is displayed on the console to show the elapsed time while waiting for a response. This behavior can be controlled using the logging settings but works by default.
+
+### Timer output behavior control
+To control the behavior of the timer output in your AI integration module, the logging settings play an important role. Here’s how you can provide control over the timer output:
+
+#### 1. Log Level
+The visibility of the timer output can be controlled using the logging level. If the log level is set to a higher level (e.g., WARNING or ERROR), the timer output will not be shown. Here's how different logging levels affect the timer:
+
+- DEBUG or INFO: The timer is displayed. Loggin is displayd when the timer closes.
+- WARNING, ERROR, or CRITICAL: The timer is not shown. This is to enable runtime loggin.
+  
+Example of changing the logging level:
+```
+import logging
+logging.basicConfig(level=logging.WARNING)
+```
+In the above code, the timer will not be shown because the level is set to WARNING.
+
+#### 2. Suppressing Timer Manually
+If developers want to suppress the timer explicitly without changing the log level, they can customize the logging configuration to exclude specific handlers (such as the timer handler).
+
+Example of configuring the logger:
+```
+import logging
+
+logger = logging.getLogger('ai_utilities')
+logger.setLevel(logging.WARNING)  # Timer won't be shown
+
+# Or if a specific handler is used for custom behavior
+for handler in logger.handlers:
+    logger.removeHandler(handler)  # Removes any existing handlers, including the timer
+```
+
+#### 3. Customizing Timer Output
+Developers can customize the messages displayed during the AI call using the configuration file (config.ini). They can modify the waiting_message and processing_message fields in the [AI] section.
+
+Example in config.ini:
+```
+[AI]
+waiting_message = Please wait while AI processes your request [{hours:02}:{minutes:02}:{seconds:02}]
+processing_message = AI response is being processed...
 ```
 
 ---
