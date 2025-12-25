@@ -29,7 +29,46 @@ class AsyncOpenAIProvider(AsyncProvider):
 
 
 class AsyncAiClient:
-    """Async AI client with concurrency control and retry logic."""
+    """
+    Async AI client with concurrency control and retry logic.
+    
+    This is the asynchronous version of AiClient, designed for high-performance
+    applications that need to handle multiple AI requests concurrently. It provides
+    the same interface as AiClient but with async/await support.
+    
+    The async client is ideal for:
+    - Web applications handling multiple simultaneous AI requests
+    - Batch processing of large numbers of prompts
+    - Applications requiring non-blocking AI operations
+    
+    Example:
+        import asyncio
+        from ai_utilities import AsyncAiClient
+        
+        async def main():
+            client = AsyncAiClient()
+            
+            # Single async request
+            response = await client.ask("What is the capital of France?")
+            
+            # Concurrent batch processing
+            prompts = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+            results = await client.ask_many(prompts, concurrency=3)
+            
+            # Process results as they complete
+            for result in results:
+                print(f"Response: {result.response}")
+        
+        asyncio.run(main())
+    
+    Features:
+        - Async/await support for non-blocking operations
+        - Concurrent request processing with configurable limits
+        - Retry logic for transient failures
+        - Progress callbacks for long-running operations
+        - Same interface as synchronous AiClient
+        - Usage tracking and progress indication
+    """
     
     def __init__(
         self,

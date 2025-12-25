@@ -24,7 +24,38 @@ from .models import AskResult
 
 
 class AiSettings(BaseSettings):
-    """Configuration settings for AI client using pydantic-settings."""
+    """
+    Configuration settings for AI client using pydantic-settings.
+    
+    This class manages all configuration for AI clients including API keys,
+    model selection, and behavior settings. It supports environment variables
+    with the 'AI_' prefix and can be configured programmatically.
+    
+    Environment Variables:
+        AI_API_KEY: OpenAI API key (required)
+        AI_MODEL: Model name (default: "test-model-1")
+        AI_TEMPERATURE: Response temperature 0.0-2.0 (default: 0.7)
+        AI_MAX_TOKENS: Maximum response tokens (optional)
+        AI_BASE_URL: Custom API base URL (optional)
+        AI_TIMEOUT: Request timeout in seconds (default: 30)
+        AI_UPDATE_CHECK_DAYS: Days between model update checks (default: 30)
+        AI_USAGE_SCOPE: Usage tracking scope (default: "per_client")
+        AI_USAGE_CLIENT_ID: Custom client ID for usage tracking (optional)
+    
+    Example:
+        # Using environment variables
+        settings = AiSettings()
+        
+        # Using explicit parameters
+        settings = AiSettings(
+            api_key="your-key",
+            model="gpt-4",
+            temperature=0.5
+        )
+        
+        # From configuration file
+        settings = AiSettings.from_ini("config.ini")
+    """
     
     model_config = SettingsConfigDict(
         env_prefix="AI_",
@@ -477,7 +508,41 @@ class AiSettings(BaseSettings):
 
 
 class AiClient:
-    """Main AI client for making requests to AI models."""
+    """
+    Main AI client for making requests to AI models.
+    
+    This is the primary interface for interacting with AI models. It provides
+    a simple, clean API for both single and batch requests with support for
+    different response formats, usage tracking, and progress indication.
+    
+    The client follows a provider architecture, defaulting to OpenAI but
+    supporting custom providers through the BaseProvider interface.
+    
+    Example:
+        # Using environment variables
+        client = AiClient()
+        response = client.ask("What is the capital of France?")
+        
+        # Using explicit settings
+        settings = AiSettings(api_key="your-key", model="gpt-4")
+        client = AiClient(settings)
+        
+        # Batch requests
+        prompts = ["Q1", "Q2", "Q3"]
+        results = client.ask_many(prompts)
+        
+        # JSON responses
+        data = client.ask_json("List 5 AI trends as JSON")
+    
+    Features:
+        - Single and batch AI requests
+        - Text and JSON response formats
+        - Optional usage tracking
+        - Progress indication
+        - Provider abstraction
+        - Environment-based configuration
+        - Interactive setup for missing API keys
+    """
     
     def __init__(self, settings: Optional[AiSettings] = None, provider: Optional[BaseProvider] = None, 
                  track_usage: bool = False, usage_file: Optional[Path] = None, 
@@ -548,15 +613,44 @@ class AiClient:
         self.provider = OpenAIProvider(self.settings)
     
     def ask(self, prompt: Union[str, List[str]], *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, List[str]]:
-        """Ask a question or multiple questions to the AI.
+        """
+        Ask a question or multiple questions to the AI.
+        
+        This is the primary method for making AI requests. It supports both single
+        prompts and batch prompts, with options for text or JSON response formats.
         
         Args:
-            prompt: Single prompt string or list of prompts
-            return_format: Format for response ("text" or "json")
-            **kwargs: Additional parameters to override settings
-            
+            prompt: Single prompt string or list of prompts. If a list is provided,
+                   returns a list of responses in the same order.
+            return_format: Format for response:
+                          - "text": Returns plain text responses (default)
+                          - "json": Returns parsed JSON as dict/list
+            **kwargs: Additional parameters to override settings:
+                     - model: Override the default model
+                     - temperature: Override response temperature
+                     - max_tokens: Override maximum response tokens
+                     - timeout: Override request timeout
+        
         Returns:
-            Response string or list of strings
+            Union[str, List[str], dict, list]: Response in requested format.
+                                              Single prompt returns single response,
+                                              list of prompts returns list of responses.
+        
+        Example:
+            client = AiClient()
+            
+            # Single question
+            answer = client.ask("What is the capital of France?")
+            
+            # JSON response
+            data = client.ask("List 5 colors", return_format="json")
+            
+            # Multiple questions
+            questions = ["Q1", "Q2", "Q3"]
+            answers = client.ask(questions)
+            
+            # With custom parameters
+            response = client.ask("Explain AI", temperature=0.3, model="gpt-4")
         """
         # Merge kwargs with settings
         request_params = self.settings.model_dump(exclude_none=True)
@@ -606,17 +700,50 @@ class AiClient:
         fail_fast: bool = False,
         **kwargs
     ) -> List[AskResult]:
-        """Ask multiple questions sequentially.
+        """
+        Ask multiple questions with optional concurrency control.
+        
+        Processes multiple prompts efficiently with support for concurrent execution
+        and detailed result information including timing and error handling.
         
         Args:
             prompts: List of prompts to process
-            return_format: Format for responses ("text" or "json")
-            concurrency: Number of concurrent requests (must be >= 1)
-            fail_fast: If True, stop processing after first failure
-            **kwargs: Additional parameters
-            
+            return_format: Format for responses:
+                          - "text": Returns plain text responses (default)
+                          - "json": Returns parsed JSON as dict/list
+            concurrency: Number of concurrent requests (must be >= 1).
+                        Higher values can improve performance but use more API quota.
+            fail_fast: If True, stops processing after first failure.
+                      If False, continues processing all prompts.
+            **kwargs: Additional parameters to override settings for all requests
+        
         Returns:
-            List of AskResult objects
+            List[AskResult]: List of results containing:
+                           - response: The AI response (or None if error)
+                           - error: Error message if request failed (or None)
+                           - duration_s: Request duration in seconds
+                           - prompt: Original prompt (for reference)
+        
+        Example:
+            client = AiClient()
+            
+            # Sequential processing
+            prompts = ["What is 2+2?", "What is 3+3?", "What is 4+4?"]
+            results = client.ask_many(prompts)
+            
+            # Concurrent processing (faster for many requests)
+            results = client.ask_many(prompts, concurrency=3)
+            
+            # Process results
+            for result in results:
+                if result.error:
+                    print(f"Error: {result.error}")
+                else:
+                    print(f"Answer: {result.response}")
+                    print(f" took {result.duration_s:.2f}s")
+            
+            # Fail fast on first error
+            results = client.ask_many(prompts, fail_fast=True)
         """
         from .models import AskResult
         
@@ -743,30 +870,83 @@ class AiClient:
         
         return results
     
-    def ask_json(self, prompt: str, **kwargs) -> str:
-        """Ask a question and return JSON format response.
+    def ask_json(self, prompt: str, **kwargs) -> Union[dict, list]:
+        """
+        Ask a question and return JSON format response.
+        
+        This is a convenience method that requests JSON responses from the AI.
+        It automatically handles JSON parsing and returns structured data.
         
         Args:
-            prompt: Prompt to process
-            **kwargs: Additional parameters to override settings
-            
+            prompt: Prompt to process. Should ask for structured/JSON data.
+            **kwargs: Additional parameters to override settings:
+                     - model: Override the default model
+                     - temperature: Override response temperature
+                     - max_tokens: Override maximum response tokens
+        
         Returns:
-            JSON format response string
+            Union[dict, list]: Parsed JSON response. For simple JSON objects
+                              returns dict, for arrays returns list.
+        
+        Raises:
+            ValueError: If the response cannot be parsed as valid JSON.
+        
+        Example:
+            client = AiClient()
+            
+            # Get structured data
+            colors = client.ask_json("List 5 primary colors as JSON array")
+            # Returns: ["red", "blue", "green", "yellow", "orange"]
+            
+            # Get structured object
+            info = client.ask_json("Information about Python as JSON with keys: name, creator, year")
+            # Returns: {"name": "Python", "creator": "Guido van Rossum", "year": 1991}
+            
+            # With custom parameters
+            data = client.ask_json("API endpoints as JSON", temperature=0.1)
         """
         return self.ask(prompt, return_format="json", **kwargs)
 
 
 # Convenience function for backward compatibility
 def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **kwargs) -> AiClient:
-    """Create an AI client with common parameters.
+    """
+    Create an AI client with common parameters.
+    
+    This is a convenience function for quickly creating an AiClient with the most
+    commonly used parameters. It's useful for simple use cases and backward
+    compatibility.
     
     Args:
-        api_key: OpenAI API key
-        model: Model to use
-        **kwargs: Additional settings
-        
+        api_key: OpenAI API key. If None, will use environment variable AI_API_KEY
+                 or prompt for setup if missing.
+        model: Model name to use (default: "test-model-1")
+        **kwargs: Additional settings passed to AiSettings:
+                 - temperature: Response temperature 0.0-2.0
+                 - max_tokens: Maximum response tokens
+                 - timeout: Request timeout in seconds
+                 - base_url: Custom API base URL
+    
     Returns:
-        Configured AiClient instance
+        AiClient: Configured AI client ready for use
+    
+    Example:
+        # Quick client with API key
+        client = create_client(api_key="your-key", model="gpt-4")
+        
+        # Using environment variables
+        client = create_client()
+        
+        # With custom settings
+        client = create_client(
+            api_key="your-key",
+            model="gpt-4",
+            temperature=0.5,
+            max_tokens=1000
+        )
+        
+        # Use the client
+        response = client.ask("What is AI?")
     """
     settings = AiSettings(api_key=api_key, model=model, **kwargs)
     return AiClient(settings)
