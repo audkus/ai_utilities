@@ -1,3 +1,13 @@
 /ai_statistics.json
 /build/
 /dist/
+*.egg-info/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,38 +1,68 @@
-from ai_utilities.ai_integration import ask_ai
+# Add src to path for development usage (works both in repo and when installed)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+from ai_utilities import create_client, AiClient
 
 
 def main() -> None:
     """
-    Example usage of the ai_integration module.
+    Example usage of the ai_utilities v1 API with progress indicator.
     """
+    print("=== AI Utilities v1 API Demo ===\n")
+    
+    try:
+        # Create client with progress indicator (default: enabled)
+        # Use a real OpenAI model for the demo
+        client = create_client(model="gpt-4")
+    except Exception as e:
+        print(f"\n❌ Failed to initialize AI client: {e}")
+        print("\nPlease ensure you have:")
+        print("1. Set your OpenAI API key: export AI_API_KEY='your-key-here'")
+        print("2. Or run the interactive setup to configure your settings")
+        print("\nThe application will now exit.")
+        return
+    
+    print("1. Single prompt with progress indicator (default):")
     prompt_single_text = "Who was the first human to walk on the moon?"
-    result_single_text = ask_ai(prompt_single_text)
-    print(f'# Example with a single prompt:\nQuestion: {prompt_single_text}:\nAnswer:{result_single_text}\n')
+    result_single_text = client.ask(prompt_single_text)
+    print(f"Question: {prompt_single_text}")
+    print(f"Answer: {result_single_text}\n")
 
+    print("2. Multiple prompts with progress indicator:")
     prompts_multiple_text = [
         "Who was the last person to walk on the moon?",
-        "What is Kant’s categorical imperative in simple terms?",
+        "What is Kant's categorical imperative in simple terms?",
         "What is the Fibonacci sequence? do not include examples"
     ]
 
-    print(f'# Example with multiple prompts:\n{prompts_multiple_text}\n')
-    results_multiple_text = ask_ai(prompts_multiple_text)
+    results_multiple_text = client.ask_many(prompts_multiple_text)
 
     if results_multiple_text:
         for question, result in zip(prompts_multiple_text, results_multiple_text):
             print(f"Question: {question}")
             print(f"Answer: {result}\n")
 
-    print(f'\n# Example with a single prompt in JSON format:\n')
+    print("3. JSON format request with progress indicator:")
     prompt_single = "What are the current top 5 trends in AI, just the title? Please return the answer as a JSON format"
-    return_format = "json"
-    result_single_json = ask_ai(prompt_single, return_format)
-    print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
+    result_single_json = client.ask_json(prompt_single)
+    print(f"Question: {prompt_single}")
+    print(f"Answer: {result_single_json}\n")
 
-    print(f'\n# Example using a custom model "gpt-3.5-turbo":\n')
+    print("4. Request without progress indicator:")
+    # Create client with progress indicator disabled and real model
+    client_no_progress = create_client(model="gpt-4", show_progress=False)
     prompt_custom_model = "What is the capital of France?"
-    response = ask_ai(prompt_custom_model, model="gpt-3.5-turbo")
-    print(f'\nQuestion: {prompt_custom_model}\nAnswer: \n{response}')
+    response = client_no_progress.ask(prompt_custom_model)
+    print(f"Question: {prompt_custom_model}")
+    print(f"Answer: {response}\n")
+
+    print("5. Custom model with progress indicator:")
+    response = client.ask("Explain quantum computing in simple terms")
+    print(f"Answer: {response}\n")
+
+    print("=== Demo Complete ===")
 
 if __name__ == "__main__":
     main()
