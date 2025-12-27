@@ -1,2 +1,0 @@
-openai
-config_utilities@ git+https://github.com/audkus/config_utilities.git
