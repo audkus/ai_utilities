@@ -1,8 +1,8 @@
 """Progress indicator for AI requests with configurable display."""
 
 import sys
-import time
 import threading
+import time
 from typing import Optional
 
 

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ai-utilities"
 version = "0.4.0"
 description = "Small reusable utilities for AI integrations"
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Steffen Rasmussen" }]
@@ -34,7 +34,6 @@ dev = [
   "pytest>=8,<9",
   "pytest-cov>=5,<7",
   "pytest-asyncio>=0.21,<1",
-  "pytest-ruff>=0.4,<1",
   "ruff>=0.6,<1",
   "mypy>=1.10,<2",
   "types-setuptools",
@@ -44,17 +43,9 @@ dev = [
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
-# Configure pytest-ruff for import checking
-ruff = [
-  # Check imports before running tests
-  "--ruff",
-  # Fail fast on import issues
-  "--ruff-fail-on-error",
-  # Run ruff check (not just format)
-  "--ruff-check",
-]
 
 [project.urls]
+Homepage = "https://github.com/audkus/ai_utilities"
 Repository = "https://github.com/audkus/ai_utilities"
 Issues = "https://github.com/audkus/ai_utilities/issues"
 
@@ -65,8 +56,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-# If you ship default config templates etc., include them like this:
-# "ai_utilities" = ["py.typed", "data/*.toml"]
+ai_utilities = ["py.typed"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

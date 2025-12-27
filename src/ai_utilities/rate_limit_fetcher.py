@@ -4,15 +4,15 @@ rate_limit_fetcher.py
 Service for fetching OpenAI rate limits dynamically from the API.
 """
 
-import logging
 import json
-from typing import Dict, Optional, Any
+import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
-from .openai_client import OpenAIClient
 from .config_models import ModelConfig
+from .openai_client import OpenAIClient
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class RateLimitFetcher:
             return None
         
         try:
-            with open(self.cache_file, 'r') as f:
+            with open(self.cache_file) as f:
                 cache_data = json.load(f)
             
             # Check if cache is still valid
@@ -389,7 +389,7 @@ class RateLimitFetcher:
             }
         
         try:
-            with open(self.cache_file, 'r') as f:
+            with open(self.cache_file) as f:
                 cache_data = json.load(f)
             
             last_updated = datetime.fromisoformat(cache_data.get('last_updated', '1970-01-01'))

@@ -2,6 +2,67 @@
 
 A Python library for AI model interaction with **Pydantic configuration**, **Single Responsibility Principle architecture**, and **dynamic rate limit management**.
 
+## ⚡ 20-Second Quickstart
+
+```bash
+# Install
+pip install ai-utilities
+
+# Set API key
+export AI_API_KEY="your-openai-key"
+
+# Use in Python
+python -c "
+from ai_utilities import AiClient
+client = AiClient()
+print(client.ask('What is AI?'))
+"
+```
+
+**Where to look next:**
+- **More examples** → [`examples/`](examples/)
+- **Configuration reference** → [Configuration](#configuration)
+- **API reference** → Use `help(AiClient)` in Python
+- **Changelog / versions** → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
+
+---
+
+## Configuration
+
+### Environment Variables (Recommended)
+
+Set these in your environment or `.env` file:
+
+```bash
+# Required
+export AI_API_KEY="your-openai-key"
+
+# Optional
+export AI_MODEL="gpt-4"
+export AI_TEMPERATURE="0.7"
+export AI_MAX_TOKENS="1000"
+export AI_TIMEOUT="30"
+```
+
+### Explicit Settings
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Create settings explicitly
+settings = AiSettings(
+    api_key="your-key",
+    model="gpt-4",
+    temperature=0.5
+)
+
+# Use with client
+client = AiClient(settings)
+response = client.ask("What is the capital of France?")
+```
+
+---
+
 ### 🚀 Key Features:
 - **🔧 Pydantic Settings Configuration**: Type-safe, validated configuration with environment variable integration and SettingsConfigDict
 - **🏗️ Provider Architecture**: Clean provider pattern with BaseProvider abstraction and OpenAIProvider implementation
@@ -279,36 +340,35 @@ pip install -e ".[dev]"
 - **pytest** (>=8,<9): Test framework for running unit and integration tests
 - **pytest-cov** (>=5,<7): Test coverage reporting
 - **pytest-asyncio** (>=0.21,<1): Async test support for pytest
-- **pytest-ruff** (>=0.4,<1): Ruff integration for pytest (import checking)
 - **ruff** (>=0.6,<1): Fast Python linter and formatter with import checking
 - **mypy** (>=1.10,<2): Static type checking
 - **types-setuptools**: Type stubs for setuptools
 
+**Type Safety:**
+- Includes `py.typed` marker file for PEP 561 compliance
+- Full type annotations on public APIs
+- mypy-compatible for downstream users
+
+**Version Management:**
+- Automatic version detection using `importlib.metadata`
+- Single source of truth in `pyproject.toml`
+- No more version mismatches between package and code
+
 **Usage examples:**
 ```bash
-# Run tests (includes automatic Ruff import checking)
-pytest
+# Code quality (run before committing)
+ruff check .          # Check for linting issues
+ruff check . --fix    # Auto-fix linting issues
+ruff format .         # Format code
 
-# Run tests with coverage
-pytest --cov=ai_utilities
+# Testing
+pytest                # Run tests
+pytest --cov=ai_utilities  # Tests with coverage
+pytest -v             # Verbose test output
+pytest -m "not slow"  # Skip slow tests
 
-# Run tests with auto-fix for Ruff issues
-pytest --ruff-fix
-
-# Run Ruff check manually
-ruff check .
-
-# Run Ruff with auto-fix
-ruff check . --fix
-
-# Format code with Ruff
-ruff format .
-
-# Lint code
-ruff check .
-
-# Type check
-mypy src/
+# Type checking
+mypy src/             # Type check the source code
 ```
 
 ### Testing Framework
@@ -354,43 +414,48 @@ pytest -m "not slow"
 
 # Run only slow tests
 pytest -m slow
-
-# Run tests with auto-fix for Ruff issues
-pytest --ruff-fix
 ```
 
 ### Import Checking with Ruff
 
-This project includes **automatic import checking** integrated with pytest:
+This project uses **Ruff** for comprehensive code quality checking including import validation:
 
 **Features:**
-- **Automatic import validation**: Ruff checks imports before running tests
-- **Unused import detection**: Automatically detects and can remove unused imports
-- **Import sorting**: Maintains consistent import order (stdlib, third-party, first-party)
-- **Fail-fast**: Tests stop immediately if import issues are found
-- **Auto-fix capability**: Can automatically fix import issues
+- **Import validation**: Detects unused imports, missing imports, and import order issues
+- **Auto-fix capability**: Automatically fixes import issues and code style problems
+- **Fast performance**: Written in Rust for lightning-fast linting
+- **Comprehensive rules**: Includes import errors, unused imports, code style, and more
 
 **Ruff Configuration:**
 - Enabled rules: Import errors, unused imports, import sorting, code quality
 - Auto-fix enabled for all fixable issues
 - Configured for `src/` layout with proper first-party detection
+- Line length: 88 characters (Black compatible)
 
 **Usage:**
 ```bash
-# Tests automatically run Ruff import checking
-pytest
-
-# Manually check imports
+# Check for issues (including import problems)
 ruff check .
 
-# Auto-fix import issues
+# Auto-fix issues (including import cleanup)
 ruff check . --fix
+
+# Format code (including import sorting)
+ruff format .
 
 # Check specific file
 ruff check src/ai_utilities/client.py
 
-# Format imports and code
-ruff format .
+# Run both check and format
+ruff check . --fix && ruff format .
+```
+
+**Recommended Workflow:**
+```bash
+# Before committing changes
+ruff check . --fix    # Fix linting issues
+ruff format .         # Format code
+pytest                # Run tests
 ```
 
 ---
@@ -696,6 +761,37 @@ prompts = ["List 3 colors as JSON", "List 3 animals as JSON"]
 json_responses = client.ask_many(prompts, return_format="json")
 for response in json_responses:
     print(f"JSON: {response}")
+```
+
+#### Typed Responses with Pydantic
+
+```python
+from ai_utilities import AiClient
+from pydantic import BaseModel
+from typing import Optional
+
+class Person(BaseModel):
+    name: str
+    age: int
+    email: Optional[str] = None
+
+client = AiClient()
+
+# Get strongly-typed response
+person = client.ask_typed(
+    "Create a person named Alice, age 30", 
+    response_model=Person
+)
+print(f"Name: {person.name}")
+print(f"Age: {person.age}")
+print(f"Email: {person.email}")
+
+# Robust JSON parsing with repair attempts
+try:
+    data = client.ask_json("List 5 colors as JSON array", max_repairs=2)
+    print(data)  # ["red", "blue", "green", "yellow", "orange"]
+except JsonParseError as e:
+    print(f"Failed to parse JSON: {e}")
 ```
 
 ### 5. Advanced Usage

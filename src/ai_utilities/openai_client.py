@@ -5,7 +5,8 @@ Pure OpenAI API client with single responsibility for API communication.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 

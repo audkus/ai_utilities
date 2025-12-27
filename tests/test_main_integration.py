@@ -1,12 +1,11 @@
 """Integration test for main.py to ensure real model usage works."""
 
 import os
-import pytest
-from unittest.mock import patch, MagicMock
 
 # Add src to path for imports
 import sys
-from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 def test_main_uses_real_models():

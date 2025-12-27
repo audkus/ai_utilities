@@ -21,12 +21,19 @@ Example Usage:
     response = client.ask_json("List 5 AI trends")
 """
 
-from .client import AiClient, AiSettings, create_client
 from .async_client import AsyncAiClient
+from .client import AiClient, AiSettings, create_client
 from .models import AskResult
-from .usage_tracker import UsageTracker, ThreadSafeUsageTracker, UsageScope, UsageStats, create_usage_tracker
-from .token_counter import TokenCounter
+from .json_parsing import JsonParseError, parse_json_from_text
 from .rate_limit_fetcher import RateLimitFetcher, RateLimitInfo
+from .token_counter import TokenCounter
+from .usage_tracker import (
+    ThreadSafeUsageTracker,
+    UsageScope,
+    UsageStats,
+    UsageTracker,
+    create_usage_tracker,
+)
 
 __all__ = [
     'AiClient',
@@ -34,6 +41,8 @@ __all__ = [
     'AiSettings', 
     'create_client',
     'AskResult',
+    'JsonParseError',
+    'parse_json_from_text',
     'UsageTracker',
     'ThreadSafeUsageTracker',
     'UsageScope',
@@ -44,5 +53,10 @@ __all__ = [
     'RateLimitInfo'
 ]
 
-# Version
-__version__ = "1.0.0"
+# Version - automatically retrieved from package metadata
+try:
+    from importlib.metadata import version
+    __version__ = version("ai-utilities")
+except ImportError:
+    # Fallback for older Python versions or when package is not installed
+    __version__ = "0.4.0"  # Should match pyproject.toml version

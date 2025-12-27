@@ -6,8 +6,7 @@ prevents contamination between different parts of the application.
 """
 
 import os
-import contextlib
-from typing import Dict, Optional, Any
+from typing import Dict
 
 
 def cleanup_ai_env_vars() -> None:

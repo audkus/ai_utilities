@@ -4,9 +4,10 @@ config_models.py
 Pydantic models for AI configuration with validation, type safety, and immutability.
 """
 
-from typing import Dict, Literal, Optional
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 import os
+from typing import Dict, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ModelConfig(BaseModel):
@@ -221,7 +222,6 @@ class AIConfig(BaseModel):
     @classmethod
     def load_from_environment(cls, data):
         """Load configuration from environment variables with contextvar support."""
-        import os
         from .env_overrides import get_env_overrides
         
         if isinstance(data, dict):

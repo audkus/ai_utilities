@@ -1,7 +1,7 @@
 """Shared models for sync and async AI clients."""
 
-from datetime import datetime
 from typing import Any, Dict, Optional, Union
+
 from pydantic import BaseModel
 
 

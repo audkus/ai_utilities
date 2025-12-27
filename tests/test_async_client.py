@@ -1,19 +1,19 @@
 """Tests for AsyncAiClient functionality."""
 
 import asyncio
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any, Dict, List
+import os
 
 # Add src to path for imports
 import sys
-import os
+import time
+from unittest.mock import AsyncMock, patch
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import pytest
+
 from ai_utilities.async_client import AsyncAiClient, AsyncOpenAIProvider
 from ai_utilities.client import AiSettings
-from ai_utilities.models import AskResult
 
 
 class TestAsyncAiClient:

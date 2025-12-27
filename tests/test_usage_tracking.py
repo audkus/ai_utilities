@@ -1,10 +1,15 @@
 """Tests for optional usage tracking functionality."""
 
-import tempfile
 import json
+import tempfile
 from pathlib import Path
 
-from src.ai_utilities import AiClient, UsageTracker, UsageStats, create_usage_tracker, UsageScope
+from src.ai_utilities import (
+    AiClient,
+    UsageScope,
+    UsageTracker,
+    create_usage_tracker,
+)
 from tests.fake_provider import FakeProvider
 
 
@@ -28,7 +33,7 @@ def test_usage_tracker_basic():
         assert stats_file.exists()
         
         # Load and verify file contents
-        with open(stats_file, 'r') as f:
+        with open(stats_file) as f:
             data = json.load(f)
             assert data['tokens_used_today'] == 150
             assert data['requests_today'] == 2
@@ -106,7 +111,7 @@ def test_usage_tracker_daily_reset():
         
         # Read, modify, and write stats file directly
         import json
-        with open(stats_file, 'r') as f:
+        with open(stats_file) as f:
             data = json.load(f)
         data['last_reset'] = yesterday
         with open(stats_file, 'w') as f:

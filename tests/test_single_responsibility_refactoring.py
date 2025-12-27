@@ -4,20 +4,21 @@ test_single_responsibility_refactoring.py
 Tests for Single Responsibility Principle refactoring components.
 """
 
-import pytest
 import os
 import sys
-from unittest.mock import Mock, patch
 from configparser import ConfigParser
+from unittest.mock import Mock, patch
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+from ai_utilities.exceptions import RateLimitExceededError
 from ai_utilities.openai_client import OpenAIClient
+from ai_utilities.openai_model import OpenAIModel
 from ai_utilities.response_processor import ResponseProcessor
 from ai_utilities.token_counter import TokenCounter
-from ai_utilities.openai_model import OpenAIModel
-from ai_utilities.exceptions import RateLimitExceededError
 
 
 class TestOpenAIClient:

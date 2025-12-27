@@ -4,21 +4,20 @@ test_rate_limit_fetching.py
 Tests for dynamic rate limit fetching system with 30-day cache.
 """
 
-import pytest
 import json
-import tempfile
-import shutil
 import os
+import shutil
 import sys
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from ai_utilities.rate_limit_fetcher import RateLimitFetcher, RateLimitInfo
 from ai_utilities.config_models import ModelConfig
+from ai_utilities.rate_limit_fetcher import RateLimitFetcher, RateLimitInfo
 
 
 class TestRateLimitInfo:
@@ -119,7 +118,7 @@ class TestRateLimitFetcher:
         assert fetcher.cache_file.exists()
         
         # Verify cache content
-        with open(fetcher.cache_file, 'r') as f:
+        with open(fetcher.cache_file) as f:
             cache_data = json.load(f)
         assert 'models' in cache_data
         assert 'last_updated' in cache_data

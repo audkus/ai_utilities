@@ -1,19 +1,16 @@
 """Tests for environment overrides using contextvars."""
 
-import os
-import pytest
-import sys
 import asyncio
-from typing import Any
+import os
+import sys
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from ai_utilities.env_overrides import (
-    get_env_overrides,
-    override_env
-)
 from ai_utilities.client import AiSettings
+from ai_utilities.env_overrides import get_env_overrides, override_env
 
 
 class TestEnvOverrides:

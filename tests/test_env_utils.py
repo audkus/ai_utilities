@@ -1,22 +1,23 @@
 """Tests for environment variable utilities to prevent contamination."""
 
 import os
-import pytest
 import sys
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from ai_utilities.env_overrides import (
-    override_env, 
-    get_env_overrides,
-    get_ai_env,
-    get_ai_env_bool,
-    get_ai_env_int,
-    get_ai_env_float
-)
 from ai_utilities.client import AiSettings
 from ai_utilities.config_models import AIConfig
+from ai_utilities.env_overrides import (
+    get_ai_env,
+    get_ai_env_bool,
+    get_ai_env_float,
+    get_ai_env_int,
+    get_env_overrides,
+    override_env,
+)
 
 
 class TestEnvironmentIsolation:

@@ -36,7 +36,7 @@ def main():
         response = client.ask("What is the capital of France?")
         print(f"   ✓ Response: {response}")
         print(f"   ✓ Update check interval: {client.settings.update_check_days} days")
-        print(f"   ✓ Smart setup enabled: True")
+        print("   ✓ Smart setup enabled: True")
         print()
     except Exception as e:
         print(f"   ✗ Error: {e}\n")
@@ -77,7 +77,7 @@ def main():
         client = AiClient(settings=settings, auto_setup=False)
         response = client.ask("What is machine learning?")
         print(f"   ✓ Response: {response}")
-        print(f"   ✓ Configuration loaded from environment variables")
+        print("   ✓ Configuration loaded from environment variables")
         print(f"   ✓ API Key: {'Set' if settings.api_key else 'Missing'}")
         print(f"   ✓ Model: {settings.model}")
         print(f"   ✓ Temperature: {settings.temperature}")

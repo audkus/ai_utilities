@@ -86,7 +86,7 @@ def main():
         cache_file = Path.home() / ".ai_utilities_model_cache.json"
         if cache_file.exists():
             import json
-            with open(cache_file, 'r') as f:
+            with open(cache_file) as f:
                 cache_data = json.load(f)
             print(f"   Last check: {cache_data.get('last_check', 'Never')}")
             print(f"   Has updates: {cache_data.get('has_updates', 'Unknown')}")

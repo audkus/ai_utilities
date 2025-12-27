@@ -5,8 +5,7 @@ Token counting utilities with single responsibility for token estimation.
 """
 
 import logging
-import re
-from typing import Union, List
+from typing import List
 
 logger = logging.getLogger(__name__)
 
