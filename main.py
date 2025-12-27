@@ -34,6 +34,28 @@ def main() -> None:
         print("\nThe application will now exit.")
         return
     
+    print("🌐 Provider Configuration Examples:")
+    print("\n1. OpenAI Provider (Default):")
+    print("   export AI_API_KEY='your-openai-key'")
+    print("   export AI_PROVIDER='openai'  # Default")
+    print("   client = create_client()")
+    
+    print("\n2. Local OpenAI-Compatible Provider (Ollama):")
+    print("   export AI_PROVIDER='openai_compatible'")
+    print("   export AI_BASE_URL='http://localhost:11434/v1'")
+    print("   export AI_API_KEY='dummy-key'  # Optional for local")
+    print("   client = create_client()")
+    
+    print("\n3. Local Provider with Custom Settings:")
+    print("   settings = AiSettings(")
+    print("       provider='openai_compatible',")
+    print("       base_url='http://localhost:8000/v1',")
+    print("       model='llama2-7b',")
+    print("       extra_headers={'X-Custom': 'value'}")
+    print("   )")
+    print("   client = AiClient(settings)")
+    print()
+    
     print("1. Single prompt with progress indicator (default):")
     prompt_single_text = "Who was the first human to walk on the moon?"
     result_single_text = client.ask(prompt_single_text)

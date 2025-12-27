@@ -498,7 +498,96 @@ for question, answer in zip(questions, responses):
 - ✅ **Works in development**: Examples automatically add `src` to Python path for repo usage  
 - ✅ **Consistent interface**: Same import pattern whether developing or using installed package
 
-### 3. 🔄 Sync & Async Client Examples
+### 3. 🌐 Provider Configuration
+
+The library supports multiple AI providers while maintaining the same `AiClient.ask()` API. Switch between OpenAI (cloud) and local OpenAI-compatible servers via configuration.
+
+#### OpenAI Provider (Default)
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Using environment variables (default)
+export AI_API_KEY="your-openai-key"
+export AI_PROVIDER="openai"  # This is the default
+
+client = AiClient()
+response = client.ask("What is AI?")
+```
+
+#### Local OpenAI-Compatible Provider
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Method 1: Environment variables
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:11434/v1"  # Ollama
+export AI_API_KEY="dummy-key"  # Optional for local servers
+
+client = AiClient()
+response = client.ask("What is AI?")
+
+# Method 2: Explicit settings
+settings = AiSettings(
+    provider="openai_compatible",
+    base_url="http://localhost:8000/v1",  # vLLM or other local server
+    api_key="dummy-key",  # Optional for local servers
+    model="llama2-7b",
+    temperature=0.8
+)
+
+client = AiClient(settings)
+response = client.ask("Explain quantum computing")
+```
+
+#### Popular Local Server Examples
+
+```bash
+# Ollama (http://localhost:11434/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:11434/v1"
+export AI_MODEL="llama2"
+
+# vLLM (http://localhost:8000/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:8000/v1"
+export AI_MODEL="vicuna-13b-v1.5"
+
+# LM Studio (http://localhost:1234/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:1234/v1"
+export AI_MODEL="local-model"
+```
+
+#### Advanced Provider Configuration
+
+```python
+from ai_utilities import AiSettings
+
+# Custom headers for gateways or authentication
+settings = AiSettings(
+    provider="openai_compatible",
+    base_url="https://api.example.com/v1",
+    api_key="your-api-key",
+    extra_headers={
+        "Authorization": "Bearer custom-token",
+        "X-Model-Provider": "custom-gateway"
+    },
+    request_timeout_s=60.0,  # Float timeout
+    model="custom-model"
+)
+
+client = AiClient(settings)
+```
+
+**Provider Features:**
+- ✅ **OpenAI**: Full feature support (JSON mode, tools, streaming, images)
+- ⚠️ **OpenAI-Compatible**: Text responses + basic parameters (JSON mode varies by server)
+- 🔄 **Same API**: `client.ask()` works identically across all providers
+- 🛡️ **Error Handling**: Clear errors for missing configuration or unsupported features
+
+### 4. 🔄 Sync & Async Client Examples
 
 #### Synchronous Client (AiClient)
 
@@ -1538,6 +1627,51 @@ ruff check src/ tests/
 # Type checking
 mypy src/
 ```
+
+---
+
+## 📋 Changelog
+
+### v0.4.0 - Provider Support & Local AI
+
+**🌐 Multi-Provider Support:**
+- ✅ **OpenAI-Compatible Provider**: First-class support for local AI servers (Ollama, vLLM, LM Studio, etc.)
+- ✅ **Provider Factory**: Automatic provider selection based on configuration
+- ✅ **Same API**: `AiClient.ask()` works identically across all providers
+- ✅ **Configuration-Driven**: Switch providers via `AI_PROVIDER` environment variable or settings
+
+**🔧 New Configuration Options:**
+- `AI_PROVIDER`: Choose between "openai" (default) and "openai_compatible"
+- `AI_BASE_URL`: Required for openai_compatible provider (e.g., `http://localhost:11434/v1`)
+- `AI_REQUEST_TIMEOUT_S`: Float timeout for precise control
+- `AI_EXTRA_HEADERS`: Custom headers for gateways and authentication
+
+**🛡️ Enhanced Error Handling:**
+- `ProviderConfigurationError`: Clear errors for missing/invalid provider setup
+- `ProviderCapabilityError`: Informative errors for unsupported features
+- Graceful degradation for local server limitations
+
+**📦 New Exports:**
+- `OpenAICompatibleProvider`: Local server provider implementation
+- `create_provider()`: Provider factory function
+- `ProviderCapabilities`: Provider feature discovery
+- `ProviderCapabilityError`, `ProviderConfigurationError`: Custom exceptions
+
+**🧪 Comprehensive Testing:**
+- 30 new tests covering provider selection, configuration, and error handling
+- Mocked network calls for reliable testing
+- Full backward compatibility verification
+
+**📚 Updated Documentation:**
+- Provider configuration examples for popular local servers
+- Vendor-neutral "OpenAI-compatible" terminology
+- Migration guide from OpenAI to local providers
+- Advanced configuration examples with custom headers
+
+**🔄 Backward Compatibility:**
+- ✅ Existing OpenAI usage unchanged - zero migration required
+- ✅ All existing APIs work identically
+- ✅ Default provider remains OpenAI for seamless upgrades
 
 ---
 
