@@ -805,7 +805,19 @@ class AiClient:
                 start_time = time.time()
                 
                 try:
-                    response = self.provider.ask(prompt, return_format=return_format, **kwargs)
+                    # Merge kwargs with settings, excluding internal fields (same as ask method)
+                    request_params = self.settings.model_dump(
+                        exclude_none=True,
+                        exclude={
+                            'api_key',  # Providers already have this from initialization
+                            'usage_scope',  # Internal usage tracking field
+                            'usage_client_id',  # Internal usage tracking field
+                            'update_check_days'  # Internal configuration field
+                        }
+                    )
+                    request_params.update(kwargs)
+                    
+                    response = self.provider.ask(prompt, return_format=return_format, **request_params)
                     duration = time.time() - start_time
                     
                     result = AskResult(
