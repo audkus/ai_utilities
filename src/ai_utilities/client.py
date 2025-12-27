@@ -601,6 +601,11 @@ class AiClient:
             else:
                 settings = AiSettings()
         
+        # Resolve API key with proper precedence if not already resolved
+        if not settings.api_key:
+            from .api_key_resolver import resolve_api_key
+            settings.api_key = resolve_api_key()
+        
         self.settings = settings
         
         # Create provider using factory
@@ -1078,8 +1083,8 @@ def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **
     compatibility.
     
     Args:
-        api_key: OpenAI API key. If None, will use environment variable AI_API_KEY
-                 or prompt for setup if missing.
+        api_key: OpenAI API key. If provided, takes highest precedence.
+                 If None, will resolve from environment/.env automatically.
         model: Model name to use (default: "test-model-1")
         **kwargs: Additional settings passed to AiSettings:
                  - temperature: Response temperature 0.0-2.0
@@ -1094,7 +1099,7 @@ def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **
         # Quick client with API key
         client = create_client(api_key="your-key", model="gpt-4")
         
-        # Using environment variables
+        # Using environment variables or .env file
         client = create_client()
         
         # With custom settings
@@ -1108,5 +1113,19 @@ def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **
         # Use the client
         response = client.ask("What is AI?")
     """
-    settings = AiSettings(api_key=api_key, model=model, **kwargs)
+    # Import here to avoid circular imports
+    from .api_key_resolver import resolve_api_key
+    
+    # Create settings first to get settings.api_key
+    settings = AiSettings(model=model, **kwargs)
+    
+    # Resolve API key with proper precedence
+    resolved_api_key = resolve_api_key(
+        explicit_api_key=api_key,
+        settings_api_key=settings.api_key
+    )
+    
+    # Update settings with resolved API key
+    settings.api_key = resolved_api_key
+    
     return AiClient(settings)

@@ -8,7 +8,10 @@ A Python library for AI model interaction with **Pydantic configuration**, **Sin
 # Install
 pip install ai-utilities
 
-# Set API key
+# Option 1: Create .env file (recommended for local dev)
+echo "AI_API_KEY=your-openai-key" > .env
+
+# Option 2: Set environment variable
 export AI_API_KEY="your-openai-key"
 
 # Use in Python
@@ -24,6 +27,61 @@ print(client.ask('What is AI?'))
 - **Configuration reference** → [Configuration](#configuration)
 - **API reference** → Use `help(AiClient)` in Python
 - **Changelog / versions** → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
+
+---
+
+## 🔑 API Key Setup
+
+Choose **one** of these methods to configure your OpenAI API key:
+
+### 1️⃣ .env File (Recommended for Local Development)
+
+Create a `.env` file in your project directory:
+
+```bash
+# Create .env file
+echo "AI_API_KEY=your-openai-key-here" > .env
+```
+
+**Works in:** Terminal, PyCharm, VS Code, any IDE  
+**Best for:** Local development, team projects
+
+### 2️⃣ Environment Variable (Current Session)
+
+```bash
+# macOS/Linux
+export AI_API_KEY="your-openai-key-here"
+
+# Windows PowerShell
+$env:AI_API_KEY="your-openai-key-here"
+
+# Windows Command Prompt
+set AI_API_KEY=your-openai-key-here
+```
+
+**Works in:** Current terminal session only  
+**Best for:** Quick tests, CI/CD, one-off usage
+
+### 3️⃣ PyCharm IDE Configuration
+
+1. **Run/Debug Configurations** → **Environment variables**
+2. Click **+** to add: `AI_API_KEY=your-openai-key-here`
+3. Apply and run
+
+**Works in:** PyCharm only  
+**Best for:** PyCharm development without terminal setup
+
+### 4️⃣ Direct Override (Tests/One-off)
+
+```python
+from ai_utilities import create_client
+
+# Pass API key directly
+client = create_client(api_key="your-openai-key-here")
+```
+
+**Works in:** Any Python code  
+**Best for:** Tests, scripts, temporary usage
 
 ---
 
