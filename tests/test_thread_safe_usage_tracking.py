@@ -2,25 +2,26 @@
 Tests for thread-safe usage tracking with concurrent access.
 """
 
-import pytest
-import tempfile
-import shutil
-import threading
-import time
 import concurrent.futures
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+import os
+import shutil
 
 # Add src to path for imports
 import sys
-import os
+import tempfile
+import threading
+import time
+from pathlib import Path
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities.usage_tracker import (
-    ThreadSafeUsageTracker, 
-    UsageScope, 
-    UsageStats, 
-    create_usage_tracker
+    ThreadSafeUsageTracker,
+    UsageScope,
+    UsageStats,
+    create_usage_tracker,
 )
 
 

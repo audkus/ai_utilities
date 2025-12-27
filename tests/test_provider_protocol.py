@@ -1,11 +1,10 @@
 """Comprehensive tests for the new provider protocol."""
 
-import os
-import pytest
-import sys
 import asyncio
-from typing import Dict, Any
-from unittest.mock import Mock, patch
+import os
+import sys
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))

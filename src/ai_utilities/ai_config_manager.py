@@ -14,21 +14,15 @@ Key improvements:
 - Default value handling
 """
 
-import os
 import logging
-from typing import Optional, Dict, Any
+import os
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Local application Imports
-from .config_models import AIConfig, ModelConfig, OpenAIConfig
-from .rate_limit_fetcher import RateLimitFetcher
-from .error_codes import (
-    ERROR_CONFIG_API_KEY_MISSING,
-    ERROR_CONFIG_MODEL_NAME_MISSING,
-    ERROR_CONFIG_UNSUPPORTED_PROVIDER,
-    ERROR_LOGGING_CODE,
-)
+from .config_models import AIConfig, ModelConfig
 from .exceptions import ConfigError
+from .rate_limit_fetcher import RateLimitFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +97,6 @@ class AIConfigManager:
         if path.exists():
             try:
                 import configparser
-                import json
                 
                 # Parse INI file
                 config_parser = configparser.ConfigParser()
@@ -503,10 +496,10 @@ def get_model_from_config(config_path: str = "config.ini", model: Optional[str] 
         raise ConfigError("Model name missing")
     
     # Create OpenAIModel (using existing implementation)
-    from .openai_model import OpenAIModel
-    
     # Convert Pydantic config to ConfigParser format for compatibility
     import configparser
+
+    from .openai_model import OpenAIModel
     compat_config = configparser.ConfigParser()
     
     # Add sections needed by OpenAIModel

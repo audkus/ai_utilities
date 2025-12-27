@@ -1,9 +1,9 @@
 """Fake provider for testing."""
 
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-import json
-from typing import List, Union, Sequence, Literal, Dict, Any
+from typing import Any, Dict, List, Literal, Union
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -39,7 +39,18 @@ class FakeProvider(BaseProvider):
         response = self.responses[self.call_count % len(self.responses)]
         self.call_count += 1
         
-        formatted_response = response.format(prompt=prompt)
+        # Check if the raw response is JSON (starts with { or [ after whitespace)
+        # If it's JSON, don't format it - return as-is
+        stripped = response.strip()
+        if stripped.startswith(('{', '[')):
+            formatted_response = response  # Don't format JSON responses
+        else:
+            # Only format text responses that contain {prompt}
+            try:
+                formatted_response = response.format(prompt=prompt)
+            except KeyError:
+                # If formatting fails, return as-is
+                formatted_response = response
         
         if return_format == "json":
             return {"answer": formatted_response}

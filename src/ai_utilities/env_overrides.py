@@ -9,9 +9,9 @@ environments.
 from __future__ import annotations
 
 import contextvars
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, Mapping
-
+from typing import Any, Dict
 
 # ContextVar to store environment overrides with default empty dict
 _env_overrides: contextvars.ContextVar[Dict[str, str]] = contextvars.ContextVar(

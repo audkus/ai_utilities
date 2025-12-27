@@ -32,9 +32,9 @@ else:
 rate_limiter.start_reset_timer()
 """
 # Standard Library Imports
-import threading
 import json
 import os
+import threading
 import time
 from datetime import datetime
 from typing import Optional
@@ -102,7 +102,7 @@ class RateLimiter:
         it initializes the statistics with default values.
         """
         if os.path.exists(self.ai_stats_file):
-            with open(self.ai_stats_file, "r") as file:
+            with open(self.ai_stats_file) as file:
                 data = json.load(file)
                 self.tokens_used_today = data.get("tokens_used_today", 0)
                 self.last_reset = datetime.fromisoformat(data.get("last_reset", datetime.now().isoformat()))

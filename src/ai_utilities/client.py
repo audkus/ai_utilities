@@ -6,11 +6,10 @@ without import-time side effects.
 """
 
 import os
-import sys
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, TypeVar, Type
 from configparser import ConfigParser
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,9 +17,14 @@ from datetime import datetime, timedelta
 
 from .providers.openai_provider import OpenAIProvider
 from .providers.base_provider import BaseProvider
-from .usage_tracker import UsageTracker, ThreadSafeUsageTracker, UsageScope, create_usage_tracker
+from .usage_tracker import UsageScope, create_usage_tracker
 from .progress_indicator import ProgressIndicator
 from .models import AskResult
+from .json_parsing import parse_json_from_text, JsonParseError, create_repair_prompt
+from pydantic import ValidationError
+
+# Generic type for typed responses
+T = TypeVar('T', bound=BaseModel)
 
 
 class AiSettings(BaseSettings):
@@ -652,8 +656,16 @@ class AiClient:
             # With custom parameters
             response = client.ask("Explain AI", temperature=0.3, model="gpt-4")
         """
-        # Merge kwargs with settings
-        request_params = self.settings.model_dump(exclude_none=True)
+        # Merge kwargs with settings, excluding internal fields
+        request_params = self.settings.model_dump(
+            exclude_none=True,
+            exclude={
+                'api_key',  # Providers already have this from initialization
+                'usage_scope',  # Internal usage tracking field
+                'usage_client_id',  # Internal usage tracking field
+                'update_check_days'  # Internal configuration field
+            }
+        )
         request_params.update(kwargs)
         
         # Show progress indicator if enabled
@@ -834,7 +846,8 @@ class AiClient:
         
         for prompt in prompts:
             start_time = time.time()
-            last_error = None
+            # Initialize error tracking (currently not used but kept for potential debugging)
+            _ = None  # Placeholder for last_error
             
             for attempt in range(max_retries + 1):  # +1 for initial attempt
                 try:
@@ -852,7 +865,8 @@ class AiClient:
                     break
                     
                 except Exception as e:
-                    last_error = e
+                    # Store last error for potential debugging (though not currently used)
+                    _ = e  # Mark as intentionally unused
                     if attempt < max_retries:
                         time.sleep(retry_delay)
                     else:
@@ -870,15 +884,17 @@ class AiClient:
         
         return results
     
-    def ask_json(self, prompt: str, **kwargs) -> Union[dict, list]:
+    def ask_json(self, prompt: str, *, max_repairs: int = 1, **kwargs) -> Union[dict, list]:
         """
-        Ask a question and return JSON format response.
+        Ask a question and return JSON format response with robust parsing.
         
-        This is a convenience method that requests JSON responses from the AI.
-        It automatically handles JSON parsing and returns structured data.
+        This method requests text responses and parses JSON from them, with automatic
+        repair attempts if parsing fails. It handles common issues like code fences,
+        extra prose, and minor syntax errors.
         
         Args:
             prompt: Prompt to process. Should ask for structured/JSON data.
+            max_repairs: Maximum number of repair attempts if JSON parsing fails (default: 1)
             **kwargs: Additional parameters to override settings:
                      - model: Override the default model
                      - temperature: Override response temperature
@@ -889,7 +905,7 @@ class AiClient:
                               returns dict, for arrays returns list.
         
         Raises:
-            ValueError: If the response cannot be parsed as valid JSON.
+            JsonParseError: If valid JSON cannot be parsed after all repair attempts.
         
         Example:
             client = AiClient()
@@ -903,9 +919,109 @@ class AiClient:
             # Returns: {"name": "Python", "creator": "Guido van Rossum", "year": 1991}
             
             # With custom parameters
-            data = client.ask_json("API endpoints as JSON", temperature=0.1)
+            data = client.ask_json("API endpoints as JSON", temperature=0.1, max_repairs=2)
         """
-        return self.ask(prompt, return_format="json", **kwargs)
+        # Get request params (excluding internal fields)
+        request_params = self.settings.model_dump(
+            exclude_none=True,
+            exclude={
+                'api_key',
+                'usage_scope', 
+                'usage_client_id',
+                'update_check_days'
+            }
+        )
+        request_params.update(kwargs)
+        
+        # Show progress indicator if enabled
+        progress = ProgressIndicator(show=self.show_progress)
+        
+        with progress:
+            # First attempt
+            try:
+                response_text = self.provider.ask_text(prompt, **request_params)
+                return parse_json_from_text(response_text)
+            except JsonParseError as e:
+                if max_repairs <= 0:
+                    raise e
+                
+                # Repair attempts
+                last_response = response_text
+                last_error = str(e)
+                
+                for attempt in range(max_repairs):
+                    try:
+                        repair_prompt = create_repair_prompt(prompt, last_response, last_error)
+                        response_text = self.provider.ask_text(repair_prompt, **request_params)
+                        return parse_json_from_text(response_text)
+                    except JsonParseError as repair_error:
+                        last_response = response_text
+                        last_error = str(repair_error)
+                        continue
+                
+                # All repair attempts failed
+                raise JsonParseError(
+                    f"Failed to parse JSON after {max_repairs + 1} attempts. Last error: {last_error}",
+                    last_response,
+                    original_error=e.original_error
+                )
+    
+    def ask_typed(self, prompt: str, response_model: Type[T], *, max_repairs: int = 1, **kwargs) -> T:
+        """
+        Ask a question and return a typed Pydantic model instance.
+        
+        This method combines JSON parsing with Pydantic validation to return
+        strongly-typed responses. It handles JSON parsing errors and schema
+        validation errors appropriately.
+        
+        Args:
+            prompt: Prompt to process. Should ask for data matching the response_model schema.
+            response_model: Pydantic model class to validate and parse the response into.
+            max_repairs: Maximum number of repair attempts if JSON parsing fails (default: 1)
+            **kwargs: Additional parameters to override settings:
+                     - model: Override the default model
+                     - temperature: Override response temperature
+                     - max_tokens: Override maximum response tokens
+        
+        Returns:
+            T: Instance of the response_model with validated data.
+        
+        Raises:
+            JsonParseError: If valid JSON cannot be parsed after all repair attempts.
+            ValidationError: If JSON parses successfully but doesn't match the response_model schema.
+        
+        Example:
+            from pydantic import BaseModel
+            
+            class Person(BaseModel):
+                name: str
+                age: int
+                email: Optional[str] = None
+            
+            client = AiClient()
+            person = client.ask_typed(
+                "Create a person named Alice, age 30", 
+                response_model=Person
+            )
+            # Returns: Person(name="Alice", age=30, email=None)
+            
+            # With custom parameters
+            person = client.ask_typed(
+                "Create a person named Bob", 
+                response_model=Person,
+                max_repairs=2,
+                temperature=0.1
+            )
+        """
+        # Get JSON data using ask_json
+        json_data = self.ask_json(prompt, max_repairs=max_repairs, **kwargs)
+        
+        # Validate with Pydantic model
+        try:
+            return response_model.model_validate(json_data)
+        except ValidationError as e:
+            # Re-raise ValidationError without swallowing it
+            raise e
 
 
 # Convenience function for backward compatibility

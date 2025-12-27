@@ -1,11 +1,10 @@
 """Tests for smart setup functionality including model checking and caching."""
 
-import os
 import json
-import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from src.ai_utilities import AiClient, AiSettings

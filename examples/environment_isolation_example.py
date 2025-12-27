@@ -11,9 +11,9 @@ import sys
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from ai_utilities.env_utils import isolated_env_context, cleanup_ai_env_vars
-from ai_utilities.client import AiSettings, AiClient
+from ai_utilities.client import AiClient, AiSettings
 from ai_utilities.config_models import AIConfig
+from ai_utilities.env_utils import cleanup_ai_env_vars, isolated_env_context
 
 
 def demonstrate_contamination_problem():

@@ -1,7 +1,8 @@
 """Base provider interface for AI models."""
 
 from abc import ABC, abstractmethod
-from typing import List, Union, Sequence, Literal, Dict, Any
+from collections.abc import Sequence
+from typing import Any, Dict, List, Literal, Union
 
 
 class BaseProvider(ABC):
@@ -34,3 +35,23 @@ class BaseProvider(ABC):
             List of response strings or dicts based on return_format
         """
         pass
+    
+    def ask_text(self, prompt: str, **kwargs) -> str:
+        """Ask a single question and always return text.
+        
+        This is a convenience method that always requests text format.
+        Default implementation calls ask() with return_format="text".
+        
+        Args:
+            prompt: Single prompt string
+            **kwargs: Additional provider-specific parameters
+            
+        Returns:
+            Response as string
+        """
+        response = self.ask(prompt, return_format="text", **kwargs)
+        if isinstance(response, str):
+            return response
+        else:
+            # Provider returned dict despite asking for text, convert to string
+            return str(response)

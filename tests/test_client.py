@@ -39,13 +39,13 @@ def test_ai_client_with_fake_provider():
 
 def test_json_extraction():
     """Test JSON format response."""
-    fake_provider = FakeProvider()
+    fake_provider = FakeProvider(['{"test": "data"}'])
     client = AiClient(provider=fake_provider, auto_setup=False)
     
     response = client.ask_json("test prompt")
     assert isinstance(response, dict)
-    assert "answer" in response
-    assert "test prompt" in response["answer"]
+    assert "test" in response
+    assert response["test"] == "data"
 
 
 def test_batch_ordering():

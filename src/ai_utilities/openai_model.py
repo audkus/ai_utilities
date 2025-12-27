@@ -7,11 +7,12 @@ Refactored OpenAI model using composition with single-responsibility components.
 import logging
 from configparser import ConfigParser
 
+from .error_codes import ERROR_RATE_LIMIT_EXCEEDED
+from .exceptions import RateLimitExceededError
+from .openai_client import OpenAIClient
+
 # Local application Imports
 from .rate_limiter import RateLimiter
-from .exceptions import RateLimitExceededError
-from .error_codes import ERROR_RATE_LIMIT_EXCEEDED
-from .openai_client import OpenAIClient
 from .response_processor import ResponseProcessor
 from .token_counter import TokenCounter
 

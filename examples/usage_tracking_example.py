@@ -7,7 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
 
-from ai_utilities import AiClient, UsageTracker
+from ai_utilities import AiClient
+
 
 def main():
     """Demonstrate usage tracking functionality."""
@@ -36,7 +37,7 @@ def main():
     # Get detailed stats
     stats = client.get_usage_stats()
     if stats:
-        print(f"\n3. Detailed Statistics:")
+        print("\n3. Detailed Statistics:")
         print(f"   Today's requests: {stats.requests_today}")
         print(f"   Today's tokens: {stats.tokens_used_today}")
         print(f"   Total requests: {stats.total_requests}")

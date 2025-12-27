@@ -2,7 +2,9 @@
 
 import json
 import re
-from typing import List, Union, Dict, Any, Optional, Sequence, Literal
+from collections.abc import Sequence
+from typing import Any, Dict, List, Literal, Union
+
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 

@@ -3,7 +3,8 @@
 import asyncio
 import random
 import time
-from typing import Any, Callable, Dict, List, Literal, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, List, Literal, Union
 
 from .client import AiSettings
 from .models import AskResult
@@ -18,7 +19,7 @@ class AsyncOpenAIProvider(AsyncProvider):
         self.settings = settings
         self._sync_provider = OpenAIProvider(settings)
     
-    async def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, Dict[str, Any]]:
+    async def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, dict, list]:
         """Async ask implementation using asyncio.to_thread."""
         return await asyncio.to_thread(
             self._sync_provider.ask,
@@ -94,7 +95,7 @@ class AsyncAiClient:
         self.provider = provider or AsyncOpenAIProvider(settings)
         self.show_progress = show_progress
     
-    async def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, Dict[str, Any]]:
+    async def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, dict, list]:
         """Ask a single question asynchronously.
         
         Args:
@@ -109,10 +110,12 @@ class AsyncAiClient:
         
         try:
             response = await self.provider.ask(prompt, return_format=return_format, **kwargs)
-            duration = time.time() - start_time
+            # Calculate duration (currently not used but kept for potential future metrics)
+            time.time() - start_time
             return response
-        except Exception as e:
-            duration = time.time() - start_time
+        except Exception:
+            # Calculate duration even for exceptions (though not currently used)
+            time.time() - start_time
             raise
     
     async def ask_many(

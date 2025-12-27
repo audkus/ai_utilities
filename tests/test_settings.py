@@ -3,6 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
+
 import pytest
 
 from src.ai_utilities import AiClient, AiSettings
@@ -176,7 +177,6 @@ def test_ai_client_no_config_file_access():
     """Test that creating AiClient does not touch config.ini or filesystem."""
     # This test ensures no import-time side effects
     import tempfile
-    import shutil
     
     # Create a temporary directory with no config.ini
     with tempfile.TemporaryDirectory() as temp_dir:

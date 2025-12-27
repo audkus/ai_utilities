@@ -11,11 +11,9 @@ from pathlib import Path
 
 # Import the new thread-safe components
 from ai_utilities import (
-    AiClient, 
-    AiSettings, 
-    UsageScope, 
+    AiClient,
+    AiSettings,
     create_usage_tracker,
-    ThreadSafeUsageTracker
 )
 
 
@@ -183,7 +181,7 @@ def race_condition_demo():
             try:
                 response = client.ask(f"Quick test {i}")
                 results.append(f"Client {client_id}-{i}: Success")
-            except Exception as e:
+            except Exception:
                 results.append(f"Client {client_id}-{i}: Error")
         return results
     
@@ -206,7 +204,7 @@ def race_condition_demo():
     expected_requests = 5 * 10  # 5 clients × 10 calls each
     actual_requests = clients[0].get_stats().total_requests
     
-    print(f"\nRace condition test:")
+    print("\nRace condition test:")
     print(f"  Expected requests: {expected_requests}")
     print(f"  Actual requests: {actual_requests}")
     print(f"  Data integrity: {'✅ PASS' if actual_requests == expected_requests else '❌ FAIL'}")

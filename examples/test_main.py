@@ -5,8 +5,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
 
-from ai_utilities import AiClient, AiSettings
 from fake_provider import FakeProvider
+
+from ai_utilities import AiClient
+
 
 def main() -> None:
     """
@@ -34,12 +36,12 @@ def main() -> None:
             print(f"Question: {question}")
             print(f"Answer: {result}\n")
 
-    print(f'\n# Example with a single prompt in JSON format:\n')
+    print('\n# Example with a single prompt in JSON format:\n')
     prompt_single = "What are the current top 5 trends in AI, just the title? Please return the answer as a JSON format"
     result_single_json = client.ask_json(prompt_single)
     print(f'\nQuestion: {prompt_single}\nAnswer: {result_single_json}')
 
-    print(f'\n# Example using a custom model "gpt-3.5-turbo":\n')
+    print('\n# Example using a custom model "gpt-3.5-turbo":\n')
     prompt_custom_model = "What is the capital of France?"
     response = client.ask(prompt_custom_model, model="gpt-3.5-turbo")
     print(f'\nQuestion: {prompt_custom_model}\nAnswer: \n{response}')

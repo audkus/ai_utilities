@@ -4,12 +4,13 @@ import json
 import os
 import threading
 import time
-from datetime import datetime, date
+from datetime import date
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional, Union
-from pydantic import BaseModel
+
 import portalocker  # Cross-platform file locking
+from pydantic import BaseModel
 
 
 class UsageScope(Enum):
@@ -120,7 +121,7 @@ class ThreadSafeUsageTracker:
         with self._file_lock:
             try:
                 # Use portalocker for cross-platform file locking
-                with open(self.stats_file, 'r') as f:
+                with open(self.stats_file) as f:
                     portalocker.lock(f, portalocker.LOCK_SH)  # Shared lock for reading
                     data = json.load(f)
                     stats = UsageStats(**data)
@@ -230,7 +231,7 @@ class ThreadSafeUsageTracker:
         
         for stats_file in stats_dir.glob("usage_*.json"):
             try:
-                with open(stats_file, 'r') as f:
+                with open(stats_file) as f:
                     portalocker.lock(f, portalocker.LOCK_SH)
                     data = json.load(f)
                     stats = UsageStats(**data)

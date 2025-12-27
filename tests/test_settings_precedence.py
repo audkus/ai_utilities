@@ -1,11 +1,11 @@
 """Comprehensive tests for AiSettings source priority and environment mapping."""
 
+import asyncio
 import os
 import sys
-import pytest
-import asyncio
 import threading
-from concurrent.futures import ThreadPoolExecutor
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))

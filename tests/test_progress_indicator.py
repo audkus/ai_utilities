@@ -1,8 +1,7 @@
 """Tests for progress indicator functionality."""
 
 import time
-import threading
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.ai_utilities import AiClient
 from src.ai_utilities.progress_indicator import ProgressIndicator
@@ -136,7 +135,7 @@ def test_ask_many_uses_progress_indicator(capsys):
 
 def test_ask_json_uses_progress_indicator(capsys):
     """Test that ask_json also uses progress indicator."""
-    fake_provider = FakeProvider()
+    fake_provider = FakeProvider(['{"result": "success"}'])
     client = AiClient(provider=fake_provider, show_progress=True, auto_setup=False)
     
     response = client.ask_json("Return JSON")
