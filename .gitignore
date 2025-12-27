@@ -11,3 +11,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
