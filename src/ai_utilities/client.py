@@ -32,29 +32,40 @@ class AiSettings(BaseSettings):
     Configuration settings for AI client using pydantic-settings.
     
     This class manages all configuration for AI clients including API keys,
-    model selection, and behavior settings. It supports environment variables
+    model selection, provider selection, and behavior settings. It supports environment variables
     with the 'AI_' prefix and can be configured programmatically.
     
     Environment Variables:
-        AI_API_KEY: OpenAI API key (required)
+        AI_API_KEY: API key (required for OpenAI, optional for local providers)
+        AI_PROVIDER: Provider type ("openai" | "openai_compatible") (default: "openai")
         AI_MODEL: Model name (default: "test-model-1")
         AI_TEMPERATURE: Response temperature 0.0-2.0 (default: 0.7)
         AI_MAX_TOKENS: Maximum response tokens (optional)
-        AI_BASE_URL: Custom API base URL (optional)
+        AI_BASE_URL: Custom API base URL (required for openai_compatible provider)
         AI_TIMEOUT: Request timeout in seconds (default: 30)
-        AI_UPDATE_CHECK_DAYS: Days between model update checks (default: 30)
+        AI_REQUEST_TIMEOUT_S: Request timeout in seconds as float (alias for timeout)
+        AI_EXTRA_HEADERS: Extra headers as JSON string (optional)
+        AI_UPDATE_CHECK_DAYS: Days between update checks (default: 30)
         AI_USAGE_SCOPE: Usage tracking scope (default: "per_client")
         AI_USAGE_CLIENT_ID: Custom client ID for usage tracking (optional)
     
     Example:
-        # Using environment variables
+        # Using environment variables (OpenAI default)
         settings = AiSettings()
         
-        # Using explicit parameters
+        # Using explicit parameters (OpenAI)
         settings = AiSettings(
+            provider="openai",
             api_key="your-key",
             model="gpt-4",
             temperature=0.5
+        )
+        
+        # Using local OpenAI-compatible server
+        settings = AiSettings(
+            provider="openai_compatible",
+            base_url="http://localhost:11434/v1",  # Ollama
+            api_key="dummy-key"  # Optional for local servers
         )
         
         # From configuration file
@@ -68,12 +79,23 @@ class AiSettings(BaseSettings):
         env_file_encoding='utf-8'
     )
     
-    api_key: Optional[str] = Field(default=None, description="OpenAI API key")
+    # Provider selection
+    provider: Literal["openai", "openai_compatible"] = Field(
+        default="openai", 
+        description="AI provider to use"
+    )
+    
+    # Core settings
+    api_key: Optional[str] = Field(default=None, description="API key (required for OpenAI, optional for local providers)")
     model: str = Field(default="test-model-1", description="Default model to use")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
-    base_url: Optional[str] = Field(default=None, description="Custom base URL for API")
+    base_url: Optional[str] = Field(default=None, description="Custom base URL for API (required for openai_compatible)")
     timeout: int = Field(default=30, ge=1, description="Request timeout in seconds")
+    request_timeout_s: Optional[float] = Field(default=None, ge=0.1, description="Request timeout in seconds (float, overrides timeout)")
+    extra_headers: Optional[Dict[str, str]] = Field(default=None, description="Extra headers for requests")
+    
+    # Legacy settings
     update_check_days: int = Field(default=30, ge=1, description="Days between update checks")
     
     # Usage tracking settings
@@ -100,12 +122,19 @@ class AiSettings(BaseSettings):
     
     def _convert_env_value(self, field_name: str, value: str) -> Any:
         """Convert environment variable value to appropriate type for the field."""
-        if field_name in ['temperature']:
+        if field_name in ['temperature', 'request_timeout_s']:
             return float(value)
         elif field_name in ['max_tokens', 'timeout', 'update_check_days']:
             return int(value)
         elif field_name in ['use_ai']:
             return value.lower() in ('true', '1', 'yes', 'on')
+        elif field_name == 'extra_headers':
+            # Parse JSON string for extra_headers
+            import json
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON for AI_EXTRA_HEADERS: {value}")
         else:
             return value
     
@@ -573,7 +602,10 @@ class AiClient:
                 settings = AiSettings()
         
         self.settings = settings
-        self.provider = provider or OpenAIProvider(settings)
+        
+        # Create provider using factory
+        from .providers.provider_factory import create_provider
+        self.provider = create_provider(settings, provider)
         
         # Initialize thread-safe usage tracker with configurable scope
         if track_usage:
