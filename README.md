@@ -140,7 +140,7 @@ client = AiClient()
 # Basic text response
 response = client.ask("What is AI?")
 
-# JSON response with schema validation
+# JSON response (best-effort parsing)
 data = client.ask("List 3 programming languages", return_format="json")
 
 # Structured JSON with repair
