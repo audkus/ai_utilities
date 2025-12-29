@@ -75,4 +75,4 @@ try:
     __version__ = version("ai-utilities")
 except ImportError:
     # Fallback for older Python versions or when package is not installed
-    __version__ = "0.4.0"  # Should match pyproject.toml version
+    __version__ = "0.5.0"  # Should match pyproject.toml version
