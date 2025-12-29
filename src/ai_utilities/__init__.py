@@ -23,8 +23,17 @@ Example Usage:
 
 from .async_client import AsyncAiClient
 from .client import AiClient, AiSettings, create_client
-from .models import AskResult
 from .json_parsing import JsonParseError, parse_json_from_text
+from .models import AskResult
+from .providers import (
+    BaseProvider,
+    OpenAICompatibleProvider,
+    OpenAIProvider,
+    ProviderCapabilities,
+    ProviderCapabilityError,
+    ProviderConfigurationError,
+    create_provider,
+)
 from .rate_limit_fetcher import RateLimitFetcher, RateLimitInfo
 from .token_counter import TokenCounter
 from .usage_tracker import (
@@ -33,15 +42,6 @@ from .usage_tracker import (
     UsageStats,
     UsageTracker,
     create_usage_tracker,
-)
-from .providers import (
-    BaseProvider,
-    OpenAIProvider,
-    OpenAICompatibleProvider,
-    create_provider,
-    ProviderCapabilities,
-    ProviderCapabilityError,
-    ProviderConfigurationError,
 )
 
 __all__ = [
@@ -75,4 +75,4 @@ try:
     __version__ = version("ai-utilities")
 except ImportError:
     # Fallback for older Python versions or when package is not installed
-    __version__ = "0.4.0"  # Should match pyproject.toml version
+    __version__ = "0.5.0"  # Should match pyproject.toml version
