@@ -85,6 +85,7 @@ from ai_utilities import AiClient, AiSettings
 settings = AiSettings(
     provider="openai_compatible",
     base_url="http://localhost:11434/v1",
+    api_key="dummy-key",  # Optional for local servers
     model="llama3.2"
 )
 client = AiClient(settings)
@@ -95,6 +96,7 @@ client = AiClient(settings)
 settings = AiSettings(
     provider="openai_compatible", 
     base_url="http://localhost:1234/v1",
+    api_key="dummy-key",  # Optional for local servers
     model="your-model"
 )
 ```
@@ -104,9 +106,12 @@ settings = AiSettings(
 settings = AiSettings(
     provider="openai_compatible",
     base_url="http://localhost:8000/v1", 
+    api_key="dummy-key",  # Optional for local servers
     model="vicuna-7b-v1.5"
 )
 ```
+
+**Note:** `api_key` is optional for local servers but required for cloud providers.
 
 ### Provider Capabilities
 
@@ -182,7 +187,7 @@ from ai_utilities import create_client
 client = create_client(
     provider="openai_compatible",
     base_url="http://localhost:11434/v1",
-    api_key="not-needed",
+    api_key="dummy-key",
     model="llama3.2"
 )
 ```
