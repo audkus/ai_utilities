@@ -4,13 +4,17 @@ import json
 import logging
 from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
-from openai import OpenAI
-
 from .base_provider import BaseProvider
 from .provider_capabilities import ProviderCapabilities
-from .provider_exceptions import ProviderCapabilityError, ProviderConfigurationError
+from .provider_exceptions import ProviderConfigurationError
+from .provider_exceptions import ProviderCapabilityError
+from ..openai_client import OpenAI
+from ..response_processor import ResponseProcessor
 
 logger = logging.getLogger(__name__)
+
+# Track which warnings have been shown to avoid repetition
+_shown_warnings = set()
 
 
 class OpenAICompatibleProvider(BaseProvider):
@@ -80,16 +84,40 @@ class OpenAICompatibleProvider(BaseProvider):
         if capability in capability_map and not capability_map[capability]:
             raise ProviderCapabilityError(capability, "openai_compatible")
     
-    def _prepare_request_params(self, **kwargs) -> Dict[str, Any]:
-        """Prepare request parameters, filtering unsupported ones.
+    def _warn_once(self, warning_key: str, message: str) -> None:
+        """Show a warning only once to avoid repetition.
         
         Args:
-            **kwargs: Request parameters
+            warning_key: Unique key to track this warning
+            message: Warning message to display
+        """
+        global _shown_warnings
+        if warning_key not in _shown_warnings:
+            # Add a newline to separate from progress indicator
+            print(f"\n{message}")
+            logger.warning(message)
+            _shown_warnings.add(warning_key)
+
+    def _prepare_request_params(self, **kwargs) -> Dict[str, Any]:
+        """Backward-compatible alias for request param filtering.
+
+        Args:
+            **kwargs: Parameters passed to provider methods.
+
+        Returns:
+            Filtered supported parameters.
+        """
+        return self._filter_parameters(**kwargs)
+    
+    def _filter_parameters(self, **kwargs) -> Dict[str, Any]:
+        """Filter parameters to only include supported ones.
+        
+        Args:
+            **kwargs: All parameters passed to the provider
             
         Returns:
-            Filtered parameters for the provider
+            Dictionary with only supported parameters
         """
-        # Start with common parameters that are supported
         params = {}
         
         # Add supported parameters
@@ -100,10 +128,23 @@ class OpenAICompatibleProvider(BaseProvider):
         if "model" in kwargs:
             params["model"] = kwargs["model"]
         
-        # Log warnings for unsupported parameters
+        # Log warnings for unsupported parameters (only once each)
         unsupported_params = set(kwargs.keys()) - set(params.keys()) - {"return_format"}
         for param in unsupported_params:
-            logger.warning(f"Parameter '{param}' is not supported by openai_compatible provider and will be ignored")
+            explanations = {
+                "provider": "Provider selection is handled at client level, not API level",
+                "base_url": "Base URL is configured during client initialization", 
+                "timeout": "Request timeout is set during client initialization",
+                "max_tokens": "Token limits depend on the specific model/server capabilities",
+                "temperature": "Temperature may not be supported by all models",
+                "extra_headers": "Custom headers may not be supported by all servers"
+            }
+            
+            explanation = explanations.get(param, "This parameter is not supported by all OpenAI-compatible servers")
+            self._warn_once(
+                f"unsupported_param_{param}",
+                f"Parameter '{param}' ignored: {explanation}"
+            )
         
         return params
     
@@ -124,10 +165,13 @@ class OpenAICompatibleProvider(BaseProvider):
         # Check JSON mode capability
         if return_format == "json":
             self._check_capability("json_mode")
-            logger.warning("JSON mode requested but not guaranteed to be supported by this OpenAI-compatible provider")
+            self._warn_once(
+                "json_mode_warning",
+                "JSON mode requested but not guaranteed to be supported by this OpenAI-compatible provider"
+            )
         
         # Prepare request parameters
-        request_params = self._prepare_request_params(**kwargs)
+        request_params = self._filter_parameters(**kwargs)
         
         try:
             # Make the request

@@ -5,24 +5,22 @@
 This script tests the ai_utilities library across multiple AI providers:
 - OpenAI (cloud)
 - Ollama (local)
-- vLLM (local) 
-- LM Studio (local)
-- Together AI (cloud)
-
-Usage:
-    python3 test_all_providers.py
-    # Or test specific providers:
-    python3 test_all_providers.py --providers ollama openai
 """
 
 import os
 import sys
 import time
-import argparse
-from typing import Dict, Any, List
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
+from ai_utilities import create_client
+from typing import Any, List, Dict
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities import AiClient, AiSettings, ProviderConfigurationError
 

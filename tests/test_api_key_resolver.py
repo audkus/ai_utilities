@@ -258,6 +258,7 @@ class TestIntegrationWithClient:
     def test_create_client_without_key_raises_error(self, tmp_path):
         """Test create_client without API key raises MissingApiKeyError."""
         from ai_utilities import create_client
+        from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
         
         # Change to temp directory to avoid .env file interference
         original_cwd = os.getcwd()
@@ -268,8 +269,13 @@ class TestIntegrationWithClient:
             if "AI_API_KEY" in os.environ:
                 del os.environ["AI_API_KEY"]
             
-            with pytest.raises(MissingApiKeyError):
+            # The provider factory now converts MissingApiKeyError to ProviderConfigurationError
+            with pytest.raises(ProviderConfigurationError) as exc_info:
                 create_client()
+            
+            # Check that the error message is still helpful
+            error_message = str(exc_info.value)
+            assert "API key is required" in error_message
         finally:
             os.chdir(original_cwd)
     

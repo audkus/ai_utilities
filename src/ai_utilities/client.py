@@ -104,6 +104,15 @@ class AiSettings(BaseSettings):
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""
+        # Tests should be isolated from developer machine .env files.
+        # Pytest sets PYTEST_CURRENT_TEST; when present, avoid implicit env_file loading
+        # unless the caller explicitly provides _env_file.
+        if "PYTEST_CURRENT_TEST" in os.environ and "_env_file" not in data:
+            project_root = Path(__file__).resolve().parents[2]
+            cwd = Path.cwd().resolve()
+            if cwd == project_root:
+                data["_env_file"] = None
+
         # Check for contextvar overrides and merge with data
         from .env_overrides import get_env_overrides
         
@@ -601,11 +610,6 @@ class AiClient:
             else:
                 settings = AiSettings()
         
-        # Resolve API key with proper precedence if not already resolved
-        if not settings.api_key:
-            from .api_key_resolver import resolve_api_key
-            settings.api_key = resolve_api_key()
-        
         self.settings = settings
         
         # Create provider using factory
@@ -698,6 +702,11 @@ class AiClient:
             exclude_none=True,
             exclude={
                 'api_key',  # Providers already have this from initialization
+                'provider',  # Not a per-request param
+                'base_url',  # Not a per-request param
+                'timeout',  # Provider init config, not a per-request param
+                'request_timeout_s',  # Provider init config, not a per-request param
+                'extra_headers',  # Provider init config, not a per-request param
                 'usage_scope',  # Internal usage tracking field
                 'usage_client_id',  # Internal usage tracking field
                 'update_check_days'  # Internal configuration field
@@ -975,6 +984,11 @@ class AiClient:
             exclude_none=True,
             exclude={
                 'api_key',
+                'provider',
+                'base_url',
+                'timeout',
+                'request_timeout_s',
+                'extra_headers',
                 'usage_scope', 
                 'usage_client_id',
                 'update_check_days'
@@ -1074,7 +1088,7 @@ class AiClient:
 
 
 # Convenience function for backward compatibility
-def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **kwargs) -> AiClient:
+def create_client(api_key: Optional[str] = None, model: str = "test-model-1", show_progress: bool = True, **kwargs) -> AiClient:
     """
     Create an AI client with common parameters.
     
@@ -1086,6 +1100,7 @@ def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **
         api_key: OpenAI API key. If provided, takes highest precedence.
                  If None, will resolve from environment/.env automatically.
         model: Model name to use (default: "test-model-1")
+        show_progress: Whether to show progress indicator during requests
         **kwargs: Additional settings passed to AiSettings:
                  - temperature: Response temperature 0.0-2.0
                  - max_tokens: Maximum response tokens
@@ -1113,19 +1128,12 @@ def create_client(api_key: Optional[str] = None, model: str = "test-model-1", **
         # Use the client
         response = client.ask("What is AI?")
     """
-    # Import here to avoid circular imports
-    from .api_key_resolver import resolve_api_key
-    
-    # Create settings first to get settings.api_key
+    # Create settings first
     settings = AiSettings(model=model, **kwargs)
     
-    # Resolve API key with proper precedence
-    resolved_api_key = resolve_api_key(
-        explicit_api_key=api_key,
-        settings_api_key=settings.api_key
-    )
+    # If explicit API key is provided, use it
+    if api_key is not None:
+        settings.api_key = api_key
     
-    # Update settings with resolved API key
-    settings.api_key = resolved_api_key
-    
-    return AiClient(settings)
+    # Create client - the provider factory will handle API key resolution if needed
+    return AiClient(settings, show_progress=show_progress)
