@@ -19,6 +19,16 @@ print(client.ask('What is AI?'))
 "
 ```
 
+**Or create a Python file:**
+```python
+# quickstart.py
+from ai_utilities import AiClient
+
+client = AiClient()
+response = client.ask("What is AI?")
+print(response)
+```
+
 **Where to look next:**
 - More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
