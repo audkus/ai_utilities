@@ -34,6 +34,15 @@ from .usage_tracker import (
     UsageTracker,
     create_usage_tracker,
 )
+from .providers import (
+    BaseProvider,
+    OpenAIProvider,
+    OpenAICompatibleProvider,
+    create_provider,
+    ProviderCapabilities,
+    ProviderCapabilityError,
+    ProviderConfigurationError,
+)
 
 __all__ = [
     'AiClient',
@@ -50,7 +59,14 @@ __all__ = [
     'create_usage_tracker',
     'TokenCounter',
     'RateLimitFetcher',
-    'RateLimitInfo'
+    'RateLimitInfo',
+    'BaseProvider',
+    'OpenAIProvider',
+    'OpenAICompatibleProvider',
+    'create_provider',
+    'ProviderCapabilities',
+    'ProviderCapabilityError',
+    'ProviderConfigurationError'
 ]
 
 # Version - automatically retrieved from package metadata

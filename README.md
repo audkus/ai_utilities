@@ -8,7 +8,10 @@ A Python library for AI model interaction with **Pydantic configuration**, **Sin
 # Install
 pip install ai-utilities
 
-# Set API key
+# Option 1: Create .env file (recommended for local dev)
+echo "AI_API_KEY=your-openai-key" > .env
+
+# Option 2: Set environment variable
 export AI_API_KEY="your-openai-key"
 
 # Use in Python
@@ -27,6 +30,190 @@ print(client.ask('What is AI?'))
 
 ---
 
+## 📁 Project Structure
+
+```
+ai_utilities/
+├── 📄 README.md              # Main documentation
+├── 📄 pyproject.toml         # Package configuration  
+├── 📄 main.py                # Entry point
+├── 📄 .env                   # Environment variables
+├── 📁 src/                   # Core library code
+│   └── 📁 ai_utilities/      # Main package
+├── 📁 tests/                 # Test suite
+│   ├── 📁 provider_monitoring/ # Provider monitoring tests
+│   ├── 📁 integration/        # Integration tests
+│   ├── 📁 demo/              # Demo app tests
+│   └── 📋 [20+ test files]   # Core library tests
+├── 📁 scripts/               # Utility & monitoring tools
+│   ├── 🏥 provider_health_monitor.py      # Core monitoring system
+│   ├── 🔍 provider_change_detector.py     # Change detection
+│   ├── 🌅 daily_provider_check.py         # Daily health check
+│   └── 🚀 ci_provider_check.sh            # CI/CD script
+├── 📁 examples/              # Usage examples
+├── 📁 .github/               # CI/CD workflows
+│   └── 📁 workflows/         # GitHub Actions
+└── 📁 docs/                  # Additional documentation
+```
+
+### 🎯 Key Directories
+
+| Directory | Purpose | Contents |
+|-----------|---------|----------|
+| **`src/`** | Core library code | Main AI utilities package |
+| **`tests/`** | Test suite | Unit tests, integration tests, provider monitoring |
+| **`scripts/`** | Utility tools | Health monitoring, change detection, CI/CD |
+| **`examples/`** | Usage examples | Code samples and demos |
+| **`.github/`** | CI/CD | Automated workflows and monitoring |
+
+---
+
+## 🔑 API Key Setup
+
+Choose **one** of these methods to configure your OpenAI API key:
+
+### 1️⃣ .env File (Recommended for Local Development)
+
+Create a `.env` file in your project directory:
+
+```bash
+# Create .env file
+echo "AI_API_KEY=your-openai-key-here" > .env
+```
+
+**Works in:** Terminal, PyCharm, VS Code, any IDE  
+**Best for:** Local development, team projects
+
+### 2️⃣ Environment Variable (Current Session)
+
+```bash
+# macOS/Linux
+export AI_API_KEY="your-openai-key-here"
+
+# Windows PowerShell
+$env:AI_API_KEY="your-openai-key-here"
+
+# Windows Command Prompt
+set AI_API_KEY=your-openai-key-here
+```
+
+**Works in:** Current terminal session only  
+**Best for:** Quick tests, CI/CD, one-off usage
+
+### 3️⃣ PyCharm IDE Configuration
+
+1. **Run/Debug Configurations** → **Environment variables**
+2. Click **+** to add: `AI_API_KEY=your-openai-key-here`
+3. Apply and run
+
+**Works in:** PyCharm only  
+**Best for:** PyCharm development without terminal setup
+
+### 4️⃣ Direct Override (Tests/One-off)
+
+```python
+from ai_utilities import create_client
+
+# Pass API key directly
+client = create_client(api_key="your-openai-key-here")
+```
+
+**Works in:** Any Python code  
+**Best for:** Tests, scripts, temporary usage
+
+---
+
+## 🔑 API Key Usage Guide
+
+### ⚠️ Important Note for Some Providers
+
+While most providers work with environment variables, **some cloud providers require explicit API key passing** for reliable operation:
+
+```python
+from ai_utilities import create_client
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+# ✅ RECOMMENDED: Use explicit api_key for consistency
+client = create_client(
+    provider="openai_compatible",
+    base_url="https://api.groq.com/openai/v1",
+    api_key=os.getenv("GROQ_API_KEY"),  # Explicit key
+    model="llama-3.1-8b-instant"
+)
+
+# ✅ This pattern works consistently for ALL providers
+providers = [
+    {
+        "name": "Groq",
+        "config": {
+            "provider": "openai_compatible",
+            "base_url": "https://api.groq.com/openai/v1",
+            "api_key": os.getenv("GROQ_API_KEY"),
+            "model": "llama-3.1-8b-instant"
+        }
+    },
+    {
+        "name": "Together AI",
+        "config": {
+            "provider": "openai_compatible", 
+            "base_url": "https://api.together.xyz/v1",
+            "api_key": os.getenv("TOGETHER_API_KEY"),
+            "model": "meta-llama/Llama-3.2-3B-Instruct-Turbo"
+        }
+    },
+    {
+        "name": "OpenRouter",
+        "config": {
+            "provider": "openai_compatible",
+            "base_url": "https://openrouter.ai/api/v1", 
+            "api_key": os.getenv("OPENROUTER_API_KEY"),
+            "model": "meta-llama/llama-3.2-3b-instruct:free"
+        }
+    }
+]
+
+# Use the same pattern for all providers
+for provider in providers:
+    client = create_client(**provider["config"])
+    response = client.ask("Hello!", max_tokens=10)
+    print(f"{provider['name']}: {response}")
+```
+
+### 📋 Provider Status
+
+| Provider | Environment Variables | Explicit Key | Recommendation |
+|----------|---------------------|--------------|----------------|
+| **OpenAI** | ✅ Works | ✅ Works | Use either method |
+| **Groq** | ❌ May fail | ✅ Works | **Use explicit key** |
+| **Together AI** | ❌ May fail | ✅ Works | **Use explicit key** |
+| **OpenRouter** | ❌ May fail | ✅ Works | **Use explicit key** |
+| **Ollama** | ✅ Works | ✅ Works | Use either method |
+| **LM Studio** | ✅ Works | ✅ Works | Use either method |
+
+### 💡 Best Practice
+
+**For maximum compatibility across all providers, always use explicit `api_key` parameter:**
+
+```python
+# ✅ Universal pattern - works for every provider
+from ai_utilities import create_client
+import os
+
+client = create_client(
+    provider="openai_compatible",
+    base_url="your-provider-url",
+    api_key=os.getenv("YOUR_API_KEY"),  # Always explicit
+    model="your-model"
+)
+```
+
+This ensures your code works consistently regardless of which AI provider you use!
+
+---
+
 ## Configuration
 
 ### Environment Variables (Recommended)
@@ -34,8 +221,13 @@ print(client.ask('What is AI?'))
 Set these in your environment or `.env` file:
 
 ```bash
-# Required
+# Required for OpenAI
 export AI_API_KEY="your-openai-key"
+
+# Additional provider API keys (for explicit key usage)
+export GROQ_API_KEY="your-groq-key"
+export TOGETHER_API_KEY="your-together-key"
+export OPENROUTER_API_KEY="your-openrouter-key"
 
 # Optional
 export AI_MODEL="gpt-4"
@@ -460,7 +652,15 @@ pytest                # Run tests
 
 ---
 
-## Quick Start
+## 📚 Documentation
+
+- **📖 [Main README](README.md)** - Project overview and quick start
+- **📋 [Documentation](docs/)** - Detailed guides and documentation
+  - [Testing Setup](docs/testing-setup.md) - Complete testing guide
+  - [All Providers Guide](docs/all-providers-guide.md) - Comprehensive provider documentation
+  - [Ollama Capabilities](docs/ollama-capabilities.md) - Ollama-specific guide
+
+## 🚀 Quick Start
 
 ### 1. Set Up Environment
 
@@ -498,7 +698,96 @@ for question, answer in zip(questions, responses):
 - ✅ **Works in development**: Examples automatically add `src` to Python path for repo usage  
 - ✅ **Consistent interface**: Same import pattern whether developing or using installed package
 
-### 3. 🔄 Sync & Async Client Examples
+### 3. 🌐 Provider Configuration
+
+The library supports multiple AI providers while maintaining the same `AiClient.ask()` API. Switch between OpenAI (cloud) and local OpenAI-compatible servers via configuration.
+
+#### OpenAI Provider (Default)
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Using environment variables (default)
+export AI_API_KEY="your-openai-key"
+export AI_PROVIDER="openai"  # This is the default
+
+client = AiClient()
+response = client.ask("What is AI?")
+```
+
+#### Local OpenAI-Compatible Provider
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Method 1: Environment variables
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:11434/v1"  # Ollama
+export AI_API_KEY="dummy-key"  # Optional for local servers
+
+client = AiClient()
+response = client.ask("What is AI?")
+
+# Method 2: Explicit settings
+settings = AiSettings(
+    provider="openai_compatible",
+    base_url="http://localhost:8000/v1",  # vLLM or other local server
+    api_key="dummy-key",  # Optional for local servers
+    model="llama2-7b",
+    temperature=0.8
+)
+
+client = AiClient(settings)
+response = client.ask("Explain quantum computing")
+```
+
+#### Popular Local Server Examples
+
+```bash
+# Ollama (http://localhost:11434/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:11434/v1"
+export AI_MODEL="llama2"
+
+# vLLM (http://localhost:8000/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:8000/v1"
+export AI_MODEL="vicuna-13b-v1.5"
+
+# LM Studio (http://localhost:1234/v1)
+export AI_PROVIDER="openai_compatible"
+export AI_BASE_URL="http://localhost:1234/v1"
+export AI_MODEL="local-model"
+```
+
+#### Advanced Provider Configuration
+
+```python
+from ai_utilities import AiSettings
+
+# Custom headers for gateways or authentication
+settings = AiSettings(
+    provider="openai_compatible",
+    base_url="https://api.example.com/v1",
+    api_key="your-api-key",
+    extra_headers={
+        "Authorization": "Bearer custom-token",
+        "X-Model-Provider": "custom-gateway"
+    },
+    request_timeout_s=60.0,  # Float timeout
+    model="custom-model"
+)
+
+client = AiClient(settings)
+```
+
+**Provider Features:**
+- ✅ **OpenAI**: Full feature support (JSON mode, tools, streaming, images)
+- ⚠️ **OpenAI-Compatible**: Text responses + basic parameters (JSON mode varies by server)
+- 🔄 **Same API**: `client.ask()` works identically across all providers
+- 🛡️ **Error Handling**: Clear errors for missing configuration or unsupported features
+
+### 4. 🔄 Sync & Async Client Examples
 
 #### Synchronous Client (AiClient)
 
@@ -1541,6 +1830,51 @@ mypy src/
 
 ---
 
+## 📋 Changelog
+
+### v0.4.0 - Provider Support & Local AI
+
+**🌐 Multi-Provider Support:**
+- ✅ **OpenAI-Compatible Provider**: First-class support for local AI servers (Ollama, vLLM, LM Studio, etc.)
+- ✅ **Provider Factory**: Automatic provider selection based on configuration
+- ✅ **Same API**: `AiClient.ask()` works identically across all providers
+- ✅ **Configuration-Driven**: Switch providers via `AI_PROVIDER` environment variable or settings
+
+**🔧 New Configuration Options:**
+- `AI_PROVIDER`: Choose between "openai" (default) and "openai_compatible"
+- `AI_BASE_URL`: Required for openai_compatible provider (e.g., `http://localhost:11434/v1`)
+- `AI_REQUEST_TIMEOUT_S`: Float timeout for precise control
+- `AI_EXTRA_HEADERS`: Custom headers for gateways and authentication
+
+**🛡️ Enhanced Error Handling:**
+- `ProviderConfigurationError`: Clear errors for missing/invalid provider setup
+- `ProviderCapabilityError`: Informative errors for unsupported features
+- Graceful degradation for local server limitations
+
+**📦 New Exports:**
+- `OpenAICompatibleProvider`: Local server provider implementation
+- `create_provider()`: Provider factory function
+- `ProviderCapabilities`: Provider feature discovery
+- `ProviderCapabilityError`, `ProviderConfigurationError`: Custom exceptions
+
+**🧪 Comprehensive Testing:**
+- 30 new tests covering provider selection, configuration, and error handling
+- Mocked network calls for reliable testing
+- Full backward compatibility verification
+
+**📚 Updated Documentation:**
+- Provider configuration examples for popular local servers
+- Vendor-neutral "OpenAI-compatible" terminology
+- Migration guide from OpenAI to local providers
+- Advanced configuration examples with custom headers
+
+**🔄 Backward Compatibility:**
+- ✅ Existing OpenAI usage unchanged - zero migration required
+- ✅ All existing APIs work identically
+- ✅ Default provider remains OpenAI for seamless upgrades
+
+---
+
 ## License
 
 MIT License - see LICENSE file for details.
@@ -1602,6 +1936,124 @@ All tests use the `FakeProvider` for offline testing - no API key required.
 
 ---
 
+## 🛡️ Provider Health Monitoring
+
+AI Utilities includes a comprehensive provider health monitoring system to detect issues before they affect your applications.
+
+### 🚀 Quick Health Check
+
+```bash
+# Daily health check
+python scripts/daily_provider_check.py
+
+# Comprehensive analysis
+python scripts/provider_change_detector.py
+
+# Run monitoring tests
+pytest tests/provider_monitoring/ -v
+```
+
+### 📊 What's Monitored
+
+| Provider | Status | Response Time | Model Availability |
+|----------|--------|---------------|-------------------|
+| **OpenAI** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+| **Groq** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+| **Together AI** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+| **OpenRouter** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+| **Ollama** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+| **LM Studio** | ✅ Monitored | ✅ Tracked | ✅ Validated |
+
+### 🔧 Monitoring Features
+
+- **🔍 Change Detection** - Automatically detects API changes, model removals, and service issues
+- **📈 Performance Tracking** - Monitors response times and availability
+- **🚨 Alert System** - Generates detailed reports for any issues
+- **🔄 CI/CD Integration** - Automated monitoring in GitHub Actions
+- **🧪 Bug Prevention** - Comprehensive tests prevent regressions
+
+### 📋 Monitoring Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `daily_provider_check.py` | Simple daily health check | `python scripts/daily_provider_check.py` |
+| `provider_health_monitor.py` | Comprehensive monitoring | `python scripts/provider_health_monitor.py` |
+| `provider_change_detector.py` | Change detection & analysis | `python scripts/provider_change_detector.py` |
+| `ci_provider_check.sh` | CI/CD integration | `./scripts/ci_provider_check.sh` |
+
+### 🎯 Example Output
+
+```
+🌅 DAILY PROVIDER HEALTH CHECK
+========================================
+🔍 Checking OpenAI...
+   ✅ Status: HEALTHY
+   ⏱️  Response time: 1.57s
+   🤖 Model: gpt-3.5-turbo
+
+🔍 Checking Groq...
+   ✅ Status: HEALTHY
+   ⏱️  Response time: 0.51s
+   🤖 Model: llama-3.1-8b-instant
+
+📊 SUMMARY: 6/6 providers healthy
+✅ All providers healthy - no action needed!
+```
+
+### 🔄 Automated Monitoring
+
+Add to your GitHub Actions (`.github/workflows/provider-health.yml`):
+
+```yaml
+name: Provider Health Monitor
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run health check
+      run: python scripts/daily_provider_check.py
+```
+
+---
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run specific test categories
+pytest tests/provider_monitoring/ -v  # Provider monitoring tests
+pytest tests/integration/ -v          # Integration tests
+pytest tests/demo/ -v                 # Demo app tests
+```
+
+### 📊 Test Coverage
+
+- **🛡️ Bug Prevention Tests** - Prevent regressions of known issues
+- **🔍 Integration Tests** - Real provider connectivity
+- **🧪 Unit Tests** - Core functionality validation
+- **📋 Provider Tests** - All 6 providers tested
+
+### 🎯 Test Categories
+
+| Category | Purpose | Command |
+|----------|---------|---------|
+| **Bug Prevention** | Prevent regressions | `pytest tests/provider_monitoring/test_critical_bugs.py` |
+| **Integration** | Real API testing | `pytest tests/integration/ -v` |
+| **Monitoring** | Health system tests | `pytest tests/provider_monitoring/ -v` |
+| **Core Library** | Main functionality | `pytest tests/test_*.py` |
+
+---
+
 ## Migration from config.ini
 
 If you're migrating from the old config.ini approach:
@@ -1638,4 +2090,49 @@ If you're migrating from the old config.ini approach:
    settings = AiSettings.from_ini("config.ini")
    client = AiClient(settings)
    ```
+
+---
+
+## 📋 Changelog
+
+### 🛡️ Provider Health Monitoring (Latest)
+- **✅ Added comprehensive provider monitoring system** - Detect issues before they affect users
+- **🔍 Change detection** - Automatic detection of API changes, model removals, and service issues
+- **📈 Performance tracking** - Monitor response times and availability across all providers
+- **🚨 Alert system** - Detailed reports and recommendations for any issues
+- **🔄 CI/CD integration** - Automated monitoring with GitHub Actions
+- **🧪 Bug prevention tests** - 17 comprehensive tests prevent regressions
+
+### 🔧 Critical Bug Fixes
+- **🔑 Fixed API headers issue** - Resolved 401 errors for OpenAI, Groq, and Together AI
+- **📋 Fixed response parsing** - Added proper handling for Together AI list responses
+- **🏗️ Improved project organization** - Clean separation of source code, tests, and scripts
+- **🧪 Enhanced test coverage** - Added focused bug prevention tests
+
+### 📊 New Monitoring Scripts
+- `daily_provider_check.py` - Simple daily health check
+- `provider_health_monitor.py` - Comprehensive monitoring system
+- `provider_change_detector.py` - Change detection and analysis
+- `ci_provider_check.sh` - CI/CD integration script
+
+### 🎯 Provider Support
+- **✅ OpenAI** - Full monitoring and testing
+- **✅ Groq** - Full monitoring and testing  
+- **✅ Together AI** - Full monitoring and testing
+- **✅ OpenRouter** - Full monitoring and testing
+- **✅ Ollama** - Local server monitoring
+- **✅ LM Studio** - Local server monitoring
+
+---
+
+## 📞 Support & Contributing
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/audkus/ai_utilities/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/audkus/ai_utilities/discussions)
+- 📧 **Questions**: Open a GitHub Discussion
+- 🔧 **Contributing**: See [Contributing Guide](CONTRIBUTING.md)
+
+---
+
+**⭐ If you find AI Utilities helpful, please give it a star on GitHub!**
 ---

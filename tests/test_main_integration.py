@@ -46,7 +46,7 @@ def test_create_client_vs_aiclient_model_difference():
     from ai_utilities.client import AiSettings
     
     # create_client should allow specifying real models
-    client_with_real_model = create_client(model="gpt-4")
+    client_with_real_model = create_client(model="gpt-4", api_key="test-key-for-testing")
     assert client_with_real_model.settings.model == "gpt-4"
     
     # AiSettings without parameters uses default test model

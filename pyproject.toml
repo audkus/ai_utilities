@@ -27,6 +27,8 @@ dependencies = [
   "pydantic-settings>=2.0,<3",
   "portalocker>=2.0,<3",
   "openai>=1.0,<3",
+  "requests>=2.31,<3",
+  "urllib3>=1.26,<2",  # Pin to v1.x for LibreSSL compatibility
 ]
 
 [project.optional-dependencies]
@@ -40,8 +42,18 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests that require real network/API calls",
+  "openai: marks tests that require OpenAI API access",
+  "groq: marks tests that require Groq API access", 
+  "together: marks tests that require Together AI API access",
+  "openrouter: marks tests that require OpenRouter API access",
+  "ollama: marks tests that require Ollama server",
+  "lmstudio: marks tests that require LM Studio server",
+  "text_generation_webui: marks tests that require text-generation-webui server",
+  "fastchat: marks tests that require FastChat server",
 ]
 
 [project.urls]
