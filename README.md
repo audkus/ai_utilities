@@ -108,16 +108,23 @@ settings = AiSettings(
 
 ### Provider Capabilities
 
-| Provider | Text | JSON | Async | Streaming |
-|----------|------|------|-------|-----------|
-| OpenAI | ✅ | ✅ | ✅ | ✅ |
-| Groq | ✅ | ✅ | ✅ | ✅ |
-| Together AI | ✅ | ✅ | ✅ | ✅ |
-| OpenRouter | ✅ | ✅ | ✅ | ✅ |
-| Ollama | ✅ | ✅ | ✅ | ✅ |
-| LM Studio | ✅ | ✅ | ✅ | ✅ |
-| Text-Generation-WebUI | ✅ | ✅ | ✅ | ✅ |
-| FastChat | ✅ | ✅ | ✅ | ✅ |
+Legend:
+- ✅ full support
+- ⚠️ partial / best-effort (varies by provider/model; may require JSON repair)
+- ❌ not supported
+
+| Provider Type | Text | JSON | Async | Streaming |
+|--------------|------|------|-------|-----------|
+| OpenAI (native) | ✅ | ✅ | ✅ | ✅ |
+| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | ✅ | ⚠️ | ✅ | ⚠️ |
+| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | ✅ | ⚠️ | ✅ | ❌ |
+
+**Notes:**
+- "Async" means our AsyncAiClient concurrency (parallel calls), not streaming tokens.
+- Streaming is provider-dependent and not available on Ollama (and most local OpenAI-compatible servers).
+
+JSON and typed responses are guaranteed only when the underlying provider supports native JSON mode.
+On OpenAI-compatible providers (especially local servers), JSON is best-effort and may require repair/validation.
 
 ---
 
