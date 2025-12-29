@@ -1,0 +1,118 @@
+name: Provider Health Monitor
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allow manual runs
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/ai_utilities/**'
+      - 'tests/**'
+
+jobs:
+  provider-health-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest python-dotenv requests
+        
+    - name: Set up environment variables
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      run: |
+        echo "Environment variables configured"
+        
+    - name: Run Provider Health Monitor
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      run: |
+        python scripts/provider_health_monitor.py
+        
+    - name: Run Provider Change Detection
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      run: |
+        python scripts/provider_change_detector.py --generate-report
+        
+    - name: Upload Health Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: provider-health-report
+        path: provider_report_*.md
+        retention-days: 30
+        
+    - name: Run Tests for Healthy Providers
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      run: |
+        python scripts/provider_change_detector.py --run-tests
+        
+    - name: Comment on Issues if Problems Detected
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const reportFiles = fs.readdirSync('.').filter(f => f.startsWith('provider_report_'));
+          
+          if (reportFiles.length > 0) {
+            const report = fs.readFileSync(reportFiles[0], 'utf8');
+            
+            // Create an issue if there are critical problems
+            if (report.includes('❌') || report.includes('CRITICAL ISSUES')) {
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Provider Health Alert - ${new Date().toISOString().split('T')[0]}`,
+                body: `## 🚨 Provider Health Alert\n\n${report}\n\n**Action Required**: Review provider status and update tests/configuration as needed.`,
+                labels: ['provider-health', 'urgent']
+              });
+            }
+          }
+
+  notify-on-failure:
+    needs: provider-health-check
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Notify on failure
+      uses: actions/github-script@v6
+      with:
+        script: |
+          console.log('Provider health check failed - check logs for details');
