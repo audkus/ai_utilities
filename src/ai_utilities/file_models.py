@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class UploadedFile(BaseModel):
@@ -26,11 +26,11 @@ class UploadedFile(BaseModel):
         None, description="When the file was uploaded"
     )
     
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat() if v else None
         }
+    )
     
     def __str__(self) -> str:
         """String representation showing file ID and filename."""
