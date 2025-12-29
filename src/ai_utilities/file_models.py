@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class UploadedFile(BaseModel):
@@ -27,10 +27,13 @@ class UploadedFile(BaseModel):
     )
     
     model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        populate_by_name=True
     )
+    
+    @field_serializer('created_at')
+    def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime to ISO format."""
+        return value.isoformat() if value else None
     
     def __str__(self) -> str:
         """String representation showing file ID and filename."""
