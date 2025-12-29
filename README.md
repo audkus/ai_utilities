@@ -51,10 +51,10 @@ pip install -e ".[dev]"
 |----------|------------------|------|---------|-------------|
 | `AI_API_KEY` | `api_key` | str | None | OpenAI API key |
 | `AI_PROVIDER` | `provider` | str | "openai" | Provider name |
-| `AI_MODEL` | `model` | str | "gpt-3.5-turbo" | Model name |
-| `AI_TEMPERATURE` | `temperature` | float | 0.7 | Response randomness |
+| `AI_MODEL` | `model` | str | "test-model-1" | Default model to use |
+| `AI_TEMPERATURE` | `temperature` | float | 0.7 | Response randomness (0.0-2.0) |
 | `AI_BASE_URL` | `base_url` | str | None | Custom API endpoint |
-| `AI_TIMEOUT` | `timeout` | int | 60 | Request timeout (seconds) |
+| `AI_TIMEOUT` | `timeout` | int | 30 | Request timeout (seconds) |
 
 ### Configuration Precedence
 
