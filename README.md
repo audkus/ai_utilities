@@ -202,6 +202,67 @@ client = create_client(
 )
 ```
 
+## Files API
+
+Upload and download files through AI providers. Currently supported by OpenAI provider.
+
+### Quick Start
+
+```python
+from ai_utilities import AiClient
+from pathlib import Path
+
+client = AiClient()
+
+# Upload a file
+file = client.upload_file("document.pdf", purpose="assistants")
+print(f"Uploaded: {file.file_id}")
+
+# Download file content
+content = client.download_file(file.file_id)
+
+# Download file to disk
+path = client.download_file(file.file_id, to_path="downloaded.pdf")
+```
+
+### File Operations
+
+```python
+# Upload with custom settings
+file = client.upload_file(
+    "data.csv",
+    purpose="fine-tune",
+    filename="training-data.csv"
+)
+
+# Async file operations
+from ai_utilities import AsyncAiClient
+
+async def main():
+    client = AsyncAiClient()
+    file = await client.upload_file("document.pdf")
+    content = await client.download_file(file.file_id)
+
+# Error handling
+from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
+
+try:
+    file = client.upload_file("report.pdf")
+except FileTransferError as e:
+    print(f"Upload failed: {e}")
+except ProviderCapabilityError as e:
+    print(f"Provider doesn't support files: {e}")
+```
+
+### Supported Providers
+
+| Provider | Upload | Download | Notes |
+|----------|--------|----------|-------|
+| **OpenAI** | ✅ | ✅ | Full support with all file types |
+| **OpenAI-Compatible** | ❌ | ❌ | Raises capability errors |
+
+**📖 Full Documentation:** See [`docs/files.md`](docs/files.md) for comprehensive Files API documentation.
+
 ---
 
 ## Development
