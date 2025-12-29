@@ -23,10 +23,12 @@ Example Usage:
 
 from .async_client import AsyncAiClient
 from .client import AiClient, AiSettings, create_client
+from .file_models import UploadedFile
 from .json_parsing import JsonParseError, parse_json_from_text
 from .models import AskResult
 from .providers import (
     BaseProvider,
+    FileTransferError,
     OpenAICompatibleProvider,
     OpenAIProvider,
     ProviderCapabilities,
@@ -50,6 +52,7 @@ __all__ = [
     'AiSettings', 
     'create_client',
     'AskResult',
+    'UploadedFile',
     'JsonParseError',
     'parse_json_from_text',
     'UsageTracker',
@@ -66,7 +69,8 @@ __all__ = [
     'create_provider',
     'ProviderCapabilities',
     'ProviderCapabilityError',
-    'ProviderConfigurationError'
+    'ProviderConfigurationError',
+    'FileTransferError'
 ]
 
 # Version - automatically retrieved from package metadata
