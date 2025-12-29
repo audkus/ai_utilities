@@ -58,10 +58,12 @@ pip install -e ".[dev]"
 
 ### Configuration Precedence
 
-1. Explicit `AiSettings` parameters (highest)
-2. Environment variables
-3. `.env` file values
-4. Defaults (lowest)
+`AiSettings` loads values in this order (highest to lowest priority):
+
+1. Explicit `AiSettings(...)` parameters
+2. Environment variables (`os.environ`)
+3. `.env` file values (loaded via `pydantic-settings`)
+4. Defaults
 
 ---
 
