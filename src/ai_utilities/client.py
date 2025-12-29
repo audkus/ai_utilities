@@ -21,6 +21,8 @@ from .usage_tracker import UsageScope, create_usage_tracker
 from .progress_indicator import ProgressIndicator
 from .models import AskResult
 from .json_parsing import parse_json_from_text, JsonParseError, create_repair_prompt
+from .file_models import UploadedFile
+from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 from pydantic import ValidationError
 
 # Generic type for typed responses
@@ -1085,6 +1087,107 @@ class AiClient:
         except ValidationError as e:
             # Re-raise ValidationError without swallowing it
             raise e
+    
+    def upload_file(
+        self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None
+    ) -> UploadedFile:
+        """Upload a file to the AI provider.
+        
+        Args:
+            path: Path to the file to upload
+            purpose: Purpose of the upload (e.g., "assistants", "fine-tune")
+            filename: Optional custom filename (defaults to path.name)
+            mime_type: Optional MIME type (auto-detected if None)
+            
+        Returns:
+            UploadedFile with metadata about the uploaded file
+            
+        Raises:
+            ValueError: If file path is invalid
+            FileTransferError: If upload fails
+            ProviderCapabilityError: If provider doesn't support file uploads
+            
+        Example:
+            >>> file = client.upload_file("document.pdf", purpose="assistants")
+            >>> print(f"Uploaded: {file.file_id}")
+        """
+        # Validate input
+        if not isinstance(path, Path):
+            path = Path(path)
+        
+        if not path.exists():
+            raise ValueError(f"File does not exist: {path}")
+        
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {path}")
+        
+        # Delegate to provider
+        try:
+            return self.provider.upload_file(path, purpose=purpose, filename=filename, mime_type=mime_type)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("upload", self.provider.__class__.__name__, e) from e
+    
+    def download_file(self, file_id: str, *, to_path: Optional[Path] = None) -> Union[bytes, Path]:
+        """Download file content from the AI provider.
+        
+        Args:
+            file_id: ID of the file to download
+            to_path: Optional path to save the file (returns bytes if None)
+            
+        Returns:
+            File content as bytes if to_path is None, or Path to saved file
+            
+        Raises:
+            ValueError: If file_id is invalid
+            FileTransferError: If download fails
+            ProviderCapabilityError: If provider doesn't support file downloads
+            
+        Example:
+            >>> # Download as bytes
+            >>> content = client.download_file("file-123")
+            >>> 
+            >>> # Download to file
+            >>> path = client.download_file("file-123", to_path="downloaded.pdf")
+        """
+        if not file_id:
+            raise ValueError("file_id cannot be empty")
+        
+        # Delegate to provider
+        try:
+            content = self.provider.download_file(file_id)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("download", self.provider.__class__.__name__, e) from e
+        
+        # Handle saving to file if requested
+        if to_path is not None:
+            if not isinstance(to_path, Path):
+                to_path = Path(to_path)
+            
+            # Create parent directories if needed
+            to_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write content to file
+            with open(to_path, "wb") as f:
+                f.write(content)
+            
+            return to_path
+        
+        # Return raw bytes
+        return content
 
 
 # Convenience function for backward compatibility
