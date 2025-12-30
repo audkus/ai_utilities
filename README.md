@@ -32,6 +32,8 @@ print(response)
 **Where to look next:**
 - More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
+- **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
+- **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
 - API reference → Use `help(AiClient)` in Python
 - Changelog → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
 
