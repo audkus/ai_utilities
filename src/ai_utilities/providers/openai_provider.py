@@ -172,7 +172,10 @@ class OpenAIProvider(BaseProvider):
                 purpose=response.purpose,
                 created_at=(
                     datetime.fromisoformat(response.created_at.replace("Z", "+00:00"))
-                    if response.created_at else None
+                    if isinstance(response.created_at, str) and response.created_at
+                    else datetime.fromtimestamp(response.created_at)
+                    if isinstance(response.created_at, (int, float)) and response.created_at
+                    else None
                 )
             )
             
