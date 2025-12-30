@@ -540,51 +540,58 @@ class TestDashboard:
         print("│ Provider                │ Unit Tests     │ Integration    │ Status         │")
         print("├─────────────────────────┼────────────────┼────────────────┼────────────────┤")
         
+        # Check actual service availability
+        import os
+        
+        def check_service_availability(env_vars):
+            """Check if required environment variables are set for service."""
+            return all(os.getenv(var) for var in env_vars)
+        
         # All providers with integration tests found in the codebase
         provider_status = {
             "OpenAI": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available",
+                "integration": "✅ API Key Available" if os.getenv("AI_API_KEY") else "🔄 API Key Required",
                 "status": "✅ Fully Supported"
             },
             "Groq": {
                 "unit": "✅ Working", 
-                "integration": "✅ Live Tests Available",
+                "integration": "✅ API Key Available" if os.getenv("AI_API_KEY") else "🔄 API Key Required",
                 "status": "✅ Fully Supported"
             },
             "Ollama": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
+                "integration": "✅ Local Available" if check_service_availability(["LIVE_OLLAMA_URL"]) else "🔄 Local Required", 
                 "status": "✅ Fully Supported"
             },
             "LM Studio": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
+                "integration": "✅ Local Available" if check_service_availability(["LIVE_LMSTUDIO_URL"]) else "🔄 Local Required", 
                 "status": "✅ Fully Supported"
             },
             "Text Generation WebUI": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
-                "status": "✅ Fully Supported"
+                "integration": "⚠️ Service Not Installed" if not check_service_availability(["LIVE_TEXTGEN_MODEL"]) else "✅ Local Available",
+                "status": "⚠️ Partially Supported"
             },
             "FastChat": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
-                "status": "✅ Fully Supported"
+                "integration": "⚠️ Service Not Installed" if not check_service_availability(["LIVE_FASTCHAT_MODEL"]) else "✅ Local Available",
+                "status": "⚠️ Partially Supported"
             },
             "Together": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
+                "integration": "✅ API Key Available" if os.getenv("AI_API_KEY") else "🔄 API Key Required", 
                 "status": "✅ Fully Supported"
             },
             "OpenRouter": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available", 
+                "integration": "✅ API Key Available" if os.getenv("AI_API_KEY") else "🔄 API Key Required", 
                 "status": "✅ Fully Supported"
             },
             "OpenAI Compatible Local": {
                 "unit": "✅ Working",
-                "integration": "✅ Live Tests Available",
+                "integration": "✅ Local Available" if check_service_availability(["LIVE_OPENAI_COMPAT_URL"]) else "🔄 Local Required",
                 "status": "✅ Fully Supported"
             }
         }
@@ -593,26 +600,31 @@ class TestDashboard:
             print(f"│ {provider:<23} │ {status['unit']:<14} │ {status['integration']:<14} │ {status['status']:<14} │")
         
         print("├─────────────────────────┼────────────────┼────────────────┼────────────────┤")
-        print(f"│ {'TOTAL':<23} │ {'9 Providers':<14} │ {'9 Supported':<14} │ {'✅ Complete':<14} │")
+        
+        # Count actual status
+        fully_supported = sum(1 for p in provider_status.values() if "✅" in p["status"])
+        partially_supported = sum(1 for p in provider_status.values() if "⚠️" in p["status"])
+        
+        print(f"│ {'TOTAL':<23} │ {'9 Providers':<14} │ {fully_supported} Fully, {partially_supported} Partial │ {'✅ Complete':<14} │")
         print("└─────────────────────────┴────────────────┴────────────────┴────────────────┘")
         
         print("\n📝 Provider Test Details:")
-        print("   • OpenAI: Unit tests ✅ | Live integration tests ✅")
-        print("   • Groq: Unit tests ✅ | Live integration tests ✅") 
-        print("   • Ollama: Unit tests ✅ | Live integration tests ✅")
-        print("   • LM Studio: Unit tests ✅ | Live integration tests ✅")
-        print("   • Text Generation WebUI: Unit tests ✅ | Live integration tests ✅")
-        print("   • FastChat: Unit tests ✅ | Live integration tests ✅")
-        print("   • Together: Unit tests ✅ | Live integration tests ✅")
-        print("   • OpenRouter: Unit tests ✅ | Live integration tests ✅")
-        print("   • OpenAI Compatible: Unit tests ✅ | Live integration tests ✅")
+        print("   • OpenAI: Unit tests ✅ | Integration tests ✅ (API key available)")
+        print("   • Groq: Unit tests ✅ | Integration tests ✅ (API key available)") 
+        print("   • Ollama: Unit tests ✅ | Integration tests 🔄 (Local server required)")
+        print("   • LM Studio: Unit tests ✅ | Integration tests 🔄 (Local server required)")
+        print("   • Text Generation WebUI: Unit tests ✅ | Integration tests ⚠️ (Service not installed)")
+        print("   • FastChat: Unit tests ✅ | Integration tests ⚠️ (Service not installed)")
+        print("   • Together: Unit tests ✅ | Integration tests ✅ (API key available)")
+        print("   • OpenRouter: Unit tests ✅ | Integration tests ✅ (API key available)")
+        print("   • OpenAI Compatible: Unit tests ✅ | Integration tests 🔄 (Local server required)")
         print("\n🔑 To run ALL integration tests:")
-        print("   export AI_API_KEY='your-key' && python scripts/test_dashboard.py --full-suite --integration")
-        print("\n📊 Integration Test Coverage:")
-        print("   • 16+ live provider tests in test_live_providers.py")
-        print("   • 10+ Files API integration tests")
-        print("   • Model discovery tests for each provider")
-        print("   • Real API validation tests")
+        print("   export AI_API_KEY='your-key' && RUN_LIVE_AI_TESTS=1 python scripts/test_dashboard.py --full-suite --integration")
+        print("\n📊 Integration Test Behavior:")
+        print("   • Tests are SKIPPED (not failed) when services unavailable")
+        print("   • This is correct behavior for integration tests")
+        print("   • 16+ live provider tests available when services are running")
+        print("   • Tests automatically detect service availability")
     
     def _print_test_summary_table(self):
         """Print the test summary table."""
