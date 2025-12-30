@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import requests
+import pytest
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -145,7 +146,7 @@ def test_text_generation_webui():
     except Exception as e:
         print(f"   ❌ Performance test failed: {e}")
     
-    return True
+    assert True  # Test passed successfully
 
 def test_text_generation_webui_discovery():
     """Test model discovery for text-generation-webui."""
@@ -166,11 +167,13 @@ def test_text_generation_webui_discovery():
         if len(models) > 10:
             print(f"   ... and {len(models) - 10} more")
             
-        return True
+        assert True  # Discovery successful
         
+    except ImportError as e:
+        pytest.skip(f"Discovery module not available: {e}")
     except Exception as e:
         print(f"❌ Model discovery failed: {e}")
-        return False
+        assert False, f"Model discovery failed: {e}"
 
 def main():
     """Main test execution."""
