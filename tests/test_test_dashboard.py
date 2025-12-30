@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from test_dashboard import TestDashboard
+from test_dashboard import AITestDashboard
 
 
 class TestTestDashboard:
@@ -25,7 +25,7 @@ class TestTestDashboard:
     
     def test_dashboard_initialization(self):
         """Test that dashboard initializes correctly."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         assert dashboard.test_results == []
         assert dashboard.module_support == []
@@ -33,7 +33,7 @@ class TestTestDashboard:
     
     def test_load_env_file(self):
         """Test environment file loading."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Create a temporary .env file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
@@ -61,7 +61,7 @@ class TestTestDashboard:
     
     def test_load_env_file_missing(self):
         """Test behavior when .env file is missing."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         with patch.object(Path, 'exists', return_value=False):
             dashboard._load_env_file()
@@ -70,7 +70,7 @@ class TestTestDashboard:
     
     def test_parse_pytest_output_success(self):
         """Test parsing successful pytest output."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         output = """
 ============================= test session starts ==============================
@@ -91,7 +91,7 @@ tests/test_files_api.py::test_download_file_success PASSED
     
     def test_parse_pytest_output_with_failures(self):
         """Test parsing pytest output with failures."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         output = """
 ============================= test session starts ==============================
@@ -112,7 +112,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_parse_pytest_output_empty(self):
         """Test parsing empty pytest output."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         total, passed, failed, skipped = dashboard._parse_pytest_output("")
         
@@ -123,7 +123,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_parse_pytest_output_non_string(self):
         """Test parsing non-string pytest output."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         total, passed, failed, skipped = dashboard._parse_pytest_output(None)
         
@@ -135,7 +135,7 @@ tests/test_integration.py::test_list SKIPPED
     @patch('subprocess.run')
     def test_run_test_suite_success(self, mock_run):
         """Test running a test suite successfully."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Mock successful pytest run
         mock_run.return_value = MagicMock(
@@ -155,7 +155,7 @@ tests/test_integration.py::test_list SKIPPED
     @patch('subprocess.run')
     def test_run_test_suite_with_failures(self, mock_run):
         """Test running a test suite with failures."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Mock pytest run with failures
         mock_run.return_value = MagicMock(
@@ -175,7 +175,7 @@ tests/test_integration.py::test_list SKIPPED
     @patch('subprocess.run')
     def test_run_test_suite_error(self, mock_run):
         """Test running a test suite with an error."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Mock pytest run that raises an exception
         mock_run.side_effect = Exception("Test execution failed")
@@ -190,7 +190,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_generate_module_support_matrix(self):
         """Test module support matrix generation."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Mock the core functionality tests
         dashboard._test_text_generation = MagicMock()
@@ -211,7 +211,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_dashboard_with_api_key(self):
         """Test dashboard behavior when API key is present."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Set API key in environment
         os.environ['AI_API_KEY'] = 'test-api-key'
@@ -231,7 +231,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_dashboard_without_api_key(self):
         """Test dashboard behavior when API key is missing."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Ensure no API key in environment
         api_key = os.environ.pop('AI_API_KEY', None)
@@ -252,7 +252,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_full_suite_mode(self):
         """Test dashboard in full suite mode."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         with patch.object(dashboard, '_run_test_suite') as mock_run:
             with patch.object(dashboard, '_test_core_functionality'):
@@ -266,7 +266,7 @@ tests/test_integration.py::test_list SKIPPED
     
     def test_files_api_focus_mode(self):
         """Test dashboard in Files API focus mode."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         with patch.object(dashboard, '_run_test_suite') as mock_run:
             with patch.object(dashboard, '_test_core_functionality'):
@@ -284,7 +284,7 @@ class TestTestDashboardIntegration:
     
     def test_dashboard_detects_missing_tests(self):
         """Test that dashboard can detect when test files are missing."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # This test ensures the dashboard would notice if test files were missing
         # We can't easily test the actual file discovery without modifying the dashboard
@@ -299,7 +299,7 @@ class TestTestDashboardIntegration:
     
     def test_dashboard_counts_are_accurate(self):
         """Test that dashboard test counts match actual pytest results."""
-        dashboard = TestDashboard()
+        dashboard = AITestDashboard()
         
         # Test various output formats to ensure accurate parsing
         test_cases = [
