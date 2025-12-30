@@ -271,10 +271,14 @@ class TestValidationStatusMapping:
 
         validated = validate_model(model_def)
 
-        # Without proper setup, validation returns NEEDS_KEY
+        # Should be READY when everything is properly set up
         assert validated.status in [ModelStatus.READY, ModelStatus.NEEDS_KEY]
-        # Fix instructions are provided when API key is missing
-        assert len(validated.fix_instructions) > 0
+        
+        # If READY, no fix instructions needed; if NEEDS_KEY, instructions provided
+        if validated.status == ModelStatus.READY:
+            assert len(validated.fix_instructions) == 0
+        else:  # NEEDS_KEY
+            assert len(validated.fix_instructions) > 0
 
     @patch("ai_utilities.demo.validation._is_server_reachable")
     @patch("ai_utilities.demo.validation._is_model_available")
