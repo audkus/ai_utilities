@@ -448,6 +448,174 @@ async def batch_upload(files):
     return successful
 ```
 
+## Document AI Workflow
+
+The Files API enables powerful document analysis workflows where you can upload documents and ask AI to analyze, summarize, or extract information from them.
+
+### Basic Workflow
+
+```python
+from ai_utilities import AiClient
+
+# 1. Upload document
+client = AiClient()
+uploaded_file = client.upload_file("report.pdf", purpose="assistants")
+
+# 2. Ask AI to analyze the document
+summary = client.ask(
+    f"Please summarize document {uploaded_file.file_id} and extract key insights."
+)
+
+# 3. Ask follow-up questions
+recommendations = client.ask(
+    f"Based on document {uploaded_file.file_id}, what are your recommendations?"
+)
+```
+
+### Advanced Document Analysis
+
+```python
+# Upload multiple documents for comparative analysis
+docs = [
+    client.upload_file("q1_report.pdf", purpose="assistants"),
+    client.upload_file("q2_report.pdf", purpose="assistants"),
+    client.upload_file("q3_report.pdf", purpose="assistants")
+]
+
+# Analyze trends across documents
+trend_analysis = client.ask(
+    f"Compare these quarterly reports: {[d.file_id for d in docs]}. "
+    "Identify trends, patterns, and key changes over time."
+)
+
+# Extract specific data
+financial_metrics = client.ask(
+    f"From document {docs[-1].file_id}, extract all financial metrics "
+    "and present them in a structured format."
+)
+```
+
+### Document Templates
+
+```python
+# Financial analysis template
+def analyze_financial_document(file_id):
+    return client.ask(
+        f"Analyze financial document {file_id} and provide:\n"
+        "1. Revenue and profit metrics\n"
+        "2. Expense breakdown\n"
+        "3. Cash flow analysis\n"
+        "4. Key financial ratios\n"
+        "5. Investment recommendations"
+    )
+
+# Legal review template
+def review_legal_document(file_id):
+    return client.ask(
+        f"Review legal document {file_id} and identify:\n"
+        "1. Key obligations and responsibilities\n"
+        "2. Risk factors and liabilities\n"
+        "3. Important dates and deadlines\n"
+        "4. Compliance requirements"
+    )
+
+# Usage
+uploaded_file = client.upload_file("contract.pdf", purpose="assistants")
+legal_review = review_legal_document(uploaded_file.file_id)
+```
+
+### Async Document Processing
+
+```python
+import asyncio
+from ai_utilities import AsyncAiClient
+
+async def process_documents_concurrently():
+    client = AsyncAiClient()
+    
+    # Upload documents concurrently
+    upload_tasks = [
+        client.upload_file("doc1.pdf", purpose="assistants"),
+        client.upload_file("doc2.pdf", purpose="assistants"),
+        client.upload_file("doc3.pdf", purpose="assistants")
+    ]
+    
+    uploaded_files = await asyncio.gather(*upload_tasks)
+    
+    # Analyze documents concurrently
+    analysis_tasks = [
+        client.ask(f"Summarize {file.file_id}") for file in uploaded_files
+    ]
+    
+    summaries = await asyncio.gather(*analysis_tasks)
+    return summaries
+
+# Run async processing
+results = asyncio.run(process_documents_concurrently())
+```
+
+### Use Cases
+
+#### **Financial Analysis**
+```python
+# Upload financial statements
+income_statement = client.upload_file("income_statement.pdf", purpose="assistants")
+balance_sheet = client.upload_file("balance_sheet.pdf", purpose="assistants")
+
+# Get financial insights
+analysis = client.ask(
+    f"Analyze the financial health based on {income_statement.file_id} "
+    f"and {balance_sheet.file_id}. Provide profitability ratios, "
+    "liquidity analysis, and investment recommendations."
+)
+```
+
+#### **Legal Document Review**
+```python
+# Upload legal documents
+contract = client.upload_file("service_agreement.pdf", purpose="assistants")
+
+# Extract key legal information
+legal_summary = client.ask(
+    f"From contract {contract.file_id}, extract:\n"
+    "- Key obligations\n"
+    "- Termination clauses\n"
+    "- Liability limitations\n"
+    "- Important dates"
+)
+```
+
+#### **Research Paper Analysis**
+```python
+# Upload research papers
+paper = client.upload_file("research_paper.pdf", purpose="assistants")
+
+# Academic analysis
+academic_review = client.ask(
+    f"Analyze research paper {paper.file_id} and provide:\n"
+    "1. Research methodology\n"
+    "2. Key findings\n"
+    "3. Limitations\n"
+    "4. Future research directions"
+)
+```
+
+#### **Business Intelligence**
+```python
+# Upload business reports
+market_report = client.upload_file("market_analysis.pdf", purpose="assistants")
+competitor_analysis = client.upload_file("competitor_data.pdf", purpose="assistants")
+
+# Strategic insights
+strategy_insights = client.ask(
+    f"Based on {market_report.file_id} and {competitor_analysis.file_id}, "
+    "provide strategic recommendations for market positioning "
+    "and competitive advantages."
+)
+```
+
+---
+
 ## Integration Examples
 
 ### With Document Processing
