@@ -309,7 +309,7 @@ class TestPrecedenceResolution:
     def test_precedence_endpoint_convenience(self) -> None:
         """Test endpoint convenience flag."""
         models = [
-            self.create_validated_model(ProviderId.OLLAMA, "llama3.2"),
+            self.create_validated_model(ProviderId.OLLAMA, "llama3.2:latest"),
         ]
 
         args = self.create_args(
