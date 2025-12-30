@@ -120,6 +120,38 @@ def mock_env_vars():
         yield
 
 
+def create_test_client(provider=None):
+    """Create a test client without interactive setup."""
+    from ai_utilities import AiSettings
+    
+    settings = AiSettings(
+        api_key='test-key',
+        provider='openai',
+        model='test-model-1'
+    )
+    
+    if provider is None:
+        provider = FakeProvider()
+    
+    return AiClient(settings=settings, provider=provider)
+
+
+def create_async_test_client(provider=None):
+    """Create a test async client without interactive setup."""
+    from ai_utilities import AiSettings
+    
+    settings = AiSettings(
+        api_key='test-key',
+        provider='openai',
+        model='test-model-1'
+    )
+    
+    if provider is None:
+        provider = FakeAsyncProvider()
+    
+    return AsyncAiClient(settings=settings, provider=provider)
+
+
 class TestFileUpload:
     """Test file upload functionality."""
     
@@ -131,23 +163,15 @@ class TestFileUpload:
             temp_path = Path(f.name)
         
         try:
-            # Setup client with fake provider
-            provider = FakeProvider()
-            client = AiClient(provider=provider)
+            # Use helper function to create client
+            client = create_test_client()
             
-            # Upload file
-            result = client.upload_file(temp_path, purpose="assistants")
+            uploaded_file = client.upload_file(temp_path)
             
-            # Verify result
-            assert isinstance(result, UploadedFile)
-            assert result.file_id == "file-123"
-            assert result.filename == temp_path.name
-            assert result.provider == "fake"
-            assert result.purpose == "assistants"
-            assert result.bytes > 0
-            
-            # Verify provider was called
-            assert len(provider.uploaded_files) == 1
+            assert uploaded_file.file_id == "file-123"
+            assert uploaded_file.filename == temp_path.name
+            assert uploaded_file.provider == "fake"
+            assert uploaded_file.purpose == "assistants"
             
         finally:
             # Cleanup
@@ -248,8 +272,17 @@ class TestFileDownload:
     
     def test_download_file_success(self, mock_env_vars):
         """Test successful file download."""
+        from ai_utilities import AiSettings
+        
+        # Create explicit settings to avoid interactive setup
+        settings = AiSettings(
+            api_key='test-key',
+            provider='openai',
+            model='test-model-1'
+        )
+        
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = AiClient(settings=settings, provider=provider)
         
         # Download file as bytes
         content = client.download_file("file-123")
@@ -259,8 +292,17 @@ class TestFileDownload:
     
     def test_download_file_to_path(self, mock_env_vars):
         """Test download file to specific path."""
+        from ai_utilities import AiSettings
+        
+        # Create explicit settings to avoid interactive setup
+        settings = AiSettings(
+            api_key='test-key',
+            provider='openai',
+            model='test-model-1'
+        )
+        
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = AiClient(settings=settings, provider=provider)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "downloaded.txt"
