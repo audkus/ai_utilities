@@ -51,7 +51,7 @@ class ModuleSupport:
     status: str
 
 
-class TestDashboard:
+class AITestDashboard:
     """Comprehensive test reporting dashboard."""
     
     def __init__(self):
@@ -685,7 +685,7 @@ def main():
     
     args = parser.parse_args()
     
-    dashboard = TestDashboard()
+    dashboard = AITestDashboard()
     
     try:
         dashboard.run_tests(
