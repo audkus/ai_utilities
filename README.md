@@ -254,6 +254,37 @@ except ProviderCapabilityError as e:
     print(f"Provider doesn't support files: {e}")
 ```
 
+### Document AI Workflow
+
+Upload documents and ask AI to analyze, summarize, or extract information:
+
+```python
+# 1. Upload document
+client = AiClient()
+uploaded_file = client.upload_file("report.pdf", purpose="assistants")
+
+# 2. Ask AI to analyze the document
+summary = client.ask(
+    f"Please summarize document {uploaded_file.file_id} and extract key insights."
+)
+
+# 3. Ask follow-up questions
+recommendations = client.ask(
+    f"Based on document {uploaded_file.file_id}, what are your recommendations?"
+)
+
+# 4. Analyze multiple documents
+docs = [
+    client.upload_file("q1_report.pdf", purpose="assistants"),
+    client.upload_file("q2_report.pdf", purpose="assistants")
+]
+
+trend_analysis = client.ask(
+    f"Compare these reports: {[d.file_id for d in docs]}. "
+    "Identify trends and key changes."
+)
+```
+
 ### Supported Providers
 
 | Provider | Upload | Download | Notes |
