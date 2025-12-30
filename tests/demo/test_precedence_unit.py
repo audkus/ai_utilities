@@ -285,6 +285,7 @@ class TestPrecedenceResolution:
         models = [
             self.create_validated_model(ProviderId.OPENAI, "gpt-4"),
             self.create_validated_model(ProviderId.OLLAMA, "llama3.2"),
+            self.create_validated_model(ProviderId.OPENAI_COMPAT_LOCAL, "llama3.2", base_url="http://localhost:11434/v1"),
         ]
 
         args = self.create_args(
@@ -303,7 +304,7 @@ class TestPrecedenceResolution:
             selected = resolve_initial_selection(models, args)
 
         assert selected is not None
-        assert selected.model_def.provider == ProviderId.OLLAMA
+        assert selected.model_def.provider == ProviderId.OPENAI_COMPAT_LOCAL
 
     def test_precedence_endpoint_convenience(self) -> None:
         """Test endpoint convenience flag."""
