@@ -56,6 +56,10 @@ class FakeProvider(BaseProvider):
         if file_id == self.fake_file_id:
             return b"Fake file content"
         raise ValueError(f"Unknown file_id: {file_id}")
+    
+    def generate_image(self, prompt, *, size="1024x1024", quality="standard", n=1):
+        """Fake image generation for testing."""
+        return [f"https://fake-image-url.com/{size}/fake.png" for _ in range(n)]
 
 
 class FakeAsyncProvider:
@@ -99,6 +103,10 @@ class FakeAsyncProvider:
         if file_id == self.fake_file_id:
             return b"Fake file content"
         raise ValueError(f"Unknown file_id: {file_id}")
+    
+    async def generate_image(self, prompt, *, size="1024x1024", quality="standard", n=1):
+        """Fake async image generation for testing."""
+        return [f"https://fake-image-url.com/{size}/fake.png" for _ in range(n)]
 
 
 @pytest.fixture
