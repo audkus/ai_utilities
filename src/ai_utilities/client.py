@@ -1188,6 +1188,57 @@ class AiClient:
         
         # Return raw bytes
         return content
+    
+    def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using AI.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs
+            
+        Raises:
+            ValueError: If prompt is invalid
+            FileTransferError: If image generation fails
+            ProviderCapabilityError: If provider doesn't support image generation
+            
+        Example:
+            >>> # Generate a single image
+            >>> urls = client.generate_image("A cute dog playing fetch")
+            >>> 
+            >>> # Generate multiple high-quality images
+            >>> urls = client.generate_image(
+            ...     "A majestic lion in the savanna", 
+            ...     size="1792x1024", 
+            ...     quality="hd", 
+            ...     n=3
+            ... )
+        """
+        if not prompt:
+            raise ValueError("prompt cannot be empty")
+        
+        if n < 1 or n > 10:
+            raise ValueError("n must be between 1 and 10")
+        
+        # Delegate to provider
+        try:
+            return self.provider.generate_image(prompt, size=size, quality=quality, n=n)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("image generation", self.provider.__class__.__name__, e) from e
 
 
 # Convenience function for backward compatibility

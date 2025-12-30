@@ -2,8 +2,9 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 from ..file_models import UploadedFile
 
@@ -99,3 +100,25 @@ class BaseProvider(ABC):
         else:
             # Provider returned dict despite asking for text, convert to string
             return str(response)
+    
+    @abstractmethod
+    def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using the provider.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs or base64-encoded images
+            
+        Raises:
+            FileTransferError: If image generation fails
+            ProviderCapabilityError: If provider doesn't support image generation
+        """
+        pass

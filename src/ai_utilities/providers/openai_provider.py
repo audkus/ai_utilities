@@ -203,3 +203,44 @@ class OpenAIProvider(BaseProvider):
             
         except Exception as e:
             raise FileTransferError("download", "openai", e) from e
+    
+    def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using OpenAI's DALL-E.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs
+            
+        Raises:
+            FileTransferError: If image generation fails
+        """
+        try:
+            if not prompt:
+                raise ValueError("prompt cannot be empty")
+            
+            if n < 1 or n > 10:
+                raise ValueError("n must be between 1 and 10")
+            
+            # Generate images using OpenAI SDK
+            response = self.client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=n
+            )
+            
+            # Extract URLs from response
+            image_urls = [image.url for image in response.data]
+            return image_urls
+            
+        except Exception as e:
+            raise FileTransferError("image generation", "openai", e) from e
