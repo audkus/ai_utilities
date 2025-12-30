@@ -38,7 +38,7 @@ class ProviderCapabilities:
             supports_json_mode=True,
             supports_streaming=True,
             supports_tools=True,
-            supports_images=True,
+            supports_images=True,  # DALL-E support
             supports_files_upload=True,
             supports_files_download=True,
             supports_temperature=True,
@@ -58,6 +58,8 @@ class ProviderCapabilities:
             supports_streaming=False,  # Varies by provider, be conservative
             supports_tools=False,      # Varies by provider, be conservative
             supports_images=False,     # Varies by provider, be conservative
+            supports_files_upload=False,     # Most don't support Files API
+            supports_files_download=False,   # Most don't support Files API
             supports_temperature=True,
             supports_max_tokens=True,
             supports_top_p=False,

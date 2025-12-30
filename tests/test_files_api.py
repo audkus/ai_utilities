@@ -384,8 +384,9 @@ class TestFileDownload:
         provider = FakeProvider()
         client = create_test_client(provider)
         
-        # Should raise ValueError from provider
-        with pytest.raises(ValueError, match="Unknown file_id"):
+        # Should raise FileTransferError wrapping ValueError from provider
+        from ai_utilities.providers.provider_exceptions import FileTransferError
+        with pytest.raises(FileTransferError, match="Unknown file_id"):
             client.download_file("unknown-file-id")
 
 
@@ -401,7 +402,7 @@ class TestAsyncFileOperations:
         
         try:
             provider = FakeAsyncProvider()
-            client = Asynccreate_test_client(provider)
+            client = create_async_test_client(provider)
             
             # Upload file asynchronously
             result = await client.upload_file(temp_path, purpose="assistants")
@@ -418,7 +419,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_success(self):
         """Test successful async file download."""
         provider = FakeAsyncProvider()
-        client = Asynccreate_test_client(provider)
+        client = create_async_test_client(provider)
         
         # Download file asynchronously
         content = await client.download_file("file-123")
@@ -430,7 +431,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_to_path(self):
         """Test async download file to specific path."""
         provider = FakeAsyncProvider()
-        client = Asynccreate_test_client(provider)
+        client = create_async_test_client(provider)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "async_downloaded.txt"
@@ -450,7 +451,7 @@ class TestAsyncFileOperations:
     async def test_async_upload_file_validation(self):
         """Test async upload validation."""
         provider = FakeAsyncProvider()
-        client = Asynccreate_test_client(provider)
+        client = create_async_test_client(provider)
         
         # Should raise ValueError for nonexistent file
         with pytest.raises(ValueError, match="File does not exist"):
@@ -460,7 +461,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_validation(self):
         """Test async download validation."""
         provider = FakeAsyncProvider()
-        client = Asynccreate_test_client(provider)
+        client = create_async_test_client(provider)
         
         # Should raise ValueError for empty file_id
         with pytest.raises(ValueError, match="file_id cannot be empty"):
@@ -470,7 +471,7 @@ class TestAsyncFileOperations:
     async def test_async_capability_errors(self):
         """Test async capability errors."""
         provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-        client = Asynccreate_test_client(provider)
+        client = create_async_test_client(provider)
         
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("Test content")
