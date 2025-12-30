@@ -365,8 +365,7 @@ class TestPrecedenceResolution:
         )
 
         selected = resolve_initial_selection(models, args)
-        assert selected is not None
-        assert selected.model_def.provider == ProviderId.OLLAMA
+        assert selected is None  # Should return None when no ready models and not non-interactive
 
     def test_precedence_invalid_cli_selection(self) -> None:
         """Test handling of invalid CLI selection."""
@@ -383,8 +382,7 @@ class TestPrecedenceResolution:
         )
 
         selected = resolve_initial_selection(models, args)
-        assert selected is not None
-        assert selected.model_def.provider == ProviderId.OLLAMA
+        assert selected is None  # Should return None when model doesn't exist
 
 
 class TestListModelsCLI:
