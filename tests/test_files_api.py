@@ -185,7 +185,7 @@ class TestFileUpload:
         
         try:
             provider = FakeProvider()
-            client = AiClient(provider=provider)
+            client = create_test_client(provider)
             
             # Upload with custom filename
             result = client.upload_file(temp_path, filename="custom.txt")
@@ -198,7 +198,7 @@ class TestFileUpload:
     def test_upload_file_nonexistent(self, mock_env_vars):
         """Test upload with nonexistent file."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise ValueError for nonexistent file
         with pytest.raises(ValueError, match="File does not exist"):
@@ -207,7 +207,7 @@ class TestFileUpload:
     def test_upload_file_directory(self, mock_env_vars):
         """Test upload with directory path."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise ValueError for directory
         with pytest.raises(ValueError, match="Path is not a file"):
@@ -221,7 +221,7 @@ class TestFileUpload:
         
         try:
             provider = FakeProvider()
-            client = AiClient(provider=provider)
+            client = create_test_client(provider)
             
             # Upload with string path
             result = client.upload_file(str(temp_path))
@@ -240,7 +240,7 @@ class TestFileUpload:
         
         try:
             provider = FakeProvider(should_fail_upload=True)
-            client = AiClient(provider=provider)
+            client = create_test_client(provider)
             
             # Should raise FileTransferError
             with pytest.raises(FileTransferError, match="upload failed"):
@@ -257,7 +257,7 @@ class TestFileUpload:
         
         try:
             provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-            client = AiClient(provider=provider)
+            client = create_test_client(provider)
             
             # Should raise ProviderCapabilityError
             with pytest.raises(ProviderCapabilityError, match="Files API"):
@@ -322,7 +322,7 @@ class TestFileDownload:
     def test_download_file_to_path_string(self, mock_env_vars):
         """Test download file to path string."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "downloaded.txt"
@@ -336,7 +336,7 @@ class TestFileDownload:
     def test_download_file_creates_directories(self, mock_env_vars):
         """Test download creates parent directories."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create nested path that doesn't exist
@@ -352,7 +352,7 @@ class TestFileDownload:
     def test_download_file_empty_id(self, mock_env_vars):
         """Test download with empty file_id."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise ValueError for empty file_id
         with pytest.raises(ValueError, match="file_id cannot be empty"):
@@ -364,7 +364,7 @@ class TestFileDownload:
     def test_download_file_provider_error(self, mock_env_vars):
         """Test download when provider raises error."""
         provider = FakeProvider(should_fail_download=True)
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise FileTransferError
         with pytest.raises(FileTransferError, match="download failed"):
@@ -373,7 +373,7 @@ class TestFileDownload:
     def test_download_file_capability_error(self, mock_env_vars):
         """Test download with provider that doesn't support files."""
         provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise ProviderCapabilityError
         with pytest.raises(ProviderCapabilityError, match="Files API"):
@@ -382,7 +382,7 @@ class TestFileDownload:
     def test_download_file_unknown_id(self, mock_env_vars):
         """Test download with unknown file_id."""
         provider = FakeProvider()
-        client = AiClient(provider=provider)
+        client = create_test_client(provider)
         
         # Should raise ValueError from provider
         with pytest.raises(ValueError, match="Unknown file_id"):
@@ -401,7 +401,7 @@ class TestAsyncFileOperations:
         
         try:
             provider = FakeAsyncProvider()
-            client = AsyncAiClient(provider=provider)
+            client = Asynccreate_test_client(provider)
             
             # Upload file asynchronously
             result = await client.upload_file(temp_path, purpose="assistants")
@@ -418,7 +418,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_success(self):
         """Test successful async file download."""
         provider = FakeAsyncProvider()
-        client = AsyncAiClient(provider=provider)
+        client = Asynccreate_test_client(provider)
         
         # Download file asynchronously
         content = await client.download_file("file-123")
@@ -430,7 +430,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_to_path(self):
         """Test async download file to specific path."""
         provider = FakeAsyncProvider()
-        client = AsyncAiClient(provider=provider)
+        client = Asynccreate_test_client(provider)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "async_downloaded.txt"
@@ -450,7 +450,7 @@ class TestAsyncFileOperations:
     async def test_async_upload_file_validation(self):
         """Test async upload validation."""
         provider = FakeAsyncProvider()
-        client = AsyncAiClient(provider=provider)
+        client = Asynccreate_test_client(provider)
         
         # Should raise ValueError for nonexistent file
         with pytest.raises(ValueError, match="File does not exist"):
@@ -460,7 +460,7 @@ class TestAsyncFileOperations:
     async def test_async_download_file_validation(self):
         """Test async download validation."""
         provider = FakeAsyncProvider()
-        client = AsyncAiClient(provider=provider)
+        client = Asynccreate_test_client(provider)
         
         # Should raise ValueError for empty file_id
         with pytest.raises(ValueError, match="file_id cannot be empty"):
@@ -470,7 +470,7 @@ class TestAsyncFileOperations:
     async def test_async_capability_errors(self):
         """Test async capability errors."""
         provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-        client = AsyncAiClient(provider=provider)
+        client = Asynccreate_test_client(provider)
         
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("Test content")
