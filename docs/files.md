@@ -760,3 +760,37 @@ The ai_utilities approach provides:
 - ✅ Built-in validation
 - ✅ Async support
 - ✅ Type safety
+
+---
+
+## 🧪 Testing Files API
+
+### Test Dashboard (Recommended)
+```bash
+# Run Files API tests with real-time progress
+python scripts/test_dashboard.py
+
+# Run with integration tests (requires API key)
+export AI_API_KEY='your-key'
+python scripts/test_dashboard.py --integration
+```
+
+### Manual Testing
+```bash
+# Files API unit tests
+pytest tests/test_files_api.py -v
+
+# Files API integration tests
+pytest tests/test_files_integration_working.py -v
+
+# Test specific functionality
+pytest tests/test_files_api.py::TestFileUpload::test_upload_file_success -v
+```
+
+### Test Coverage
+- **Unit Tests**: 24 tests covering all Files API functionality
+- **Integration Tests**: 10 tests with real OpenAI API calls
+- **Provider Tests**: Tests for OpenAI and OpenAI-compatible providers
+- **Async Tests**: Full async/await support validation
+
+**📖 Full Test Dashboard Documentation:** See [`docs/test_dashboard.md`](test_dashboard.md) for comprehensive testing information.

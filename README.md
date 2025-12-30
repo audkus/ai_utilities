@@ -34,6 +34,7 @@ print(response)
 - Configuration reference → [Configuration](#configuration)
 - **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
 - **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
+- **Test Dashboard** → [`docs/test_dashboard.md`](docs/test_dashboard.md)
 - API reference → Use `help(AiClient)` in Python
 - Changelog → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
 
@@ -301,9 +302,33 @@ trend_analysis = client.ask(
 ## Development
 
 ### Running Tests
+
+#### 🧪 Test Dashboard (Recommended)
+```bash
+# Files API focused tests with real-time progress
+python scripts/test_dashboard.py
+
+# With integration tests (requires API key)
+python scripts/test_dashboard.py --integration
+
+# Complete project test suite
+python scripts/test_dashboard.py --full-suite
+
+# Full suite with integration tests
+python scripts/test_dashboard.py --full-suite --integration
+```
+
+**Features:**
+- ✅ Real-time test progress (1/24, 2/24, etc.)
+- ✅ Provider coverage analysis (9 providers)
+- ✅ Accurate test reporting and failure analysis
+- ✅ Production readiness assessment
+
+#### Standard Pytest
 ```bash
 pytest                    # All tests
 pytest -m "not slow"     # Skip slow tests
+pytest tests/test_files_api.py  # Files API tests
 ```
 
 ### Code Quality
