@@ -67,7 +67,25 @@ class AITestDashboard:
         print("🚀 AI UTILITIES TEST DASHBOARD")
         print("=" * 50)
         print(f"Started at: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"Mode: {'Full Test Suite' if full_suite else 'Files API Focus'}")
+        
+        # Show mode and timing estimates
+        if full_suite:
+            mode = "Full Test Suite"
+            estimated_time = "8-15 minutes"
+            test_count = "~500 tests"
+        elif include_integration:
+            mode = "Files API + Integration"
+            estimated_time = "2-5 minutes"
+            test_count = "~200 tests"
+        else:
+            mode = "Files API Focus"
+            estimated_time = "30-60 seconds"
+            test_count = "~35 tests"
+        
+        print(f"Mode: {mode}")
+        print(f"📊 Expected: {test_count} in {estimated_time}")
+        print(f"⏱️  Progress will be shown below...")
+        print()
         
         # Check if API key is available
         api_key = os.getenv('AI_API_KEY')
@@ -79,22 +97,30 @@ class AITestDashboard:
             integration_available = False
         print()
         
+        # Track overall progress
+        total_categories = 4 if full_suite else 3
+        current_category = 0
+        
         if full_suite:
-            # Run complete test suite
+            print(f"📋 Running {total_categories} test categories...")
+            print(f"   1/{total_categories} 🧪 Complete Unit Tests")
             self._run_test_suite(
                 "Complete Unit Tests",
                 ["pytest", "-m", "not integration", "-q"],
                 verbose
             )
+            current_category += 1
             
             if include_integration and integration_available:
+                print(f"   2/{total_categories} 🧪 Integration Tests")
                 self._run_test_suite(
                     "Integration Tests",
                     ["pytest", "-m", "integration", "-q"],
                     verbose
                 )
+                current_category += 1
             else:
-                print("🧪 Integration Tests (Skipped - No API Key)")
+                print(f"   2/{total_categories} 🧪 Integration Tests (Skipped - No API Key)")
                 print("   ⏭️  SKIPPED: Integration tests require API key")
                 self.test_results.append(TestResult(
                     category="Integration Tests (Skipped - No API Key)",
@@ -104,23 +130,27 @@ class AITestDashboard:
                     skipped=0,
                     duration=0.0
                 ))
-                print()
+                current_category += 1
         else:
-            # Files API focused tests
+            print(f"📋 Running {total_categories} test categories...")
+            print(f"   1/{total_categories} 🧪 Files API Unit Tests")
             self._run_test_suite(
                 "Files API Unit Tests",
                 ["pytest", "tests/test_files_api.py", "-q"],
                 verbose
             )
+            current_category += 1
             
             if include_integration and integration_available:
+                print(f"   2/{total_categories} 🧪 Files Integration Tests")
                 self._run_test_suite(
                     "Files Integration Tests",
-                    ["pytest", "tests/test_files_integration_working.py", "-q"],
+                    ["pytest", "tests/test_files_integration.py", "-q"],
                     verbose
                 )
+                current_category += 1
             else:
-                print("🧪 Files Integration Tests (Skipped - No API Key)")
+                print(f"   2/{total_categories} 🧪 Files Integration Tests (Skipped - No API Key)")
                 print("   ⏭️  SKIPPED: Integration tests require API key")
                 self.test_results.append(TestResult(
                     category="Files Integration Tests (Skipped - No API Key)",
@@ -130,14 +160,23 @@ class AITestDashboard:
                     skipped=0,
                     duration=0.0
                 ))
-                print()
+                current_category += 1
         
         # Core functionality tests (always run)
+        core_num = current_category + 1
+        print(f"   {core_num}/{total_categories} 🔧 Testing Core Functionality...")
         self._test_core_functionality(verbose)
+        current_category += 1
+        
+        async_num = current_category + 1
+        print(f"   {async_num}/{total_categories} ⚡ Testing Async Operations...")
         self._test_async_operations(verbose)
+        current_category += 1
         
         # Generate module support matrix
+        print(f"   📊 Generating Module Support Matrix...")
         self._generate_module_support_matrix()
+        print()
     
     def _load_env_file(self):
         """Load environment variables from .env file."""
@@ -158,7 +197,7 @@ class AITestDashboard:
             print("⚠️  No .env file found")
         
     def _run_test_suite(self, category: str, command: List[str], verbose: bool) -> None:
-        """Run a test suite and parse results."""
+        """Run a test suite and parse results with enhanced progress indicators."""
         print(f"🧪 Running {category}...")
         
         try:
@@ -167,51 +206,109 @@ class AITestDashboard:
                 print(f"   Command: {' '.join(command)}")
                 result = subprocess.run(command, capture_output=False, text=True)
             else:
-                # Show progress with live output
+                # Show progress with live output and enhanced indicators
                 print(f"   Executing: {' '.join(command)}")
-                print("   Running tests:")
+                print("   🔄 Starting test execution...")
                 
                 # Remove -q flag to get live output, add -v for verbose
-                cmd = [c for c in command if c != '-q'] + ['-v', '--tb=line']
+                cmd = [c for c in command if c != '-q'] + ['-v', '--tb=line', '--no-header']
                 env = os.environ.copy()
-                process = subprocess.run(
+                
+                # Start with a spinner for initial loading
+                import itertools
+                spinner = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
+                
+                print("   ⏳ Loading tests", end="", flush=True)
+                
+                process = subprocess.Popen(
                     cmd,
-                    capture_output=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
                     text=True,
+                    universal_newlines=True,
                     env=env
                 )
                 
-                # Parse individual test lines for progress
-                lines = process.stdout.split('\n')
+                # Parse output in real-time
+                lines = []
                 test_count = 0
                 total_tests = 0
+                passed = 0
+                failed = 0
+                skipped = 0
+                last_progress = 0
                 
-                for line in lines:
-                    line = line.strip()
-                    
-                    # Get total test count
-                    if "collected" in line and "items" in line:
-                        match = re.search(r'collected (\d+) items', line)
-                        if match:
-                            total_tests = int(match.group(1))
-                            print(f"   Found {total_tests} tests")
-                    
-                    # Show individual test results
-                    elif "::" in line and ("PASSED" in line or "FAILED" in line or "SKIPPED" in line):
-                        test_count += 1
-                        parts = line.split("::")
-                        if len(parts) > 1:
-                            test_name = parts[-1].split()[0]
-                            # Shorten test names for display
-                            if len(test_name) > 30:
-                                test_name = test_name[:27] + "..."
-                        else:
-                            test_name = "unknown"
+                while True:
+                    output = process.stdout.readline()
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        line = output.strip()
+                        lines.append(line)
                         
-                        status = "✅" if "PASSED" in line else "❌" if "FAILED" in line else "⏭️"
-                        print(f"   {test_count:2d}/{total_tests:<2d} {status} {test_name}")
+                        # Update spinner during loading
+                        if "collected" not in line and total_tests == 0:
+                            print(f" {next(spinner)}", end="", flush=True)
+                            continue
+                        
+                        # Get total test count
+                        if "collected" in line and "items" in line:
+                            match = re.search(r'collected (\d+) items', line)
+                            if match:
+                                total_tests = int(match.group(1))
+                                print(f"\r   📊 Found {total_tests} tests - Starting execution...")
+                        
+                        # Show individual test results with progress bar
+                        elif "::" in line and ("PASSED" in line or "FAILED" in line or "SKIPPED" in line):
+                            test_count += 1
+                            
+                            # Update counters
+                            if "PASSED" in line:
+                                passed += 1
+                                status = "✅"
+                            elif "FAILED" in line:
+                                failed += 1
+                                status = "❌"
+                            else:
+                                skipped += 1
+                                status = "⏭️"
+                            
+                            # Extract test name
+                            parts = line.split("::")
+                            if len(parts) > 1:
+                                test_name = parts[-1].split()[0]
+                                # Shorten test names for display
+                                if len(test_name) > 25:
+                                    test_name = test_name[:22] + "..."
+                            else:
+                                test_name = "unknown"
+                            
+                            # Calculate progress percentage
+                            if total_tests > 0:
+                                progress = (test_count / total_tests) * 100
+                                progress_bar = self._get_progress_bar(progress)
+                                print(f"\r   📊 [{progress_bar}] {test_count:3d}/{total_tests:<3d} ({progress:5.1f}%) {status} {test_name}")
+                            else:
+                                print(f"\r   📊 {test_count:3d} tests run {status} {test_name}")
+                            
+                            last_progress = test_count
+                        
+                        # Show progress every 10 tests if no individual results
+                        elif test_count > 0 and test_count % 10 == 0 and test_count > last_progress:
+                            if total_tests > 0:
+                                progress = (test_count / total_tests) * 100
+                                progress_bar = self._get_progress_bar(progress)
+                                print(f"\r   📊 [{progress_bar}] {test_count:3d}/{total_tests:<3d} ({progress:5.1f}%) - Running...")
+                            else:
+                                print(f"\r   📊 {test_count:3d} tests completed - Running...")
                 
-                result = process
+                # Show final summary
+                print(f"\n   📋 Final Results: {passed} passed, {failed} failed, {skipped} skipped")
+                
+                # Create result object
+                result = MagicMock()
+                result.stdout = '\n'.join(lines)
+                result.returncode = process.returncode
             
             # Parse pytest output for final summary
             output = result.stdout if hasattr(result, 'stdout') else ""
@@ -256,29 +353,52 @@ class AITestDashboard:
         
         print()
     
+    def _get_progress_bar(self, percentage: float, width: int = 20) -> str:
+        """Generate a text progress bar."""
+        filled = int(width * percentage / 100)
+        bar = '█' * filled + '░' * (width - filled)
+        return bar
+    
     def _parse_pytest_output(self, output) -> Tuple[int, int, int, int]:
         """Parse pytest output to extract test counts."""
         # Ensure output is a string
         if not isinstance(output, str):
             output = str(output) if output is not None else ""
         
-        # Look for pattern like "24 passed in 0.48s" or "16 skipped in 0.42s"
-        passed = len(re.findall(r'passed', output))
-        failed = len(re.findall(r'failed', output))
-        skipped = len(re.findall(r'skipped', output))
+        # Look for the summary line like: "X failed, Y passed, Z skipped, W errors in T.TTs"
+        # Try multiple patterns in order of preference
+        patterns = [
+            r'(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+skipped,\s+(\d+)\s+errors',
+            r'(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+skipped',
+            r'(\d+)\s+passed,\s+(\d+)\s+failed',
+            r'(\d+)\s+passed',
+        ]
         
-        # Extract numbers more precisely
+        for pattern in patterns:
+            match = re.search(pattern, output)
+            if match:
+                groups = match.groups()
+                if len(groups) == 4:  # failed, passed, skipped, errors
+                    return int(groups[1]), int(groups[0]), int(groups[2]), int(groups[3])
+                elif len(groups) == 3:  # failed, passed, skipped
+                    return int(groups[1]), int(groups[0]), int(groups[2]), 0
+                elif len(groups) == 2:  # passed, failed
+                    return int(groups[0]), int(groups[1]), 0, 0
+                elif len(groups) == 1:  # passed only
+                    return int(groups[0]), 0, 0, 0
+        
+        # Fallback: try to extract from individual patterns
         passed_match = re.search(r'(\d+)\s+passed', output)
         failed_match = re.search(r'(\d+)\s+failed', output)
         skipped_match = re.search(r'(\d+)\s+skipped', output)
+        errors_match = re.search(r'(\d+)\s+errors', output)
         
         passed = int(passed_match.group(1)) if passed_match else 0
         failed = int(failed_match.group(1)) if failed_match else 0
         skipped = int(skipped_match.group(1)) if skipped_match else 0
+        errors = int(errors_match.group(1)) if errors_match else 0
         
-        total = passed + failed + skipped
-        
-        return total, passed, failed, skipped
+        return passed, failed, skipped, errors
     
     def _test_core_functionality(self, verbose: bool) -> None:
         """Test core functionality manually."""
