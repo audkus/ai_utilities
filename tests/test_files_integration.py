@@ -12,7 +12,7 @@ from datetime import datetime
 
 import pytest
 
-from ai_utilities import AiClient, AsyncAiClient, UploadedFile
+from ai_utilities import AiClient, AsyncAiClient, UploadedFile, AiSettings
 from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 
 
@@ -55,12 +55,22 @@ class TestFilesIntegration:
     @pytest.fixture
     def client(self):
         """Create AiClient with real OpenAI provider."""
-        return AiClient()
+        settings = AiSettings(
+            api_key=os.getenv("AI_API_KEY"),
+            provider="openai",
+            model="gpt-4o-mini"  # Use a real model for integration tests
+        )
+        return AiClient(settings=settings)
     
     @pytest.fixture
     def async_client(self):
         """Create AsyncAiClient with real OpenAI provider."""
-        return AsyncAiClient()
+        settings = AiSettings(
+            api_key=os.getenv("AI_API_KEY"),
+            provider="openai",
+            model="gpt-4o-mini"  # Use a real model for integration tests
+        )
+        return AsyncAiClient(settings=settings)
     
     def test_upload_file_real_api(self, client, temp_files):
         """Test actual file upload to OpenAI API."""
@@ -114,8 +124,8 @@ class TestFilesIntegration:
         """Test actual file download from OpenAI API."""
         temp_dir, text_file, json_file, csv_file = temp_files
         
-        # First upload a file
-        uploaded_file = client.upload_file(text_file, purpose="assistants")
+        # Upload a file with fine-tune purpose (downloadable)
+        uploaded_file = client.upload_file(text_file, purpose="fine-tune")
         
         # Download the file content
         content = client.download_file(uploaded_file.file_id)
@@ -401,7 +411,8 @@ class TestOpenAICompatibleIntegration:
         
         # Create client with OpenAI-compatible provider
         provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-        client = AiClient(provider=provider)
+        settings = AiSettings(api_key="fake-key", provider="openai_compatible")
+        client = AiClient(settings=settings, provider=provider)
         
         # Test upload capability error
         with pytest.raises(ProviderCapabilityError) as exc_info:

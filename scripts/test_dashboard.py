@@ -18,6 +18,7 @@ import sys
 import subprocess
 import json
 import argparse
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Any
@@ -60,10 +61,20 @@ class TestDashboard:
         
     def run_tests(self, include_integration: bool = False, verbose: bool = False, full_suite: bool = False) -> None:
         """Run all test suites and collect results."""
+        # Load environment variables from .env file
+        self._load_env_file()
+        
         print("🚀 AI UTILITIES TEST DASHBOARD")
         print("=" * 50)
         print(f"Started at: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Mode: {'Full Test Suite' if full_suite else 'Files API Focus'}")
+        
+        # Check if API key is available
+        api_key = os.getenv('AI_API_KEY')
+        if api_key:
+            print(f"✅ API Key found: {api_key[:10]}...{api_key[-4:]}")
+        else:
+            print("⚠️  No API Key found - integration tests will be skipped")
         print()
         
         if full_suite:
@@ -74,7 +85,7 @@ class TestDashboard:
                 verbose
             )
             
-            if include_integration:
+            if include_integration and api_key:
                 self._run_test_suite(
                     "Integration Tests",
                     ["pytest", "-m", "integration", "-q"],
@@ -94,7 +105,7 @@ class TestDashboard:
                 verbose
             )
             
-            if include_integration:
+            if include_integration and api_key:
                 self._run_test_suite(
                     "Files Integration Tests",
                     ["pytest", "tests/test_files_integration.py", "-q"],
@@ -113,6 +124,24 @@ class TestDashboard:
         
         # Generate module support matrix
         self._generate_module_support_matrix()
+    
+    def _load_env_file(self):
+        """Load environment variables from .env file."""
+        from pathlib import Path
+        import os
+        
+        env_file = Path(__file__).parent.parent / ".env"
+        if env_file.exists():
+            print(f"📁 Loading environment from: {env_file}")
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key.strip()] = value.strip()
+            print("✅ Environment variables loaded")
+        else:
+            print("⚠️  No .env file found")
         
     def _run_test_suite(self, category: str, command: List[str], verbose: bool) -> None:
         """Run a test suite and parse results."""
@@ -120,9 +149,23 @@ class TestDashboard:
         
         try:
             if verbose:
+                # Show detailed test execution
+                print(f"   Command: {' '.join(command)}")
                 result = subprocess.run(command, capture_output=False, text=True)
             else:
-                result = subprocess.run(command, capture_output=True, text=True)
+                # Show progress but capture output
+                print(f"   Executing: {' '.join(command)}")
+                print("   Running", end="", flush=True)
+                
+                # Create a wrapper script that loads environment before pytest
+                if "integration" in " ".join(command):
+                    # For integration tests, ensure environment is loaded
+                    env = os.environ.copy()
+                    result = subprocess.run(command, capture_output=True, text=True, env=env)
+                else:
+                    result = subprocess.run(command, capture_output=True, text=True)
+                
+                print(" ✓")
             
             # Parse pytest output
             output = result.stdout if not verbose else ""
@@ -140,10 +183,18 @@ class TestDashboard:
             self.test_results.append(test_result)
             
             # Show immediate result
-            status = "✅ PASSED" if failed == 0 else "❌ FAILED"
+            if failed == 0:
+                status = "✅ PASSED"
+            elif failed > 0:
+                status = "❌ FAILED"
+            else:
+                status = "⚠️  UNKNOWN"
+                
             print(f"   {status}: {passed}/{total} passed")
             if skipped > 0:
                 print(f"   ⏭️  {skipped} skipped")
+            if failed > 0:
+                print(f"   ❌ {failed} failed")
             
         except Exception as e:
             print(f"   ❌ ERROR: {e}")
