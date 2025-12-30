@@ -268,3 +268,26 @@ class OpenAICompatibleProvider(BaseProvider):
             "Files API (download)", 
             "openai_compatible"
         )
+    
+    def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using the provider.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs or base64-encoded images
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support image generation
+        """
+        raise ProviderCapabilityError(
+            "Image generation", 
+            "openai_compatible"
+        )
