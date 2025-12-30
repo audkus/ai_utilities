@@ -73,8 +73,10 @@ class TestDashboard:
         api_key = os.getenv('AI_API_KEY')
         if api_key:
             print(f"✅ API Key found: {api_key[:10]}...{api_key[-4:]}")
+            integration_available = True
         else:
             print("⚠️  No API Key found - integration tests will be skipped")
+            integration_available = False
         print()
         
         if full_suite:
@@ -85,18 +87,24 @@ class TestDashboard:
                 verbose
             )
             
-            if include_integration and api_key:
+            if include_integration and integration_available:
                 self._run_test_suite(
                     "Integration Tests",
                     ["pytest", "-m", "integration", "-q"],
                     verbose
                 )
             else:
-                self._run_test_suite(
-                    "Integration Tests (Skipped - No API Key)",
-                    ["pytest", "-m", "integration", "-q"],
-                    verbose
-                )
+                print("🧪 Integration Tests (Skipped - No API Key)")
+                print("   ⏭️  SKIPPED: Integration tests require API key")
+                self.test_results.append(TestResult(
+                    category="Integration Tests (Skipped - No API Key)",
+                    total=0,
+                    passed=0,
+                    failed=0,
+                    skipped=0,
+                    duration=0.0
+                ))
+                print()
         else:
             # Files API focused tests
             self._run_test_suite(
@@ -105,18 +113,24 @@ class TestDashboard:
                 verbose
             )
             
-            if include_integration and api_key:
+            if include_integration and integration_available:
                 self._run_test_suite(
                     "Files Integration Tests",
-                    ["pytest", "tests/test_files_integration.py", "-q"],
+                    ["pytest", "tests/test_files_integration_working.py", "-q"],
                     verbose
                 )
             else:
-                self._run_test_suite(
-                    "Files Integration Tests (Skipped - No API Key)",
-                    ["pytest", "tests/test_files_integration.py", "-q"],
-                    verbose
-                )
+                print("🧪 Files Integration Tests (Skipped - No API Key)")
+                print("   ⏭️  SKIPPED: Integration tests require API key")
+                self.test_results.append(TestResult(
+                    category="Files Integration Tests (Skipped - No API Key)",
+                    total=0,
+                    passed=0,
+                    failed=0,
+                    skipped=0,
+                    duration=0.0
+                ))
+                print()
         
         # Core functionality tests (always run)
         self._test_core_functionality(verbose)
@@ -153,22 +167,54 @@ class TestDashboard:
                 print(f"   Command: {' '.join(command)}")
                 result = subprocess.run(command, capture_output=False, text=True)
             else:
-                # Show progress but capture output
+                # Show progress with live output
                 print(f"   Executing: {' '.join(command)}")
-                print("   Running", end="", flush=True)
+                print("   Running tests:")
                 
-                # Create a wrapper script that loads environment before pytest
-                if "integration" in " ".join(command):
-                    # For integration tests, ensure environment is loaded
-                    env = os.environ.copy()
-                    result = subprocess.run(command, capture_output=True, text=True, env=env)
-                else:
-                    result = subprocess.run(command, capture_output=True, text=True)
+                # Remove -q flag to get live output, add -v for verbose
+                cmd = [c for c in command if c != '-q'] + ['-v', '--tb=line']
+                env = os.environ.copy()
+                process = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    env=env
+                )
                 
-                print(" ✓")
+                # Parse individual test lines for progress
+                lines = process.stdout.split('\n')
+                test_count = 0
+                total_tests = 0
+                
+                for line in lines:
+                    line = line.strip()
+                    
+                    # Get total test count
+                    if "collected" in line and "items" in line:
+                        match = re.search(r'collected (\d+) items', line)
+                        if match:
+                            total_tests = int(match.group(1))
+                            print(f"   Found {total_tests} tests")
+                    
+                    # Show individual test results
+                    elif "::" in line and ("PASSED" in line or "FAILED" in line or "SKIPPED" in line):
+                        test_count += 1
+                        parts = line.split("::")
+                        if len(parts) > 1:
+                            test_name = parts[-1].split()[0]
+                            # Shorten test names for display
+                            if len(test_name) > 30:
+                                test_name = test_name[:27] + "..."
+                        else:
+                            test_name = "unknown"
+                        
+                        status = "✅" if "PASSED" in line else "❌" if "FAILED" in line else "⏭️"
+                        print(f"   {test_count:2d}/{total_tests:<2d} {status} {test_name}")
+                
+                result = process
             
-            # Parse pytest output
-            output = result.stdout if not verbose else ""
+            # Parse pytest output for final summary
+            output = result.stdout if hasattr(result, 'stdout') else ""
             total, passed, failed, skipped = self._parse_pytest_output(output)
             
             test_result = TestResult(
@@ -177,12 +223,12 @@ class TestDashboard:
                 passed=passed,
                 failed=failed,
                 skipped=skipped,
-                duration=0.0  # Would need timing for real implementation
+                duration=0.0
             )
             
             self.test_results.append(test_result)
             
-            # Show immediate result
+            # Show final result
             if failed == 0:
                 status = "✅ PASSED"
             elif failed > 0:
@@ -210,8 +256,12 @@ class TestDashboard:
         
         print()
     
-    def _parse_pytest_output(self, output: str) -> Tuple[int, int, int, int]:
+    def _parse_pytest_output(self, output) -> Tuple[int, int, int, int]:
         """Parse pytest output to extract test counts."""
+        # Ensure output is a string
+        if not isinstance(output, str):
+            output = str(output) if output is not None else ""
+        
         # Look for pattern like "24 passed in 0.48s" or "16 skipped in 0.42s"
         passed = len(re.findall(r'passed', output))
         failed = len(re.findall(r'failed', output))
@@ -451,7 +501,7 @@ class TestDashboard:
         print()
         
         print("🎯 AI MODULE SUPPORT MATRIX:")
-        self._print_module_support_matrix()
+        self._generate_module_support_matrix()
         print()
         
         print("🔍 DETAILED TEST BREAKDOWN:")
@@ -460,59 +510,46 @@ class TestDashboard:
             print(f"{result.category:<25}: {result.passed:>3}/{result.total:<3} {status}")
         print()
         
-        # Overall status
+        # Show grand total prominently
         total_tests = sum(r.total for r in self.test_results)
         total_passed = sum(r.passed for r in self.test_results)
         total_failed = sum(r.failed for r in self.test_results)
         
+        print(f"🎯 **GRAND TOTAL: {total_passed}/{total_tests} tests executed**")
+        if total_failed > 0:
+            print(f"⚠️  {total_failed} test failures detected")
+        else:
+            print("✅ All tests passed!")
+        print()
+        
+        # Production readiness assessment
         if total_failed == 0:
             print("🚀 PRODUCTION READINESS: ✅ READY FOR MERGE")
         else:
             print("🚨 PRODUCTION READINESS: ❌ NEEDS FIXES")
         
-        print()
-        print(f"⏱️  Completed in: {(datetime.now() - self.start_time).total_seconds():.2f}s")
+        print(f"\n⏱️  Completed in: {(datetime.now() - self.start_time).total_seconds():.2f}s")
     
-    def _print_test_summary_table(self) -> None:
-        """Print test summary table."""
+    def _print_test_summary_table(self):
+        """Print the test summary table."""
         print("┌─────────────────────┬──────────┬──────────┬─────────────┐")
         print("│ Category            │ Total    │ Passed   │ Failed      │")
         print("├─────────────────────┼──────────┼──────────┼─────────────┤")
         
         for result in self.test_results:
-            print(f"│ {result.category:<19} │ {result.total:>8} │ {result.passed:>8} │ {result.failed:>11} │")
+            failed_str = f"{result.failed:9d}" if result.failed > 0 else "           0"
+            print(f"│ {result.category[:19]:19} │ {result.total:8d} │ {result.passed:8d} │ {failed_str} │")
         
-        # Total row
+        print("├─────────────────────┼──────────┼──────────┼─────────────┤")
+        
+        # Calculate totals
         total_tests = sum(r.total for r in self.test_results)
         total_passed = sum(r.passed for r in self.test_results)
         total_failed = sum(r.failed for r in self.test_results)
         
-        print("├─────────────────────┼──────────┼──────────┼─────────────┤")
-        print(f"│ {'TOTAL':<19} │ {total_tests:>8} │ {total_passed:>8} │ {total_failed:>11} │")
+        failed_str = f"{total_failed:9d}" if total_failed > 0 else "           0"
+        print(f"│ {'TOTAL':19} │ {total_tests:8d} │ {total_passed:8d} │ {failed_str} │")
         print("└─────────────────────┴──────────┴──────────┴─────────────┘")
-    
-    def _print_module_support_matrix(self) -> None:
-        """Print module support matrix."""
-        print("┌─────────────────────┬──────────┬──────────┬──────────┬──────────┐")
-        print("│ Feature             │ OpenAI   │ OAI Comp │ Async    │ Status   │")
-        print("├─────────────────────┼──────────┼──────────┼──────────┼──────────┤")
-        
-        for module in self.module_support:
-            openai_status = "✅" if module.openai else "❌"
-            compat_status = "✅" if module.openai_compatible else "❌"
-            async_status = "✅" if module.async_support else "❌"
-            
-            print(f"│ {module.feature:<19} │ {openai_status:>8} │ {compat_status:>8} │ {async_status:>8} │ {module.status:>8} │")
-        
-        # Coverage row
-        openai_coverage = sum(1 for m in self.module_support if m.openai) / len(self.module_support) * 100
-        compat_coverage = sum(1 for m in self.module_support if m.openai_compatible) / len(self.module_support) * 100
-        async_coverage = sum(1 for m in self.module_support if m.async_support) / len(self.module_support) * 100
-        overall_coverage = (openai_coverage + compat_coverage + async_coverage) / 3
-        
-        print("├─────────────────────┼──────────┼──────────┼──────────┼──────────┤")
-        print(f"│ {'COVERAGE':<19} │ {openai_coverage:>7.0f}% │ {compat_coverage:>7.0f}% │ {async_coverage:>7.0f}% │ {overall_coverage:>7.0f}% │")
-        print("└─────────────────────┴──────────┴──────────┴──────────┴──────────┘")
     
     def save_report(self, filename: str = None) -> None:
         """Save dashboard report to file."""
