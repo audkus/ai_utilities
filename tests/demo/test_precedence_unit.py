@@ -138,8 +138,8 @@ class TestModelFinding:
     def test_find_model_by_params_with_base_url(self) -> None:
         """Test finding model with base URL parameter."""
         models = [
-            self.create_validated_model(ProviderId.OLLAMA, "llama3.2", base_url="http://localhost:11434/v1"),
-            self.create_validated_model(ProviderId.OLLAMA, "llama3.2", base_url="http://localhost:1234/v1"),
+            self.create_validated_model(ProviderId.OPENAI_COMPAT_LOCAL, "llama3.2", base_url="http://localhost:11434/v1"),
+            self.create_validated_model(ProviderId.OPENAI_COMPAT_LOCAL, "llama3.2", base_url="http://localhost:1234/v1"),
         ]
 
         found = find_model_by_params(
@@ -523,8 +523,7 @@ class TestErrorHandling:
         )
 
         selected = resolve_initial_selection(models, args)
-        assert selected is not None
-        assert selected.model_def.provider == ProviderId.OLLAMA
+        assert selected is None  # Should return None when no ready models in non-interactive mode
 
     def test_invalid_endpoint(self) -> None:
         """Test handling of invalid endpoint."""
@@ -539,7 +538,6 @@ class TestErrorHandling:
         )
 
         selected = resolve_initial_selection(models, args)
-        assert selected is not None
-        assert selected.model_def.provider == ProviderId.OLLAMA
+        assert selected is None  # Should return None when models list is empty
 
     
