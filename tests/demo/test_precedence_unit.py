@@ -388,6 +388,48 @@ class TestPrecedenceResolution:
 class TestListModelsCLI:
     """Test --list-models CLI functionality."""
 
+    def create_validated_model(
+        self,
+        provider: ProviderId,
+        model: str,
+        status: ModelStatus = ModelStatus.READY,
+        base_url: str = None
+    ) -> ValidatedModel:
+        """Helper to create ValidatedModel instances."""
+        if base_url is None:
+            base_url = "http://localhost:11434/v1" if provider != ProviderId.OPENAI else None
+
+        model_def = ModelDef(
+            provider=provider,
+            display_name=f"{provider.value} - {model}",
+            model=model,
+            base_url=base_url,
+            requires_env="AI_API_KEY" if provider == ProviderId.OPENAI else None,
+            is_local=provider != ProviderId.OPENAI,
+            endpoint_id="test"
+        )
+
+        # Create appropriate menu line text based on status
+        display_name = model_def.display_name
+        if status == ModelStatus.READY:
+            menu_line_text = f"{display_name} – {model} ✅ ready"
+        elif status == ModelStatus.NEEDS_KEY:
+            menu_line_text = f"{display_name} – {model} 🔑 needs key"
+        elif status == ModelStatus.UNREACHABLE:
+            menu_line_text = f"{display_name} – {model} ❌ server not running"
+        elif status == ModelStatus.INVALID_MODEL:
+            menu_line_text = f"{display_name} – {model} ❓ invalid model"
+        else:  # ERROR
+            menu_line_text = f"{display_name} – {model} ⚠️ error"
+        
+        return ValidatedModel(
+            model_def=model_def,
+            status=status,
+            status_detail=status.value,
+            fix_instructions="" if status == ModelStatus.READY else "Fix this",
+            menu_line_text=menu_line_text
+        )
+
     def test_print_models_and_exit(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test --list-models output formatting."""
         models = [
@@ -406,9 +448,9 @@ class TestListModelsCLI:
         output = captured.out
 
         assert "AVAILABLE MODELS" in output
-        assert "OpenAI (cloud) – gpt-4 ✅ ready" in output
-        assert "Ollama (local) – llama3.2 🔑 needs key" in output
-        assert "Groq (cloud) – llama3 ❌ server not running" in output
+        assert "openai - gpt-4 – gpt-4 ✅ ready" in output
+        assert "ollama - llama3.2 – llama3.2 🔑 needs key" in output
+        assert "groq - llama3 – llama3 ❌ server not running" in output
 
     
 
