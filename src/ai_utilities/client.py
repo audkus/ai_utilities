@@ -1240,6 +1240,185 @@ class AiClient:
             # Wrap other exceptions
             raise FileTransferError("image generation", self.provider.__class__.__name__, e) from e
 
+    def transcribe_audio(
+        self,
+        audio_file: Union[str, Path],
+        language: Optional[str] = None,
+        model: str = "whisper-1",
+        prompt: Optional[str] = None,
+        temperature: float = 0.0,
+        response_format: str = "json"
+    ) -> Dict[str, Any]:
+        """
+        Transcribe audio file to text using AI models.
+        
+        Args:
+            audio_file: Path to audio file to transcribe
+            language: Optional language code (e.g., 'en', 'es')
+            model: Transcription model to use (default: 'whisper-1')
+            prompt: Optional prompt to guide transcription
+            temperature: Sampling temperature (0.0 to 1.0)
+            response_format: Response format ('json', 'text', 'srt', 'verbose_json', 'vtt')
+            
+        Returns:
+            Dictionary containing transcription results
+            
+        Raises:
+            FileTransferError: If transcription fails
+            
+        Example:
+            result = client.transcribe_audio("recording.wav")
+            print(result["text"])
+        """
+        try:
+            # Import here to avoid circular imports
+            from .audio.audio_processor import AudioProcessor
+            
+            # Create audio processor with this client
+            processor = AudioProcessor(client=self)
+            
+            # Perform transcription
+            result = processor.transcribe_audio(
+                audio_file=audio_file,
+                language=language,
+                model=model,
+                prompt=prompt,
+                temperature=temperature,
+                response_format=response_format
+            )
+            
+            # Convert to dictionary for API consistency
+            return {
+                "text": result.text,
+                "language": result.language,
+                "duration_seconds": result.duration_seconds,
+                "model_used": result.model_used,
+                "processing_time_seconds": result.processing_time_seconds,
+                "word_count": result.word_count,
+                "character_count": result.character_count,
+                "segments": [
+                    {
+                        "start_time": seg.start_time,
+                        "end_time": seg.end_time,
+                        "text": seg.text,
+                        "confidence": seg.confidence
+                    }
+                    for seg in (result.segments or [])
+                ],
+                "metadata": result.metadata
+            }
+            
+        except Exception as e:
+            raise FileTransferError("audio transcription", self.provider.__class__.__name__, e) from e
+
+    def generate_audio(
+        self,
+        text: str,
+        voice: str = "alloy",
+        model: str = "tts-1",
+        speed: float = 1.0,
+        response_format: str = "mp3"
+    ) -> bytes:
+        """
+        Generate audio from text using text-to-speech.
+        
+        Args:
+            text: Text to convert to speech
+            voice: Voice to use for generation (default: 'alloy')
+            model: Text-to-speech model (default: 'tts-1')
+            speed: Speech speed factor (0.25 to 4.0)
+            response_format: Output audio format ('mp3', 'wav', 'flac', 'ogg', 'webm')
+            
+        Returns:
+            Generated audio data as bytes
+            
+        Raises:
+            FileTransferError: If audio generation fails
+            
+        Example:
+            audio_data = client.generate_audio("Hello, world!", voice="nova")
+            with open("output.mp3", "wb") as f:
+                f.write(audio_data)
+        """
+        try:
+            # Import here to avoid circular imports
+            from .audio.audio_processor import AudioProcessor
+            from .audio.audio_models import AudioFormat
+            
+            # Create audio processor with this client
+            processor = AudioProcessor(client=self)
+            
+            # Convert string format to enum
+            format_map = {
+                "mp3": AudioFormat.MP3,
+                "wav": AudioFormat.WAV,
+                "flac": AudioFormat.FLAC,
+                "ogg": AudioFormat.OGG,
+                "webm": AudioFormat.WEBM
+            }
+            
+            if response_format not in format_map:
+                raise ValueError(f"Invalid audio format: {response_format}")
+            
+            # Perform generation
+            result = processor.generate_audio(
+                text=text,
+                voice=voice,
+                model=model,
+                speed=speed,
+                response_format=format_map[response_format]
+            )
+            
+            return result.audio_data
+            
+        except Exception as e:
+            raise FileTransferError("audio generation", self.provider.__class__.__name__, e) from e
+
+    def get_audio_voices(self) -> List[Dict[str, str]]:
+        """
+        Get list of available voices for audio generation.
+        
+        Returns:
+            List of voice information dictionaries
+            
+        Raises:
+            FileTransferError: If voice retrieval fails
+        """
+        try:
+            # Import here to avoid circular imports
+            from .audio.audio_processor import AudioProcessor
+            
+            processor = AudioProcessor(client=self)
+            voices_info = processor.get_supported_voices()
+            
+            return voices_info.get("voices", [])
+            
+        except Exception as e:
+            raise FileTransferError("audio voices", self.provider.__class__.__name__, e) from e
+
+    def validate_audio_file(self, audio_file: Union[str, Path]) -> Dict[str, Any]:
+        """
+        Validate audio file for transcription requirements.
+        
+        Args:
+            audio_file: Path to audio file to validate
+            
+        Returns:
+            Dictionary with validation results
+            
+        Raises:
+            FileTransferError: If validation fails
+        """
+        try:
+            # Import here to avoid circular imports
+            from .audio.audio_processor import AudioProcessor
+            
+            processor = AudioProcessor(client=self)
+            return processor.validate_audio_for_transcription(audio_file)
+            
+        except Exception as e:
+            raise FileTransferError("audio validation", self.provider.__class__.__name__, e) from e
+
 
 # Convenience function for backward compatibility
 def create_client(api_key: Optional[str] = None, model: str = "test-model-1", show_progress: bool = True, **kwargs) -> AiClient:
