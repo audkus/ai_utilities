@@ -5,7 +5,7 @@ from .openai_provider import OpenAIProvider
 from .openai_compatible_provider import OpenAICompatibleProvider
 from .provider_factory import create_provider
 from .provider_capabilities import ProviderCapabilities
-from .provider_exceptions import ProviderCapabilityError, ProviderConfigurationError
+from .provider_exceptions import ProviderCapabilityError, ProviderConfigurationError, FileTransferError
 
 __all__ = [
     "BaseProvider", 
@@ -14,5 +14,6 @@ __all__ = [
     "create_provider",
     "ProviderCapabilities",
     "ProviderCapabilityError", 
-    "ProviderConfigurationError"
+    "ProviderConfigurationError",
+    "FileTransferError"
 ]

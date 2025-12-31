@@ -56,3 +56,29 @@ class FakeProvider(BaseProvider):
             return {"answer": formatted_response}
         
         return formatted_response
+    
+    def upload_file(
+        self, path: Path, *, purpose: str = "assistants", filename: str = None, mime_type: str = None
+    ):
+        """Fake file upload for testing."""
+        from ai_utilities.file_models import UploadedFile
+        from datetime import datetime
+        
+        return UploadedFile(
+            file_id=f"fake-file-{self.call_count}",
+            filename=filename or path.name,
+            bytes=1000,
+            provider="fake",
+            purpose=purpose,
+            created_at=datetime.now()
+        )
+    
+    def download_file(self, file_id: str) -> bytes:
+        """Fake file download for testing."""
+        return b"Fake file content for testing purposes"
+    
+    def generate_image(
+        self, prompt: str, *, size: str = "1024x1024", quality: str = "standard", n: int = 1
+    ) -> List[str]:
+        """Fake image generation for testing."""
+        return [f"https://fake-image-url.com/{size}/{self.call_count}.png" for _ in range(n)]

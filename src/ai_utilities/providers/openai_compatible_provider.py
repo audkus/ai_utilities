@@ -2,14 +2,18 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Union
 
+from ..file_models import UploadedFile
+from ..openai_client import OpenAI
 from .base_provider import BaseProvider
 from .provider_capabilities import ProviderCapabilities
-from .provider_exceptions import ProviderConfigurationError
-from .provider_exceptions import ProviderCapabilityError
-from ..openai_client import OpenAI
-from ..response_processor import ResponseProcessor
+from .provider_exceptions import (
+    ProviderCapabilityError,
+    ProviderConfigurationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -225,3 +229,65 @@ class OpenAICompatibleProvider(BaseProvider):
     def capabilities(self, value: ProviderCapabilities) -> None:
         """Set the provider's capabilities."""
         self._capabilities = value
+    
+    def upload_file(
+        self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None
+    ) -> UploadedFile:
+        """Upload a file to the provider.
+        
+        Args:
+            path: Path to the file to upload
+            purpose: Purpose of the upload (e.g., "assistants", "fine-tune")
+            filename: Optional custom filename (defaults to path.name)
+            mime_type: Optional MIME type (auto-detected if None)
+            
+        Returns:
+            UploadedFile with metadata about the uploaded file
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support Files API
+        """
+        raise ProviderCapabilityError(
+            "Files API (upload)", 
+            "openai_compatible"
+        )
+    
+    def download_file(self, file_id: str) -> bytes:
+        """Download file content from the provider.
+        
+        Args:
+            file_id: ID of the file to download
+            
+        Returns:
+            File content as bytes
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support Files API
+        """
+        raise ProviderCapabilityError(
+            "Files API (download)", 
+            "openai_compatible"
+        )
+    
+    def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using the provider.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs or base64-encoded images
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support image generation
+        """
+        raise ProviderCapabilityError(
+            "Image generation", 
+            "openai_compatible"
+        )
