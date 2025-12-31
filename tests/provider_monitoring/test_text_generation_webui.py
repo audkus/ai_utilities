@@ -39,15 +39,15 @@ def test_text_generation_webui():
             print(f"   ✅ Server is reachable")
         else:
             print(f"   ❌ Server returned status {response.status_code}")
-            return False
+            pytest.skip("Text-Generation-WebUI server not available")
     except requests.exceptions.ConnectionError:
         print(f"   ❌ Cannot connect to server at {base_url}")
         print(f"   💡 Make sure text-generation-webui is running with --api flag")
         print(f"   💡 Command: python server.py --api --listen")
-        return False
+        pytest.skip("Text-Generation-WebUI server not running")
     except Exception as e:
         print(f"   ❌ Connection error: {e}")
-        return False
+        pytest.skip(f"Text-Generation-WebUI server error: {e}")
     
     # Test 2: Model Discovery
     print(f"\n2️⃣ Testing model discovery...")
@@ -65,7 +65,7 @@ def test_text_generation_webui():
                 available_models = [m["id"] for m in models_data]
             else:
                 print(f"   ❌ Unexpected response format: {type(models_data)}")
-                return False
+                assert False, f"Unexpected response format: {type(models_data)}"
                 
             print(f"   ✅ Found {len(available_models)} models:")
             for model in available_models[:5]:  # Show first 5
@@ -75,15 +75,15 @@ def test_text_generation_webui():
                 
             if not available_models:
                 print(f"   ❌ No models available")
-                return False
+                assert False, "No models available"
                 
             test_model = available_models[0]
         else:
             print(f"   ❌ Models endpoint returned {response.status_code}")
-            return False
+            assert False, f"Models endpoint returned {response.status_code}"
     except Exception as e:
         print(f"   ❌ Model discovery failed: {e}")
-        return False
+        assert False, f"Model discovery failed: {e}"
     
     # Test 3: AI Client Creation
     print(f"\n3️⃣ Testing AI client creation...")
@@ -98,7 +98,7 @@ def test_text_generation_webui():
         print(f"   📝 Model: {test_model}")
     except Exception as e:
         print(f"   ❌ Client creation failed: {e}")
-        return False
+        assert False, f"Client creation failed: {e}"
     
     # Test 4: Simple Chat Test
     print(f"\n4️⃣ Testing chat functionality...")
@@ -111,10 +111,10 @@ def test_text_generation_webui():
             print(f"   📝 Response: {response[:100]}{'...' if len(response) > 100 else ''}")
         else:
             print(f"   ❌ Empty response")
-            return False
+            assert False, "Empty response"
     except Exception as e:
         print(f"   ❌ Chat failed: {e}")
-        return False
+        assert False, f"Chat failed: {e}"
     
     # Test 5: Streaming Test (Optional)
     print(f"\n5️⃣ Testing streaming functionality...")

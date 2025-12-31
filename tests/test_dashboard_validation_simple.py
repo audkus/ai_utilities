@@ -14,9 +14,10 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from scripts.test_dashboard import AITestDashboard
+from scripts.dashboard import AITestDashboard
 
 
+@pytest.mark.dashboard
 class TestDashboardValidationSimple:
     """Test dashboard accuracy with mocked data."""
     
