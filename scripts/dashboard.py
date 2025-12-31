@@ -105,8 +105,8 @@ class AITestDashboard:
         
         if full_suite:
             print(f"📋 Running {total_categories} test categories...")
-            print(f"   1/{total_categories} 🧪 Core Essential Tests (Guaranteed working)")
-            # Minimal guaranteed-working mode: only include absolutely essential, verified tests
+            print(f"   1/{total_categories} 🧪 Core Essential Tests (Guaranteed working - excludes hanging tests)")
+            # Revert to working configuration - only include verified non-hanging tests
             self._run_test_suite(
                 "Core Essential Tests",
                 ["pytest", 
@@ -779,7 +779,7 @@ class AITestDashboard:
         print("   • Good coverage: Ollama (8), Together (7), OpenAI Compatible (12)")
         print("   • Basic coverage: Groq (2), OpenRouter (4), FastChat (6), TextGen (6), LM Studio (4)")
         print("\n🔑 To run ALL integration tests:")
-        print("   export AI_API_KEY='your-key' && RUN_LIVE_AI_TESTS=1 python scripts/test_dashboard.py --full-suite --integration")
+        print("   export AI_API_KEY='your-key' && RUN_LIVE_AI_TESTS=1 python scripts/dashboard.py --full-suite --integration")
         print("\n📊 Integration Test Behavior:")
         print("   • Tests are SKIPPED (not failed) when services unavailable")
         print("   • This is correct behavior for integration tests")
