@@ -166,27 +166,49 @@ class TestAIConfig:
         assert "test-model-1" in config.models
         assert "test-model-2" in config.models
     
+    @pytest.mark.hanging
     def test_environment_variable_integration(self):
         """Test environment variable integration."""
         from ai_utilities.env_overrides import override_env
         
-        # Test with environment variable overrides
-        with override_env({
-            'AI_USE_AI': 'false',
-            'AI_MEMORY_THRESHOLD': '0.9',
-            'AI_MODEL': 'test-model-2',
-            'AI_TEMPERATURE': '0.3',
-            'AI_MAX_TOKENS': '500',
-            'AI_TIMEOUT': '60'
-        }):
-            config = AIConfig()
+        # Store original environment variables to restore later
+        original_env = {}
+        env_vars_to_check = [k for k in os.environ.keys() if k.startswith('AI_')]
+        for var in env_vars_to_check:
+            original_env[var] = os.environ.get(var)
+        
+        try:
+            # Clean up AI environment variables for this test
+            env_vars_to_clear = [k for k in os.environ.keys() if k.startswith('AI_')]
+            for var in env_vars_to_clear:
+                if var in os.environ:
+                    del os.environ[var]
             
-            assert config.use_ai is False
-            assert config.memory_threshold == 0.9
-            assert config.openai.model == 'test-model-2'
-            assert config.openai.temperature == 0.3
-            assert config.openai.max_tokens == 500
-            assert config.openai.timeout == 60
+            # Test with environment variable overrides
+            with override_env({
+                'AI_USE_AI': 'false',
+                'AI_MEMORY_THRESHOLD': '0.9',
+                'AI_MODEL': 'test-model-2',
+                'AI_TEMPERATURE': '0.3',
+                'AI_MAX_TOKENS': '500',
+                'AI_TIMEOUT': '60'
+            }):
+                config = AIConfig()
+                
+                assert config.use_ai is False
+                assert config.memory_threshold == 0.9
+                assert config.openai.model == 'test-model-2'
+                assert config.openai.temperature == 0.3
+                assert config.openai.max_tokens == 500
+                assert config.openai.timeout == 60
+        
+        finally:
+            # Restore original environment variables
+            for var, value in original_env.items():
+                if value is not None:
+                    os.environ[var] = value
+                elif var in os.environ:
+                    del os.environ[var]
     
     def test_global_model_rate_limits_env_vars(self):
         """Test global model rate limit environment variables."""
@@ -312,6 +334,7 @@ class TestConfigIntegration:
             model_config = config.get_model_config('test-model-2')
             assert model_config.requests_per_minute == 3000
     
+    @pytest.mark.hanging
     def test_configuration_validation_chain(self):
         """Test that validation works across the configuration chain."""
         from ai_utilities.env_overrides import override_env
@@ -320,22 +343,40 @@ class TestConfigIntegration:
             with pytest.raises(ValidationError):
                 AIConfig()
     
+    @pytest.mark.hanging
     def test_environment_variable_precedence(self):
         """Test environment variable precedence over defaults."""
         from ai_utilities.env_overrides import override_env
-        from ai_utilities.env_utils import cleanup_ai_env_vars
         
-        # Clean up any existing environment variables
-        cleanup_ai_env_vars()
+        # Store original environment variables to restore later
+        original_env = {}
+        env_vars_to_check = [k for k in os.environ.keys() if k.startswith('AI_')]
+        for var in env_vars_to_check:
+            original_env[var] = os.environ.get(var)
         
-        with override_env({
-            'AI_MODEL_RPM': '1000',  # Global
-            'AI_TEST_MODEL_1_RPM': '2000'   # Specific
-        }):
-            config = AIConfig()
+        try:
+            # Clean up AI environment variables for this test
+            env_vars_to_clear = [k for k in os.environ.keys() if k.startswith('AI_')]
+            for var in env_vars_to_clear:
+                if var in os.environ:
+                    del os.environ[var]
             
-            # Specific should override global for test-model-1
-            assert config.models['test-model-1'].requests_per_minute == 2000
-            
-            # test-model-2 uses global AI_MODEL_RPM when no specific override
-            assert config.models['test-model-2'].requests_per_minute == 1000
+            with override_env({
+                'AI_MODEL_RPM': '1000',  # Global
+                'AI_TEST_MODEL_1_RPM': '2000'   # Specific
+            }):
+                config = AIConfig()
+                
+                # Specific should override global for test-model-1
+                assert config.models['test-model-1'].requests_per_minute == 2000
+                
+                # test-model-2 uses global AI_MODEL_RPM when no specific override
+                assert config.models['test-model-2'].requests_per_minute == 1000
+        
+        finally:
+            # Restore original environment variables
+            for var, value in original_env.items():
+                if value is not None:
+                    os.environ[var] = value
+                elif var in os.environ:
+                    del os.environ[var]

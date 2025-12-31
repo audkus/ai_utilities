@@ -4,12 +4,15 @@ import asyncio
 import random
 import time
 from collections.abc import Sequence
-from typing import Callable, List, Literal, Union
+from pathlib import Path
+from typing import Callable, List, Literal, Optional, Union
 
 from .client import AiSettings
+from .file_models import UploadedFile
 from .models import AskResult
 from .providers.base import AsyncProvider
 from .providers.openai_provider import OpenAIProvider
+from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 
 
 class AsyncOpenAIProvider(AsyncProvider):
@@ -26,6 +29,44 @@ class AsyncOpenAIProvider(AsyncProvider):
             prompt,
             return_format=return_format,
             **kwargs
+        )
+    
+    async def ask_many(self, prompts: Sequence[str], *, return_format: Literal["text", "json"] = "text", **kwargs) -> List[Union[str, dict, list]]:
+        """Async ask_many implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.ask_many,
+            prompts,
+            return_format=return_format,
+            **kwargs
+        )
+    
+    async def upload_file(
+        self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None
+    ) -> UploadedFile:
+        """Async upload_file implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.upload_file,
+            path,
+            purpose=purpose,
+            filename=filename,
+            mime_type=mime_type
+        )
+    
+    async def download_file(self, file_id: str) -> bytes:
+        """Async download_file implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.download_file,
+            file_id
+        )
+    
+    async def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Async image generation implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.generate_image,
+            prompt, size=size, quality=quality, n=n
         )
 
 
@@ -340,3 +381,155 @@ class AsyncAiClient:
                 )
         
         return results
+    
+    async def upload_file(
+        self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None
+    ) -> UploadedFile:
+        """Upload a file to the AI provider asynchronously.
+        
+        Args:
+            path: Path to the file to upload
+            purpose: Purpose of the upload (e.g., "assistants", "fine-tune")
+            filename: Optional custom filename (defaults to path.name)
+            mime_type: Optional MIME type (auto-detected if None)
+            
+        Returns:
+            UploadedFile with metadata about the uploaded file
+            
+        Raises:
+            ValueError: If file path is invalid
+            FileTransferError: If upload fails
+            ProviderCapabilityError: If provider doesn't support file uploads
+            
+        Example:
+            >>> file = await client.upload_file("document.pdf", purpose="assistants")
+            >>> print(f"Uploaded: {file.file_id}")
+        """
+        # Validate input
+        if not isinstance(path, Path):
+            path = Path(path)
+        
+        if not path.exists():
+            raise ValueError(f"File does not exist: {path}")
+        
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {path}")
+        
+        # Delegate to async provider
+        try:
+            return await self.provider.upload_file(path, purpose=purpose, filename=filename, mime_type=mime_type)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("upload", self.provider.__class__.__name__, e) from e
+    
+    async def download_file(self, file_id: str, *, to_path: Optional[Path] = None) -> Union[bytes, Path]:
+        """Download file content from the AI provider asynchronously.
+        
+        Args:
+            file_id: ID of the file to download
+            to_path: Optional path to save the file (returns bytes if None)
+            
+        Returns:
+            File content as bytes if to_path is None, or Path to saved file
+            
+        Raises:
+            ValueError: If file_id is invalid
+            FileTransferError: If download fails
+            ProviderCapabilityError: If provider doesn't support file downloads
+            
+        Example:
+            >>> # Download as bytes
+            >>> content = await client.download_file("file-123")
+            >>> 
+            >>> # Download to file
+            >>> path = await client.download_file("file-123", to_path="downloaded.pdf")
+        """
+        if not file_id:
+            raise ValueError("file_id cannot be empty")
+        
+        # Delegate to async provider
+        try:
+            content = await self.provider.download_file(file_id)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("download", self.provider.__class__.__name__, e) from e
+        
+        # Handle saving to file if requested
+        if to_path is not None:
+            if not isinstance(to_path, Path):
+                to_path = Path(to_path)
+            
+            # Create parent directories if needed
+            to_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write content to file
+            with open(to_path, "wb") as f:
+                f.write(content)
+            
+            return to_path
+        
+        # Return raw bytes
+        return content
+    
+    async def generate_image(
+        self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
+        quality: Literal["standard", "hd"] = "standard", n: int = 1
+    ) -> List[str]:
+        """Generate images using AI asynchronously.
+        
+        Args:
+            prompt: Description of the image to generate
+            size: Image size (e.g., "1024x1024", "1792x1024", "1024x1792")
+            quality: Image quality ("standard" or "hd")
+            n: Number of images to generate (1-10)
+            
+        Returns:
+            List of image URLs
+            
+        Raises:
+            ValueError: If prompt is invalid
+            FileTransferError: If image generation fails
+            ProviderCapabilityError: If provider doesn't support image generation
+            
+        Example:
+            >>> # Generate a single image
+            >>> urls = await client.generate_image("A cute dog playing fetch")
+            >>> 
+            >>> # Generate multiple high-quality images
+            >>> urls = await client.generate_image(
+            ...     "A majestic lion in the savanna", 
+            ...     size="1792x1024", 
+            ...     quality="hd", 
+            ...     n=3
+            ... )
+        """
+        if not prompt:
+            raise ValueError("prompt cannot be empty")
+        
+        if n < 1 or n > 10:
+            raise ValueError("n must be between 1 and 10")
+        
+        # Delegate to async provider
+        try:
+            return await self.provider.generate_image(prompt, size=size, quality=quality, n=n)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("image generation", self.provider.__class__.__name__, e) from e

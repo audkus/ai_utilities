@@ -1,7 +1,7 @@
 """Provider capabilities for different AI providers."""
 
 from dataclasses import dataclass
-from typing import Optional, Set
+from typing import Optional
 
 
 @dataclass
@@ -15,6 +15,10 @@ class ProviderCapabilities:
     supports_tools: bool = False
     supports_images: bool = False
     
+    # File operations
+    supports_files_upload: bool = False
+    supports_files_download: bool = False
+    
     # Model capabilities
     supports_temperature: bool = True
     supports_max_tokens: bool = True
@@ -24,7 +28,7 @@ class ProviderCapabilities:
     
     # Additional metadata
     max_context_length: Optional[int] = None
-    supported_models: Optional[Set[str]] = None
+    supported_models: Optional[set[str]] = None
     
     @classmethod
     def openai(cls) -> "ProviderCapabilities":
@@ -34,7 +38,9 @@ class ProviderCapabilities:
             supports_json_mode=True,
             supports_streaming=True,
             supports_tools=True,
-            supports_images=True,
+            supports_images=True,  # DALL-E support
+            supports_files_upload=True,
+            supports_files_download=True,
             supports_temperature=True,
             supports_max_tokens=True,
             supports_top_p=True,
@@ -52,6 +58,8 @@ class ProviderCapabilities:
             supports_streaming=False,  # Varies by provider, be conservative
             supports_tools=False,      # Varies by provider, be conservative
             supports_images=False,     # Varies by provider, be conservative
+            supports_files_upload=False,     # Most don't support Files API
+            supports_files_download=False,   # Most don't support Files API
             supports_temperature=True,
             supports_max_tokens=True,
             supports_top_p=False,

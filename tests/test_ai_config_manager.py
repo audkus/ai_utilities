@@ -79,11 +79,20 @@ class TestAIConfigManager:
             }
         }
         
-        config = manager.load_config(config_data)
+        # Clear environment variables that might interfere with test data
+        import os
+        old_ai_model = os.environ.pop('AI_MODEL', None)
         
-        assert config.use_ai is False
-        assert config.openai.model == "test-model-2"
-        assert config.openai.temperature == 0.5
+        try:
+            config = manager.load_config(config_data)
+            
+            assert config.use_ai is False
+            assert config.openai.model == "test-model-2"
+            assert config.openai.temperature == 0.5
+        finally:
+            # Restore environment variable
+            if old_ai_model is not None:
+                os.environ['AI_MODEL'] = old_ai_model
     
     def test_load_config_invalid_data(self):
         """Test loading configuration with invalid data."""
@@ -107,45 +116,72 @@ class TestAIConfigManager:
         config_parser = ConfigParser()
         config_parser.add_section('AI')
         config_parser.set('AI', 'use_ai', 'false')
-        config_parser.set('AI', 'ai_provider', 'openai')
-        
-        config_parser.add_section('openai')
-        config_parser.set('openai', 'model', 'test-model-2')
-        config_parser.set('openai', 'temperature', '0.3')
-        
-        with open(self.config_path, 'w') as f:
-            config_parser.write(f)
-        
         manager = AIConfigManager(config_path=str(self.config_path))
-        config = manager.load_from_file()
         
-        assert config.use_ai is False
-        assert config.openai.model == "test-model-2"
-        assert config.openai.temperature == 0.3
+        # Clear environment variables that might interfere with test data
+        import os
+        old_ai_model = os.environ.pop('AI_MODEL', None)
+        
+        try:
+            # Create a test config file
+            config_parser = ConfigParser()
+            config_parser.add_section('AI')
+            config_parser.set('AI', 'use_ai', 'false')
+            config_parser.set('AI', 'ai_provider', 'openai')
+            
+            config_parser.add_section('openai')
+            config_parser.set('openai', 'model', 'test-model-2')
+            config_parser.set('openai', 'temperature', '0.3')
+            
+            with open(self.config_path, 'w') as f:
+                config_parser.write(f)
+            
+            config = manager.load_from_file()
+            
+            assert config.use_ai is False
+            assert config.openai.model == "test-model-2"
+            assert config.openai.temperature == 0.3
+        finally:
+            # Restore environment variable
+            if old_ai_model is not None:
+                os.environ['AI_MODEL'] = old_ai_model
     
     def test_save_config(self):
         """Test saving configuration to file."""
         manager = AIConfigManager(config_path=str(self.config_path))
         
-        # Create custom config
-        config = AIConfig(
-            use_ai=False,
-            openai=OpenAIConfig(
-                model="test-model-2",
-                temperature=0.5
+        # Clear environment variables that might interfere with test data
+        import os
+        old_ai_model = os.environ.pop('AI_MODEL', None)
+        old_ai_temperature = os.environ.pop('AI_TEMPERATURE', None)
+        
+        try:
+            # Create custom config
+            config = AIConfig(
+                use_ai=False,
+                openai=OpenAIConfig(
+                    model="test-model-2",
+                    temperature=0.5
+                )
             )
-        )
-        
-        manager.save_config(config)
-        
-        # Verify file was created and contains correct data
-        assert self.config_path.exists()
-        
-        # Load and verify
-        loaded_config = manager.load_from_file()
-        assert loaded_config.use_ai is False
-        assert loaded_config.openai.model == "test-model-2"
-        assert loaded_config.openai.temperature == 0.5
+            
+            manager.save_config(config)
+            
+            # Verify file was created and contains correct data
+            assert self.config_path.exists()
+            
+            # Load and verify
+            loaded_config = manager.load_from_file()
+            
+            assert loaded_config.use_ai is False
+            assert loaded_config.openai.model == "test-model-2"
+            assert loaded_config.openai.temperature == 0.5
+        finally:
+            # Restore environment variables
+            if old_ai_model is not None:
+                os.environ['AI_MODEL'] = old_ai_model
+            if old_ai_temperature is not None:
+                os.environ['AI_TEMPERATURE'] = old_ai_temperature
     
     def test_get_model_config(self):
         """Test getting model configuration."""
@@ -403,34 +439,46 @@ class TestAIConfigManagerIntegration:
         """Test configuration file save/load roundtrip."""
         manager = AIConfigManager(config_path=str(self.config_path))
         
-        # Create custom configuration
-        original_config = AIConfig(
-            use_ai=False,
-            openai=OpenAIConfig(
-                model="test-model-2",
-                temperature=0.3,
-                max_tokens=500
-            ),
-            models={
-                "custom-model": ModelConfig(
-                    requests_per_minute=1000,
-                    tokens_per_minute=100000,
-                    tokens_per_day=1000000
-                )
-            }
-        )
+        # Clear environment variables that might interfere with test data
+        import os
+        old_ai_model = os.environ.pop('AI_MODEL', None)
+        old_ai_temperature = os.environ.pop('AI_TEMPERATURE', None)
         
-        # Save and reload
-        manager.save_config(original_config)
-        loaded_config = manager.load_from_file()
-        
-        # Verify data integrity
-        assert loaded_config.use_ai is False
-        assert loaded_config.openai.model == "test-model-2"
-        assert loaded_config.openai.temperature == 0.3
-        assert loaded_config.openai.max_tokens == 500
-        assert "custom-model" in loaded_config.models
-        assert loaded_config.models["custom-model"].requests_per_minute == 1000
+        try:
+            # Create custom configuration
+            original_config = AIConfig(
+                use_ai=False,
+                openai=OpenAIConfig(
+                    model="test-model-2",
+                    temperature=0.3,
+                    max_tokens=500
+                ),
+                models={
+                    "custom-model": ModelConfig(
+                        requests_per_minute=1000,
+                        tokens_per_minute=100000,
+                        tokens_per_day=1000000
+                    )
+                }
+            )
+            
+            # Save and reload
+            manager.save_config(original_config)
+            loaded_config = manager.load_from_file()
+            
+            # Verify data integrity
+            assert loaded_config.use_ai is False
+            assert loaded_config.openai.model == "test-model-2"
+            assert loaded_config.openai.temperature == 0.3
+            assert loaded_config.openai.max_tokens == 500
+            assert "custom-model" in loaded_config.models
+            assert loaded_config.models["custom-model"].requests_per_minute == 1000
+        finally:
+            # Restore environment variables
+            if old_ai_model is not None:
+                os.environ['AI_MODEL'] = old_ai_model
+            if old_ai_temperature is not None:
+                os.environ['AI_TEMPERATURE'] = old_ai_temperature
     
     def test_environment_variable_integration(self):
         """Test environment variable integration."""

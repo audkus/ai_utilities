@@ -1,6 +1,6 @@
 # AI Utilities
 
-A Python library for AI model interaction with Pydantic configuration, clean architecture, and dynamic rate limit management.
+A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
 
 ## Quickstart
 
@@ -32,6 +32,9 @@ print(response)
 **Where to look next:**
 - More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
+- **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
+- **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
+- **Test Dashboard** → [`docs/test_dashboard.md`](docs/test_dashboard.md)
 - API reference → Use `help(AiClient)` in Python
 - Changelog → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
 
@@ -202,14 +205,162 @@ client = create_client(
 )
 ```
 
+## Files API
+
+Upload and download files through AI providers. Currently supported by OpenAI provider.
+
+### Quick Start
+
+```python
+from ai_utilities import AiClient
+from pathlib import Path
+
+client = AiClient()
+
+# Upload a file
+file = client.upload_file("document.pdf", purpose="assistants")
+print(f"Uploaded: {file.file_id}")
+
+# Download file content
+content = client.download_file(file.file_id)
+
+# Download file to disk
+path = client.download_file(file.file_id, to_path="downloaded.pdf")
+```
+
+### File Operations
+
+```python
+# Upload with custom settings
+file = client.upload_file(
+    "data.csv",
+    purpose="fine-tune",
+    filename="training-data.csv"
+)
+
+# Async file operations
+from ai_utilities import AsyncAiClient
+
+async def main():
+    client = AsyncAiClient()
+    file = await client.upload_file("document.pdf")
+    content = await client.download_file(file.file_id)
+
+# Error handling
+from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
+
+try:
+    file = client.upload_file("report.pdf")
+except FileTransferError as e:
+    print(f"Upload failed: {e}")
+except ProviderCapabilityError as e:
+    print(f"Provider doesn't support files: {e}")
+```
+
+### Document AI Workflow
+
+Upload documents and ask AI to analyze, summarize, or extract information:
+
+```python
+# 1. Upload document
+client = AiClient()
+uploaded_file = client.upload_file("report.pdf", purpose="assistants")
+
+# 2. Ask AI to analyze the document
+summary = client.ask(
+    f"Please summarize document {uploaded_file.file_id} and extract key insights."
+)
+
+# 3. Ask follow-up questions
+recommendations = client.ask(
+    f"Based on document {uploaded_file.file_id}, what are your recommendations?"
+)
+
+# 4. Analyze multiple documents
+docs = [
+    client.upload_file("q1_report.pdf", purpose="assistants"),
+    client.upload_file("q2_report.pdf", purpose="assistants")
+]
+
+trend_analysis = client.ask(
+    f"Compare these reports: {[d.file_id for d in docs]}. "
+    "Identify trends and key changes."
+)
+```
+
+### Supported Providers
+
+| Provider | Upload | Download | Notes |
+|----------|--------|----------|-------|
+| **OpenAI** | ✅ | ✅ | Full support with all file types |
+| **OpenAI-Compatible** | ❌ | ❌ | Raises capability errors |
+
+**📖 Full Documentation:** See [`docs/files.md`](docs/files.md) for comprehensive Files API documentation.
+
 ---
 
 ## Development
 
 ### Running Tests
+
+#### 🧪 Enhanced Test Dashboard (Recommended)
+
+The AI Utilities Test Dashboard provides enterprise-grade testing with resilience, debugging, and comprehensive visibility.
+
 ```bash
-pytest                    # All tests
-pytest -m "not slow"     # Skip slow tests
+# Standard test suite (excludes integration & dashboard tests)
+python scripts/dashboard.py
+
+# With integration tests (requires API key)
+python scripts/dashboard.py --integration
+
+# Complete project test suite with chunked execution
+python scripts/dashboard.py --full-suite
+
+# Full suite with integration tests
+python scripts/dashboard.py --full-suite --integration
+
+# Enhanced debugging for hangs
+python scripts/dashboard.py --full-suite --debug-hangs
+
+# Custom timeout settings
+python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output-timeout-seconds 120
+```
+
+**🚀 Enterprise Features:**
+- ✅ **Chunked Execution**: Individual file isolation prevents cascading failures
+- ✅ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
+- ✅ **Complete Visibility**: Shows exactly which tests are excluded and why
+- ✅ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
+- ✅ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
+- ✅ **Real-time Progress**: Live test execution with per-file granularity
+- ✅ **Provider Coverage**: Analysis across 9 AI providers
+- ✅ **Production Readiness**: Clear assessment and failure diagnostics
+
+**📊 Test Visibility Example:**
+```
+📊 Test Discovery Summary:
+   📋 Total tests available: 524
+   🔧 Integration tests: 46 (excluded by default)
+   🎛️  Dashboard tests: 30 (excluded to prevent self-reference)
+   ✅ Tests to execute: 448
+   📉 Excluded tests: 76
+```
+
+**🔧 Debugging Features:**
+- `--debug-hangs`: Enable SIGQUIT stack dumps and verbose pytest output
+- `--suite-timeout-seconds`: Hard timeout for entire test suite
+- `--no-output-timeout-seconds`: Timeout if no output received
+- Continues execution even when individual files hang
+- Detailed diagnostics with last test nodeid and output tail
+
+#### Standard Pytest
+```bash
+pytest                    # All tests (524 total)
+pytest -m "not integration and not dashboard"  # Same as dashboard default
+pytest -m integration     # Integration tests only (requires API key)
+pytest -m dashboard       # Dashboard self-tests only
+pytest tests/test_files_api.py  # Specific test files
 ```
 
 ### Code Quality
@@ -218,6 +369,28 @@ ruff check . --fix        # Lint and fix
 ruff format .             # Format code
 mypy src/                 # Type checking
 ```
+
+### 🏗️ Test Architecture
+
+The project uses a clean, resilient test architecture designed for enterprise reliability:
+
+**📋 Test Categories:**
+- **Unit Tests** (447 tests): Core functionality, provider implementations, utilities
+- **Integration Tests** (46 tests): Real API calls, requires `AI_API_KEY` 
+- **Dashboard Tests** (30 tests): Self-validation of the dashboard runner
+- **Total**: 523 tests with clear separation and purpose
+
+**🔒 Test Isolation:**
+- Dashboard excludes its own tests to prevent self-reference issues
+- Integration tests excluded by default, opt-in via `--integration`
+- Chunked execution prevents cascading failures from hanging files
+- Environment variable isolation prevents test interference
+
+**🚀 Resilience Features:**
+- Individual file timeouts prevent suite-wide hangs
+- Stack dump capabilities for debugging hanging tests
+- Partial progress reporting shows accurate completion status
+- Continues execution even when individual files fail
 
 ### Project Structure
 ```
