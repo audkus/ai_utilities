@@ -18,9 +18,10 @@ import re
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from scripts.test_dashboard import AITestDashboard
+from scripts.dashboard import AITestDashboard
 
 
+@pytest.mark.dashboard
 class TestDashboardValidation:
     """Test that the dashboard accurately reports test results."""
     

@@ -8,15 +8,15 @@ The AI Utilities Test Dashboard provides comprehensive testing visibility with r
 The test dashboard includes its own comprehensive test suite:
 
 ```
-tests/test_test_dashboard.py::TestTestDashboard::test_dashboard_initialization PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_load_env_file PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_parse_pytest_output_success PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_parse_pytest_output_with_failures PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_run_test_suite_success PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_generate_module_support_matrix PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_dashboard_with_api_key PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_full_suite_mode PASSED
-tests/test_test_dashboard.py::TestTestDashboard::test_files_api_focus_mode PASSED
+tests/test_dashboard.py::TestTestDashboard::test_dashboard_initialization PASSED
+tests/test_dashboard.py::TestTestDashboard::test_load_env_file PASSED
+tests/test_dashboard.py::TestTestDashboard::test_parse_pytest_output_success PASSED
+tests/test_dashboard.py::TestTestDashboard::test_parse_pytest_output_with_failures PASSED
+tests/test_dashboard.py::TestTestDashboard::test_run_test_suite_success PASSED
+tests/test_dashboard.py::TestTestDashboard::test_generate_module_support_matrix PASSED
+tests/test_dashboard.py::TestTestDashboard::test_dashboard_with_api_key PASSED
+tests/test_dashboard.py::TestTestDashboard::test_full_suite_mode PASSED
+tests/test_dashboard.py::TestTestDashboard::test_files_api_focus_mode PASSED
 ...
 ========================= 17 passed, 1 warning in 0.07s =========================
 ```

@@ -17,9 +17,10 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from test_dashboard import AITestDashboard
+from dashboard import AITestDashboard
 
 
+@pytest.mark.dashboard
 class TestTestDashboard:
     """Test the test dashboard itself."""
     
@@ -279,6 +280,7 @@ tests/test_integration.py::test_list SKIPPED
         assert any("Files API Unit Tests" in call for call in calls)
 
 
+@pytest.mark.dashboard
 class TestTestDashboardIntegration:
     """Integration tests for the test dashboard."""
     
