@@ -8,8 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 🎵 **Complete Audio Processing System**
+  - OpenAI Whisper integration for audio transcription
+  - OpenAI TTS integration for speech generation
+  - Audio validation and format analysis
+  - Metadata extraction with mutagen support
+  - Audio format conversion with pydub support
+  - Complex workflows (transcribe + generate)
+  - Support for WAV, MP3, FLAC, OGG, M4A, WEBM formats
+- **Enhanced Installation Options**
+  - Optional audio dependencies: `pip install ai-utilities[audio]`
+  - Full installation: `pip install ai-utilities[all]`
+- **Comprehensive Audio Documentation**
+  - Complete audio processing guide (docs/audio_processing.md)
+  - Updated command reference with audio methods
+  - Audio examples and cheat sheet entries
+- **Audio Testing Infrastructure**
+  - 19 unit tests for audio utilities (100% pass rate)
+  - 13 integration tests for audio client functionality
+  - 3 real API integration tests (cost-controlled)
+  - Demo audio file for testing (examples/demo_audio.wav)
+- **Audio Error Handling**
+  - Graceful handling of missing optional dependencies
+  - Comprehensive validation and error reporting
+  - Robust file format checking and MIME type validation
+
+### Documentation
 - Documentation refactoring and cleanup
 - Improved README structure and clarity
+- Added comprehensive audio processing documentation
 
 ## [0.5.0] - 2024-12-29
 

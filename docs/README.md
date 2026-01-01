@@ -4,6 +4,14 @@ Welcome to the AI Utilities documentation! This folder contains detailed guides 
 
 ## 📚 Available Documentation
 
+### 🎵 [Audio Processing Guide](audio_processing.md)
+- Complete audio processing capabilities
+- Audio transcription with OpenAI Whisper
+- Audio generation with OpenAI TTS
+- Audio validation and metadata extraction
+- Format conversion and advanced workflows
+- Installation and configuration guide
+
 ### 🚀 [Testing Setup Guide](testing-setup.md)
 - Complete testing setup and configuration
 - Provider-specific testing instructions
@@ -44,9 +52,10 @@ ai_utilities/
 ## 📖 Getting Started
 
 1. Read the [main README](../README.md) for project overview
-2. Follow the [Testing Setup Guide](testing-setup.md) for configuration
-3. Check the [All Providers Guide](all-providers-guide.md) for provider setup
-4. Explore the [examples](../examples/) for usage patterns
+2. Check the [Audio Processing Guide](audio_processing.md) for audio features
+3. Follow the [Testing Setup Guide](testing-setup.md) for configuration
+4. Check the [All Providers Guide](all-providers-guide.md) for provider setup
+5. Explore the [examples](../examples/) for usage patterns
 
 ## 🤝 Contributing
 
