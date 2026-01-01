@@ -41,6 +41,15 @@ dev = [
   "types-setuptools",
 ]
 
+audio = [
+  "mutagen>=1.47,<2",
+  "pydub>=0.25.1,<1",
+]
+
+all = [
+  "ai-utilities[dev,audio]",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

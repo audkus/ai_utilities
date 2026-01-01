@@ -78,17 +78,29 @@ class AiSettings(BaseSettings):
         env_prefix="AI_",
         extra='ignore',
         env_file='.env',
-        env_file_encoding='utf-8'
+        env_file_encoding='utf-8',
+        case_sensitive=False
     )
     
-    # Provider selection
-    provider: Literal["openai", "openai_compatible"] = Field(
-        default="openai", 
-        description="AI provider to use"
+    # Provider selection - expanded to support multiple providers
+    provider: Optional[Literal["openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
+        default=None, 
+        description="AI provider to use (inferred from base_url if not specified)"
     )
     
     # Core settings
-    api_key: Optional[str] = Field(default=None, description="API key (required for OpenAI, optional for local providers)")
+    api_key: Optional[str] = Field(default=None, description="Generic API key override (AI_API_KEY)")
+    
+    # Vendor-specific API keys (no prefix - read directly from env)
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key (OPENAI_API_KEY)")
+    groq_api_key: Optional[str] = Field(default=None, description="Groq API key (GROQ_API_KEY)")
+    together_api_key: Optional[str] = Field(default=None, description="Together AI API key (TOGETHER_API_KEY)")
+    openrouter_api_key: Optional[str] = Field(default=None, description="OpenRouter API key (OPENROUTER_API_KEY)")
+    
+    # Local provider keys (optional)
+    ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
+    lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
+    
     model: str = Field(default="test-model-1", description="Default model to use")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
@@ -103,6 +115,54 @@ class AiSettings(BaseSettings):
     # Usage tracking settings
     usage_scope: str = Field(default="per_client", description="Usage tracking scope: per_client, per_process, global")
     usage_client_id: Optional[str] = Field(default=None, description="Custom client ID for usage tracking")
+    
+    @field_validator('openai_api_key', mode='before')
+    @classmethod
+    def get_openai_key(cls, v):
+        """Get OpenAI API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENAI_API_KEY')
+    
+    @field_validator('groq_api_key', mode='before')
+    @classmethod
+    def get_groq_key(cls, v):
+        """Get Groq API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('GROQ_API_KEY')
+    
+    @field_validator('together_api_key', mode='before')
+    @classmethod
+    def get_together_key(cls, v):
+        """Get Together API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TOGETHER_API_KEY')
+    
+    @field_validator('openrouter_api_key', mode='before')
+    @classmethod
+    def get_openrouter_key(cls, v):
+        """Get OpenRouter API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENROUTER_API_KEY')
+    
+    @field_validator('ollama_api_key', mode='before')
+    @classmethod
+    def get_ollama_key(cls, v):
+        """Get Ollama API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OLLAMA_API_KEY')
+    
+    @field_validator('lmstudio_api_key', mode='before')
+    @classmethod
+    def get_lmstudio_key(cls, v):
+        """Get LM Studio API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('LMSTUDIO_API_KEY')
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""

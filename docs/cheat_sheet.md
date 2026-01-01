@@ -38,6 +38,73 @@ responses = client.ask_many(["Q1", "Q2", "Q3"])
 
 ---
 
+## 🎵 Audio Processing
+
+### Transcription
+```python
+# Basic transcription
+result = client.transcribe_audio("audio.wav")
+print(result['text'])
+
+# With options
+result = client.transcribe_audio(
+    "podcast.mp3",
+    language="en",
+    temperature=0.1
+)
+```
+
+### Audio Generation
+```python
+# Generate speech
+audio_data = client.generate_audio("Hello world!", voice="alloy")
+with open("output.mp3", "wb") as f:
+    f.write(audio_data)
+
+# With different voice and speed
+audio_data = client.generate_audio(
+    "Welcome!",
+    voice="nova",
+    speed=1.2
+)
+```
+
+### Audio Validation
+```python
+# Validate audio file
+validation = client.validate_audio_file("audio.wav")
+if validation['valid']:
+    print(f"Duration: {validation['file_info']['duration_seconds']}s")
+```
+
+### Voices
+```python
+# List available voices
+voices = client.get_audio_voices()
+# alloy, echo, fable, onyx, nova, shimmer
+```
+
+### Advanced Audio
+```python
+from ai_utilities.audio import AudioProcessor
+from ai_utilities.audio.audio_utils import convert_audio_format
+
+# Load with metadata
+audio_file = load_audio_file("music.mp3")
+print(f"Metadata: {audio_file.metadata}")
+
+# Convert format
+convert_audio_format("input.wav", "output.mp3", "mp3")
+
+# Complex workflow
+processor = AudioProcessor()
+transcription, new_audio = processor.transcribe_and_generate(
+    "speech.wav", target_voice="nova"
+)
+```
+
+---
+
 ## Files API - Document Operations
 
 ### Upload & Analyze

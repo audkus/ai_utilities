@@ -6,6 +6,7 @@ This document provides a comprehensive list of all commands and methods availabl
 
 - [Core Client Methods](#core-client-methods)
 - [Text Generation](#text-generation)
+- [🎵 Audio Processing](#-audio-processing)
 - [Files API - Document Operations](#files-api---document-operations)
 - [Image Generation](#image-generation)
 - [Async Operations](#async-operations)
@@ -101,6 +102,148 @@ response = client.ask(
     system="You are a biology teacher."
 )
 ```
+
+---
+
+## 🎵 Audio Processing
+
+### Audio Transcription
+
+```python
+# Basic transcription
+result = client.transcribe_audio("audio.wav")
+print(result['text'])
+
+# With options
+result = client.transcribe_audio(
+    audio_file="podcast.mp3",
+    language="en",
+    model="whisper-1",
+    prompt="Business meeting transcript",
+    temperature=0.1,
+    response_format="verbose_json"
+)
+
+# Access detailed results
+print(f"Text: {result['text']}")
+print(f"Language: {result['language']}")
+print(f"Duration: {result['duration_seconds']}")
+print(f"Word count: {result['word_count']}")
+```
+
+**Parameters:**
+- `audio_file` (str|Path): Path to audio file
+- `language` (str, optional): Language code (e.g., 'en', 'es')
+- `model` (str, default="whisper-1"): Transcription model
+- `prompt` (str, optional): Prompt to guide transcription
+- `temperature` (float, default=0.0): Sampling temperature (0.0-1.0)
+- `response_format` (str, default="json"): Response format ('json', 'text', 'srt', 'verbose_json', 'vtt')
+
+**Returns:** Dictionary with transcription results
+
+### Audio Generation
+
+```python
+# Basic speech generation
+audio_data = client.generate_audio("Hello world!", voice="alloy")
+
+# With options
+audio_data = client.generate_audio(
+    text="Welcome to our presentation!",
+    voice="nova",
+    model="tts-1",
+    speed=1.0,
+    response_format="mp3"
+)
+
+# Save to file
+with open("speech.mp3", "wb") as f:
+    f.write(audio_data)
+```
+
+**Parameters:**
+- `text` (str): Text to convert to speech
+- `voice` (str, default="alloy"): Voice ID ('alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer')
+- `model` (str, default="tts-1"): TTS model
+- `speed` (float, default=1.0): Speech speed (0.25-4.0)
+- `response_format` (str, default="mp3"): Output format ('mp3', 'opus', 'aac', 'flac')
+
+**Returns:** Bytes containing audio data
+
+### Get Available Voices
+
+```python
+# List all available voices
+voices = client.get_audio_voices()
+for voice in voices:
+    print(f"{voice['id']}: {voice['name']} ({voice['language']})")
+```
+
+**Returns:** List of voice dictionaries with 'id', 'name', and 'language' keys
+
+### Audio Validation
+
+```python
+# Validate audio file
+validation = client.validate_audio_file("audio.wav")
+
+if validation['valid']:
+    print("✅ Valid audio file")
+    info = validation['file_info']
+    print(f"Format: {info['format']}")
+    print(f"Size: {info['size_mb']} MB")
+    print(f"Duration: {info['duration_seconds']}s")
+else:
+    print("❌ Invalid audio file")
+    for error in validation['errors']:
+        print(f"Error: {error}")
+```
+
+**Parameters:**
+- `audio_file` (str|Path): Path to audio file to validate
+
+**Returns:** Dictionary with validation results, file info, warnings, and errors
+
+### Advanced Audio Processing
+
+```python
+from ai_utilities.audio import AudioProcessor
+from ai_utilities.audio.audio_utils import load_audio_file, convert_audio_format
+from ai_utilities.audio.audio_models import AudioFormat
+
+# Create audio processor
+processor = AudioProcessor()
+
+# Load audio with metadata extraction
+audio_file = load_audio_file("music.mp3")
+print(f"Duration: {audio_file.duration_seconds}s")
+print(f"Metadata: {audio_file.metadata}")
+
+# Convert audio format
+convert_audio_format(
+    input_file="input.wav",
+    output_file="output.mp3", 
+    target_format=AudioFormat.MP3
+)
+
+# Complex workflow: transcribe and generate with different voice
+transcription, new_audio = processor.transcribe_and_generate(
+    audio_file="speech.wav",
+    target_voice="nova"
+)
+```
+
+**AudioProcessor Methods:**
+- `load_audio_file(file_path)`: Load audio with metadata extraction
+- `transcribe_audio(...)`: Enhanced transcription with metadata
+- `generate_audio(...)`: Enhanced audio generation
+- `transcribe_and_generate(audio_file, target_voice)`: Complex workflow
+- `convert_audio_format(input, output, target_format)`: Format conversion
+- `validate_audio_for_transcription(file)`: Transcription-specific validation
+
+**Supported Audio Formats:**
+- **Input:** WAV, MP3, FLAC, OGG, M4A, WEBM
+- **Output:** MP3, OPUS, AAC, FLAC
 
 ---
 
