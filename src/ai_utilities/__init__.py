@@ -2,11 +2,12 @@
 ai_utilities - Clean v1 library for AI integrations.
 
 This package provides tools for AI integration with explicit configuration
-and no import-time side effects.
+and no import-time side effects, including audio processing capabilities.
 
 Main Classes:
     AiSettings: Configuration settings for AI client
     AiClient: Main AI client for making requests
+    AudioProcessor: Audio transcription and generation
 
 Example Usage:
     from ai_utilities import AiClient, AiSettings
@@ -14,6 +15,13 @@ Example Usage:
     # Using environment variables
     client = AiClient()
     response = client.ask("What is the capital of France?")
+    
+    # Audio transcription
+    result = client.transcribe_audio("recording.wav")
+    print(result["text"])
+    
+    # Audio generation
+    audio_data = client.generate_audio("Hello, world!", voice="nova")
     
     # Using explicit settings
     settings = AiSettings(api_key="your-key", model="test-model-1")
@@ -45,6 +53,19 @@ from .usage_tracker import (
     UsageTracker,
     create_usage_tracker,
 )
+from .audio import (
+    AudioProcessor,
+    AudioFormat,
+    AudioFile,
+    TranscriptionRequest,
+    TranscriptionResult,
+    AudioGenerationRequest,
+    AudioGenerationResult,
+    load_audio_file,
+    save_audio_file,
+    validate_audio_file,
+    get_audio_info,
+)
 
 __all__ = [
     'AiClient',
@@ -70,7 +91,19 @@ __all__ = [
     'ProviderCapabilities',
     'ProviderCapabilityError',
     'ProviderConfigurationError',
-    'FileTransferError'
+    'FileTransferError',
+    # Audio processing
+    'AudioProcessor',
+    'AudioFormat',
+    'AudioFile',
+    'TranscriptionRequest',
+    'TranscriptionResult',
+    'AudioGenerationRequest',
+    'AudioGenerationResult',
+    'load_audio_file',
+    'save_audio_file',
+    'validate_audio_file',
+    'get_audio_info',
 ]
 
 # Version - automatically retrieved from package metadata

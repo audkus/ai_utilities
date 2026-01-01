@@ -30,6 +30,7 @@ print(response)
 ```
 
 **Where to look next:**
+- **🎵 Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
 - More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
 - **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
@@ -53,6 +54,72 @@ git clone https://github.com/audkus/ai_utilities.git
 cd ai_utilities
 pip install -e ".[dev]"
 ```
+
+### With Audio Features
+```bash
+# Basic installation
+pip install ai-utilities
+
+# With audio processing capabilities
+pip install ai-utilities[audio]
+
+# Full installation with all features
+pip install ai-utilities[all]
+```
+
+---
+
+## 🎵 Audio Processing
+
+AI Utilities now includes comprehensive audio processing capabilities:
+
+### Audio Transcription (OpenAI Whisper)
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+result = client.transcribe_audio("podcast.mp3")
+print(f"Transcription: {result['text']}")
+```
+
+### Audio Generation (OpenAI TTS)
+```python
+# Generate speech from text
+audio_data = client.generate_audio("Hello world!", voice="alloy")
+with open("output.mp3", "wb") as f:
+    f.write(audio_data)
+```
+
+### Audio Validation & Analysis
+```python
+# Validate audio files
+validation = client.validate_audio_file("audio.wav")
+print(f"Valid: {validation['valid']}")
+
+# Extract metadata
+from ai_utilities.audio.audio_utils import load_audio_file
+audio_file = load_audio_file("music.mp3")
+print(f"Duration: {audio_file.duration_seconds}s")
+print(f"Metadata: {audio_file.metadata}")
+```
+
+### Format Conversion & Advanced Workflows
+```python
+from ai_utilities.audio.audio_utils import convert_audio_format
+from ai_utilities.audio.audio_models import AudioFormat
+
+# Convert between formats
+convert_audio_format("input.wav", "output.mp3", AudioFormat.MP3)
+
+# Complex workflows
+from ai_utilities.audio import AudioProcessor
+processor = AudioProcessor()
+transcription, new_audio = processor.transcribe_and_generate(
+    "speech.wav", target_voice="nova"
+)
+```
+
+**📚 Complete Audio Guide → [`docs/audio_processing.md`](docs/audio_processing.md)**
 
 ---
 

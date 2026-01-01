@@ -256,7 +256,7 @@ class TestIntegrationWithClient:
         assert client.settings.api_key == "test-key"
     
     def test_create_client_without_key_raises_error(self, tmp_path):
-        """Test create_client without API key raises MissingApiKeyError."""
+        """Test create_client without API key raises MissingApiKeyError for OpenAI provider."""
         from ai_utilities import create_client
         from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
         
@@ -265,17 +265,27 @@ class TestIntegrationWithClient:
         try:
             os.chdir(tmp_path)
             
-            # Remove any existing key
-            if "AI_API_KEY" in os.environ:
-                del os.environ["AI_API_KEY"]
+            # Remove any existing API keys from environment
+            api_keys_to_remove = ["AI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
+            removed_keys = []
+            for key in api_keys_to_remove:
+                if key in os.environ:
+                    del os.environ[key]
+                    removed_keys.append(key)
             
+            # Create an empty .env file to ensure no keys are loaded from it
+            env_file = tmp_path / ".env"
+            env_file.write_text("# Empty .env file for testing\n")
+            
+            # Test that OpenAI provider requires API key
             # The provider factory now converts MissingApiKeyError to ProviderConfigurationError
+            # Disable auto_setup to prevent interactive prompts and disable .env loading
             with pytest.raises(ProviderConfigurationError) as exc_info:
-                create_client()
+                create_client(provider="openai", _env_file=None, auto_setup=False)
             
             # Check that the error message is still helpful
             error_message = str(exc_info.value)
-            assert "API key is required" in error_message
+            assert "No API key found" in error_message
         finally:
             os.chdir(original_cwd)
     
