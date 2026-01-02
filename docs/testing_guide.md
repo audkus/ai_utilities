@@ -1,31 +1,61 @@
 # Testing Guide
 
-This guide explains how to test the ai_utilities library, including all test parameters and best practices.
+This guide explains how to test the ai_utilities library, including all test parameters, categories, and best practices.
 
-## Table of Contents
+## 📊 Test Categories
+
+The test suite is organized into three main categories:
+
+### 🧪 Unit Tests (535 tests)
+- **Speed**: Fast (no external dependencies)
+- **Requirements**: No API keys needed
+- **Purpose**: Core functionality testing
+- **Examples**: `test_caching.py`, `test_client.py`, `test_config_models.py`
+
+### 🔗 Integration Tests (54 skipped by default)
+- **Speed**: Medium (requires API calls)
+- **Requirements**: Valid API keys needed
+- **Purpose**: Real API interaction testing
+- **Examples**: Live provider tests, file upload tests
+- **Run with**: `pytest -m integration` (requires `AI_API_KEY`)
+
+### 📈 Dashboard Tests (17 deselected by default)
+- **Speed**: Slow (runs full test suite)
+- **Requirements**: None, but makes real API calls
+- **Purpose**: Test suite validation and reporting
+- **Examples**: `test_dashboard.py`
+- **Run with**: `pytest -m dashboard`
+
+## 📋 Table of Contents
 
 - [Quick Start](#quick-start)
 - [Test Categories](#test-categories)
-- [Test Parameters](#test-parameters)
+- [Understanding Test Output](#understanding-test-output)
 - [Running Tests](#running-tests)
 - [Writing Tests](#writing-tests)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Basic Test Commands
 
 ```bash
 # Run all tests (unit tests only - no API calls)
 pytest
+# Output: 535 passed, 54 skipped, 17 deselected in 105.24s
 
 # Run unit tests only (fast, no external dependencies)
-pytest -m "not integration"
+pytest -m "not integration and not dashboard"
 
 # Run integration tests (requires API key)
-pytest -m "integration"
+pytest -m integration
+# First set: export AI_API_KEY="your-key"
+
+# Run dashboard validation tests
+pytest -m dashboard
+# Note: These are slow and make real API calls
 
 # Run specific test file
 pytest tests/test_files_api.py
@@ -36,6 +66,48 @@ pytest -v
 # Run with coverage
 pytest --cov=src --cov-report=html
 ```
+
+---
+
+## 📖 Understanding Test Output
+
+### What the Numbers Mean
+
+```
+535 passed, 54 skipped, 17 deselected in 105.24s (0:01:45)
+```
+
+- **535 passed**: Unit tests that ran successfully
+- **54 skipped**: Integration tests that require API keys or external services
+- **17 deselected**: Dashboard tests excluded by configuration filter
+
+### Why Tests Are Skipped/Deselected
+
+**Skipped Tests (54):**
+- Integration tests without `AI_API_KEY`
+- Tests requiring external services (Ollama, local providers)
+- Platform-specific tests
+
+**Deselected Tests (17):**
+- Dashboard validation tests (`@pytest.mark.dashboard`)
+- Excluded by `pytest.ini` setting: `addopts = -m "not dashboard"`
+- These run the actual test suite and are slow
+
+### Test Markers
+
+```bash
+# See all available markers
+pytest --markers
+
+# Common markers:
+# @pytest.mark.integration - Requires API keys
+# @pytest.mark.hanging - Tests that hang in full suite
+# @pytest.mark.dashboard - Dashboard validation tests
+```
+
+---
+
+## 🏃 Running Tests
 
 ### Environment Setup for Testing
 
@@ -50,378 +122,188 @@ cp .env.example .env.test
 # Edit .env.test with test values
 ```
 
----
-
-## Test Categories
-
-### 1. Unit Tests (`-m "not integration"`)
-- **Purpose**: Test individual components in isolation
-- **Speed**: Fast (seconds)
-- **Dependencies**: None (uses fake providers)
-- **Examples**: `test_files_api.py`, `test_client.py`
-
-### 2. Integration Tests (`-m "integration"`)
-- **Purpose**: Test with real APIs
-- **Speed**: Slower (minutes)
-- **Dependencies**: Requires API keys
-- **Examples**: `test_files_integration.py`, `test_real_api_integration.py`
-
-### 3. Performance Tests
-- **Purpose**: Test speed and resource usage
-- **Speed**: Variable
-- **Dependencies**: May require API keys
-- **Examples**: `test_performance.py`
-
----
-
-## Test Parameters
-
-### Pytest Parameters
-
-| Parameter | Purpose | Example |
-|-----------|---------|---------|
-| `-v` | Verbose output | `pytest -v` |
-| `-s` | Show stdout (don't capture) | `pytest -s` |
-| `-x` | Stop on first failure | `pytest -x` |
-| `--tb=short` | Short traceback format | `pytest --tb=short` |
-| `--tb=line` | One-line traceback | `pytest --tb=line` |
-| `-k "expression"` | Run tests matching expression | `pytest -k "upload"` |
-| `--maxfail=N` | Stop after N failures | `pytest --maxfail=3` |
-
-### Marker Parameters
-
-| Marker | Purpose | Usage |
-|--------|---------|-------|
-| `integration` | Tests requiring real API | `pytest -m integration` |
-| `not integration` | Tests without API calls | `pytest -m "not integration"` |
-| `openai` | OpenAI-specific tests | `pytest -m openai` |
-| `slow` | Slow-running tests | `pytest -m "not slow"` |
-
-### Coverage Parameters
-
-| Parameter | Purpose | Example |
-|-----------|---------|---------|
-| `--cov=src` | Generate coverage report | `pytest --cov=src` |
-| `--cov-report=html` | HTML coverage report | `pytest --cov=src --cov-report=html` |
-| `--cov-report=term` | Terminal coverage | `pytest --cov=src --cov-report=term` |
-| `--cov-fail-under=80` | Fail if coverage < 80% | `pytest --cov=src --cov-fail-under=80` |
-
----
-
-## Running Tests
-
-### Development Workflow
+### Test Selection Strategies
 
 ```bash
-# 1. Quick check during development
-pytest tests/test_files_api.py -x --tb=line
+# Fast feedback: unit tests only
+pytest
 
-# 2. Full unit test suite
-pytest -m "not integration" -v
+# Full feedback: include integration tests
+pytest -m "not dashboard"
 
-# 3. Integration tests (when API available)
-pytest -m integration -v
+# Complete validation: include dashboard tests
+pytest -m "dashboard"
 
-# 4. Full test suite with coverage
-pytest --cov=src --cov-report=html
+# Specific functionality
+pytest tests/test_caching.py -v
+pytest tests/test_client.py::test_ai_client_creation -v
 
-# 5. Performance tests
-pytest tests/test_performance.py -v
+# Exclude slow tests
+pytest -m "not hanging and not dashboard"
 ```
 
-### CI/CD Pipeline
+### CI/CD Testing
 
 ```bash
-# In CI/CD (no API keys)
-pytest -m "not integration" --cov=src --cov-fail-under=80
+# CI environment (no API keys)
+pytest -m "not integration and not dashboard"
 
-# In CI/CD with API keys
-pytest --cov=src --cov-fail-under=80
-```
-
-### Debugging Tests
-
-```bash
-# Run with debugging output
-pytest -s -v tests/test_files_api.py::TestFileUpload::test_upload_file_success
-
-# Run with Python debugger
-pytest --pdb tests/test_files_api.py::TestFileUpload::test_upload_file_success
-
-# Run with verbose output and stop on failure
-pytest -x -v --tb=short tests/test_files_api.py
+# Full CI with API keys
+pytest -m "not dashboard"
 ```
 
 ---
 
-## Writing Tests
+## ✍️ Writing Tests
 
 ### Test Structure
 
 ```python
 import pytest
 from ai_utilities import AiClient, AiSettings
-from tests.fake_provider import FakeProvider
+from tests.test_caching import FakeProvider
 
-class TestFeatureName:
-    """Test feature description."""
+def test_functionality():
+    """Test description."""
+    # Arrange
+    fake_settings = AiSettings(temperature=0.5)
+    provider = FakeProvider(fake_settings)
+    client = AiClient(settings=settings, provider=provider)
     
-    def test_method_name(self):
-        """Test specific functionality."""
-        # Arrange
-        settings = AiSettings(api_key='test-key', provider='openai')
-        provider = FakeProvider()
-        client = AiClient(settings=settings, provider=provider)
-        
-        # Act
-        result = client.some_method()
-        
-        # Assert
-        assert result is not None
-        assert result.success == True
+    # Act
+    response = client.ask("test prompt")
+    
+    # Assert
+    assert "test prompt" in response
+    assert provider.ask_count == 1
 ```
 
-### Using Fixtures
+### Testing with Cache
 
 ```python
-@pytest.fixture
-def mock_client():
-    """Create a mock client for testing."""
-    settings = AiSettings(api_key='test-key', provider='openai')
-    provider = FakeProvider()
-    return AiClient(settings=settings, provider=provider)
-
-def test_with_fixture(mock_client):
-    """Test using fixture."""
-    result = mock_client.ask("test prompt")
-    assert result is not None
-```
-
-### Async Tests
-
-```python
-import pytest
-import asyncio
-
-@pytest.mark.asyncio
-async def test_async_functionality():
-    """Test async methods."""
-    from ai_utilities import AsyncAiClient
+def test_caching_behavior(tmp_path):
+    """Test cache isolation and behavior."""
+    import tempfile
     
-    settings = AiSettings(api_key='test-key', provider='openai')
-    provider = FakeAsyncProvider()
-    client = AsyncAiClient(settings=settings, provider=provider)
+    # SQLite cache requires explicit path in pytest
+    settings = AiSettings(
+        cache_enabled=True,
+        cache_backend="sqlite",
+        cache_sqlite_path=tmp_path / "test_cache.sqlite",
+        cache_namespace="test"
+    )
     
-    result = await client.ask("test prompt")
-    assert result is not None
+    client = AiClient(settings=settings)
+    
+    # Test cache hit
+    response1 = client.ask("test")
+    response2 = client.ask("test")  # Should hit cache
+    
+    assert response1 == response2
 ```
 
 ### Integration Tests
 
 ```python
-import pytest
-import os
-
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("AI_API_KEY"), reason="No API key")
-def test_real_api_integration():
-    """Test with real API."""
-    client = AiClient()  # Uses real API key from environment
-    
-    result = client.ask("What is AI?")
-    assert len(result) > 0
-    assert isinstance(result, str)
+def test_real_api_call():
+    """Test with real API - requires AI_API_KEY."""
+    client = AiClient()
+    response = client.ask("What is 2+2?")
+    assert "4" in response or "four" in response.lower()
 ```
 
-### Error Testing
+### Dashboard Tests
 
 ```python
-def test_error_handling():
-    """Test error conditions."""
-    provider = FakeProvider(should_fail=True)
-    client = AiClient(provider=provider)
-    
-    with pytest.raises(FileTransferError):
-        client.upload_file("test.txt")
+@pytest.mark.dashboard
+def test_dashboard_validation():
+    """Test dashboard functionality - slow validation test."""
+    # These tests run the full test suite
+    # Only run when explicitly requested
+    pass
 ```
 
 ---
 
-## Test Configuration
-
-### pytest.ini Configuration
-
-```ini
-[tool:pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts = 
-    --strict-markers
-    --strict-config
-    --verbose
-    --tb=short
-markers =
-    integration: Tests requiring real API access
-    openai: Tests specific to OpenAI provider
-    slow: Tests that take a long time to run
-```
-
-### pyproject.toml Configuration
-
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config", 
-    "--verbose",
-    "--tb=short"
-]
-markers = [
-    "integration: Tests requiring real API access",
-    "openai: Tests specific to OpenAI provider",
-    "slow: Tests that take a long time to run"
-]
-```
-
----
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-#### 1. Interactive Setup Prompts
-**Problem**: Tests ask for API key input
-**Solution**: Use explicit settings in tests
+**Tests are too slow:**
+```bash
+# Exclude dashboard tests (default behavior)
+pytest
 
-```python
-# Wrong - triggers interactive setup
-client = AiClient(provider=provider)
-
-# Correct - no interactive setup
-settings = AiSettings(api_key='test-key', provider='openai')
-client = AiClient(settings=settings, provider=provider)
+# Check what's running
+pytest --collect-only | wc -l  # Should show ~589 total
 ```
 
-#### 2. Input Capture Issues
-**Problem**: `OSError: pytest: reading from stdin while output is captured`
-**Solution**: Run with `-s` flag or fix test setup
-
+**Integration tests failing:**
 ```bash
-# Quick fix
-pytest -s tests/test_files_api.py
+# Check API key
+echo $AI_API_KEY
 
-# Proper fix - add explicit settings to test
-settings = AiSettings(api_key='test-key')
-client = AiClient(settings=settings)
-```
-
-#### 3. Integration Test Failures
-**Problem**: Integration tests fail without API key
-**Solution**: Set environment variables or skip tests
-
-```bash
-# Set API key
-export AI_API_KEY="your-key"
-
-# Or run unit tests only
+# Run without integration tests
 pytest -m "not integration"
 ```
 
-#### 4. Import Errors
-**Problem**: Module import failures in tests
-**Solution**: Add src to Python path
-
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+**Cache tests failing:**
+```bash
+# SQLite cache needs explicit path in pytest
+export AI_CACHE_SQLITE_PATH="/tmp/test_cache.sqlite"
+pytest tests/test_sqlite_cache.py -v
 ```
 
-### Debug Commands
+**Database/connection errors:**
+```bash
+# Clean test environment
+rm -rf .pytest_cache/
+pytest --tb=short
+```
+
+### Debugging Test Selection
 
 ```bash
-# Run specific test with debugging
-pytest -s -v tests/test_files_api.py::TestFileUpload::test_upload_file_success
+# See which tests will run
+pytest --collect-only -m "not dashboard"
 
-# Check which tests would run (dry run)
-pytest --collect-only
-
-# Run with maximum verbosity
-pytest -vv -s
+# See deselected tests
+pytest --collect-only -m dashboard
 
 # Check test markers
-pytest --markers
+grep -r "@pytest.mark" tests/ | head -10
 ```
 
-### Performance Testing
+### Performance Issues
 
 ```bash
-# Run tests with timing
+# Run with timing information
 pytest --durations=10
 
 # Profile slow tests
 pytest --profile
 
-# Memory usage testing
-pytest --memprof
+# Run in parallel (if available)
+pytest -n auto
 ```
 
 ---
 
-## Best Practices
+## 📚 Best Practices
 
-### 1. Test Organization
-- **Unit tests**: Test individual methods/classes
-- **Integration tests**: Test component interactions
-- **End-to-end tests**: Test complete workflows
-
-### 2. Test Data
-- Use temporary files for file tests
-- Clean up resources in teardown
-- Use fixtures for common test data
-
-### 3. Assertions
-- Be specific with assertions
-- Test both success and failure cases
-- Use descriptive assertion messages
-
-### 4. Mocking
-- Use fake providers for unit tests
-- Mock external dependencies
-- Keep mocks simple and focused
-
-### 5. Performance
-- Keep unit tests fast
-- Use markers for slow tests
-- Run integration tests separately
+1. **Use FakeProvider for unit tests** - Avoid real API calls
+2. **Mark integration tests** - Use `@pytest.mark.integration`
+3. **Test cache behavior** - Include cache hit/miss scenarios
+4. **Use tmp_path for files** - Clean test isolation
+5. **Test error conditions** - Don't just test happy paths
+6. **Keep tests fast** - Avoid unnecessary delays
+7. **Use descriptive names** - Test should document itself
 
 ---
 
-## Example Test Commands
+## 📖 Related Documentation
 
-```bash
-# Development workflow
-pytest tests/test_files_api.py -x --tb=line
-pytest -m "not integration" --cov=src
-pytest -m integration -s
-
-# CI/CD pipeline
-pytest --cov=src --cov-fail-under=80 --maxfail=3
-
-# Debugging
-pytest -s -v tests/test_files_api.py::TestFileUpload::test_upload_file_success
-pytest --pdb tests/test_files_api.py
-
-# Performance
-pytest --durations=10 tests/test_performance.py
-```
-
----
-
-This testing guide provides comprehensive coverage of all testing aspects in ai_utilities. Use it as a reference for writing, running, and debugging tests.
+- [Smart Caching Guide](caching.md) - Testing with cache backends
+- [Command Reference](command_reference.md) - All configuration options
+- [Test Dashboard](test_dashboard.md) - Dashboard validation tests
