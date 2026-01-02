@@ -21,6 +21,11 @@ class MissingApiKeyError(Exception):
     pass
 
 
+class MissingBaseUrlError(Exception):
+    """Raised when a base_url is required but missing."""
+    pass
+
+
 @dataclass
 class ResolvedConfig:
     """Resolved configuration for a request."""
@@ -58,16 +63,34 @@ def resolve_provider(
     Raises:
         UnknownProviderError: If provider cannot be determined
     """
+    valid_providers = {
+        "openai",
+        "groq",
+        "together",
+        "openrouter",
+        "ollama",
+        "lmstudio",
+        "text-generation-webui",
+        "fastchat",
+        "openai_compatible",
+    }
+
+    def _validate(name: str) -> str:
+        normalized = name.lower()
+        if normalized not in valid_providers:
+            raise UnknownProviderError(f"Unknown provider: {normalized}")
+        return normalized
+
     # 1) Per-request provider wins
     if provider:
-        return provider.lower()
+        return _validate(provider)
     
     # 2) Settings/provider provider
     # (This will be handled by caller passing settings.provider)
     
     # 3) Environment AI_PROVIDER
     if env_provider:
-        return env_provider.lower()
+        return _validate(env_provider)
     
     # 4) Infer from base_url
     if base_url:
@@ -163,6 +186,8 @@ def resolve_api_key(
         return vendor_key
     
     # 5) For local providers, allow fallback tokens
+    if provider == "openai_compatible":
+        return "dummy-key"
     if provider in ["ollama", "lmstudio", "text-generation-webui", "fastchat"]:
         fallbacks = {
             "ollama": "ollama",
@@ -173,6 +198,8 @@ def resolve_api_key(
         return fallbacks.get(provider, "not-required")
     
     # 6) Cloud providers must have API keys
+    if provider == "openai":
+        raise MissingApiKeyError("API key is required")
     raise MissingApiKeyError(f"No API key found for provider '{provider}'. "
                            f"Set {provider.upper()}_API_KEY environment variable.")
 
@@ -252,6 +279,9 @@ def resolve_base_url(
         return settings_base_url
     
     # 3) Provider default base URL
+    if provider == "openai_compatible":
+        raise MissingBaseUrlError("base_url is required")
+
     defaults = {
         "openai": "https://api.openai.com/v1",
         "groq": "https://api.groq.com/openai/v1",
@@ -261,7 +291,6 @@ def resolve_base_url(
         "lmstudio": "http://localhost:1234/v1",
         "text-generation-webui": "http://localhost:5000/v1",
         "fastchat": "http://localhost:8000/v1",
-        "openai_compatible": "http://localhost:8080/v1",  # Generic default
     }
     
     return defaults.get(provider, "https://api.openai.com/v1")
@@ -320,17 +349,20 @@ def resolve_request_config(
     )
     
     # Resolve base URL
-    resolved_base_url = resolve_base_url(
-        provider=resolved_provider,
-        base_url=base_url,
-        settings_base_url=settings.base_url
-    )
-    
+    try:
+        resolved_base_url = resolve_base_url(
+            provider=resolved_provider,
+            base_url=base_url,
+            settings_base_url=settings.base_url
+        )
+    except MissingBaseUrlError as e:
+        raise MissingBaseUrlError(str(e))  # Re-raise so provider_factory can catch it 
+        
     # Resolve other parameters (per-request wins, then settings)
     resolved_model = model or settings.model
     resolved_temperature = temperature or settings.temperature
     resolved_max_tokens = max_tokens or getattr(settings, 'max_tokens', None)
-    resolved_timeout = timeout or settings.timeout
+    resolved_timeout = timeout or settings.request_timeout_s or settings.timeout
     
     # Provider-specific kwargs
     provider_kwargs = kwargs.copy()
