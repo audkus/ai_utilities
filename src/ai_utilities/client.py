@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from .providers.openai_provider import OpenAIProvider
 from .providers.base_provider import BaseProvider
 from .usage_tracker import UsageScope, create_usage_tracker
-from .cache import CacheBackend, NullCache, MemoryCache
+from .cache import CacheBackend, NullCache, MemoryCache, SqliteCache, stable_hash
 from .progress_indicator import ProgressIndicator
 from .models import AskResult
 from .json_parsing import parse_json_from_text, JsonParseError, create_repair_prompt
@@ -28,6 +28,55 @@ from pydantic import ValidationError
 
 # Generic type for typed responses
 T = TypeVar('T', bound=BaseModel)
+
+
+def _sanitize_namespace(ns: str) -> str:
+    """Sanitize namespace string to be safe for database use.
+    
+    Args:
+        ns: Raw namespace string
+        
+    Returns:
+        Sanitized namespace string
+    """
+    # Strip whitespace and convert to lowercase
+    sanitized = ns.strip().lower()
+    
+    # Replace most special chars with underscores, but keep some safe ones
+    import re
+    sanitized = re.sub(r'[^a-z0-9_.-]', '_', sanitized)
+    
+    # Remove consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    
+    # Limit length and strip leading/trailing underscores
+    sanitized = sanitized[:50].strip('_')
+    
+    # Ensure it's not empty
+    if not sanitized:
+        sanitized = "default"
+    
+    return sanitized
+
+
+def _default_namespace() -> str:
+    """Generate default namespace based on current working directory.
+    
+    Returns:
+        Stable namespace string for current project
+    """
+    # Use current working directory for namespace
+    cwd_hash = stable_hash({"cwd": str(Path.cwd().resolve())})
+    return f"proj_{cwd_hash[:12]}"
+
+
+def _running_under_pytest() -> bool:
+    """Check if currently running under pytest.
+    
+    Returns:
+        True if running under pytest
+    """
+    return "PYTEST_CURRENT_TEST" in os.environ
 
 
 class AiSettings(BaseSettings):
@@ -107,9 +156,20 @@ class AiSettings(BaseSettings):
     
     # Caching settings (opt-in)
     cache_enabled: bool = Field(default=False, description="Enable response caching")
-    cache_backend: Literal["null", "memory"] = Field(default="null", description="Cache backend to use")
+    cache_backend: Literal["null", "memory", "sqlite"] = Field(default="null", description="Cache backend to use")
     cache_ttl_s: Optional[int] = Field(default=None, ge=1, description="Cache TTL in seconds (None for no expiration)")
     cache_max_temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Maximum temperature for caching (only cache when temp <= this)")
+    
+    # SQLite cache settings
+    cache_sqlite_path: Optional[Path] = Field(default=None, description="Path to SQLite cache database file")
+    cache_sqlite_table: str = Field(default="ai_cache", description="SQLite table name for cache")
+    cache_sqlite_wal: bool = Field(default=True, description="Enable WAL mode for SQLite cache")
+    cache_sqlite_busy_timeout_ms: int = Field(default=3000, ge=100, description="SQLite busy timeout in milliseconds")
+    cache_sqlite_max_entries: Optional[int] = Field(default=None, ge=1, description="Maximum entries per namespace (LRU eviction)")
+    cache_sqlite_prune_batch: int = Field(default=200, ge=1, description="Batch size for LRU pruning")
+    
+    # Cache namespace
+    cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""
@@ -648,6 +708,40 @@ class AiClient:
         elif settings.cache_backend == "memory":
             # Use memory cache with configured TTL
             self.cache = MemoryCache(default_ttl_s=settings.cache_ttl_s)
+        elif settings.cache_backend == "sqlite":
+            # SQLite cache with isolation rules for pytest
+            if _running_under_pytest() and settings.cache_sqlite_path is None:
+                # Strict isolation: disable SQLite cache in pytest unless explicit path
+                self.cache = NullCache()
+            else:
+                # Determine database path
+                if settings.cache_sqlite_path is not None:
+                    db_path = settings.cache_sqlite_path
+                else:
+                    # Default to user home directory
+                    db_path = Path.home() / ".ai_utilities" / "cache.sqlite"
+                
+                # Determine namespace
+                if settings.cache_namespace is not None:
+                    namespace = _sanitize_namespace(settings.cache_namespace)
+                else:
+                    # Use pytest namespace when under pytest, otherwise default
+                    if _running_under_pytest():
+                        namespace = "pytest"
+                    else:
+                        namespace = _default_namespace()
+                
+                # Create SQLite cache
+                self.cache = SqliteCache(
+                    db_path=db_path,
+                    table=settings.cache_sqlite_table,
+                    namespace=namespace,
+                    wal=settings.cache_sqlite_wal,
+                    busy_timeout_ms=settings.cache_sqlite_busy_timeout_ms,
+                    default_ttl_s=settings.cache_ttl_s,
+                    max_entries=settings.cache_sqlite_max_entries,
+                    prune_batch=settings.cache_sqlite_prune_batch,
+                )
         else:
             # Default to null cache
             self.cache = NullCache()
@@ -804,10 +898,17 @@ class AiClient:
                 'usage_scope',  # Internal usage tracking field
                 'usage_client_id',  # Internal usage tracking field
                 'update_check_days',  # Internal configuration field
-                'cache_enabled',  # Caching configuration field
-                'cache_backend',  # Caching configuration field
-                'cache_ttl_s',  # Caching configuration field
-                'cache_max_temperature'  # Caching configuration field
+                'cache_enabled',  # Cache settings, not provider params
+                'cache_backend',  # Cache settings, not provider params
+                'cache_ttl_s',  # Cache settings, not provider params
+                'cache_max_temperature',  # Cache settings, not provider params
+                'cache_sqlite_path',  # Cache settings, not provider params
+                'cache_sqlite_table',  # Cache settings, not provider params
+                'cache_sqlite_wal',  # Cache settings, not provider params
+                'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                'cache_sqlite_max_entries',  # Cache settings, not provider params
+                'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                'cache_namespace',  # Cache settings, not provider params
             }
         )
         request_params.update(kwargs)
@@ -942,7 +1043,18 @@ class AiClient:
                             'api_key',  # Providers already have this from initialization
                             'usage_scope',  # Internal usage tracking field
                             'usage_client_id',  # Internal usage tracking field
-                            'update_check_days'  # Internal configuration field
+                            'update_check_days',  # Internal configuration field
+                            'cache_enabled',  # Cache settings, not provider params
+                            'cache_backend',  # Cache settings, not provider params
+                            'cache_ttl_s',  # Cache settings, not provider params
+                            'cache_max_temperature',  # Cache settings, not provider params
+                            'cache_sqlite_path',  # Cache settings, not provider params
+                            'cache_sqlite_table',  # Cache settings, not provider params
+                            'cache_sqlite_wal',  # Cache settings, not provider params
+                            'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                            'cache_sqlite_max_entries',  # Cache settings, not provider params
+                            'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                            'cache_namespace',  # Cache settings, not provider params
                         }
                     )
                     request_params.update(kwargs)
@@ -1111,7 +1223,14 @@ class AiClient:
                 'cache_enabled',  # Caching configuration field
                 'cache_backend',  # Caching configuration field
                 'cache_ttl_s',  # Caching configuration field
-                'cache_max_temperature'  # Caching configuration field
+                'cache_max_temperature',  # Caching configuration field
+                'cache_sqlite_path',  # Cache settings, not provider params
+                'cache_sqlite_table',  # Cache settings, not provider params
+                'cache_sqlite_wal',  # Cache settings, not provider params
+                'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                'cache_sqlite_max_entries',  # Cache settings, not provider params
+                'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                'cache_namespace',  # Cache settings, not provider params
             }
         )
         request_params.update(kwargs)
@@ -1270,7 +1389,14 @@ class AiClient:
                 'cache_enabled',  # Caching configuration field
                 'cache_backend',  # Caching configuration field
                 'cache_ttl_s',  # Caching configuration field
-                'cache_max_temperature'  # Caching configuration field
+                'cache_max_temperature',  # Caching configuration field
+                'cache_sqlite_path',  # Cache settings, not provider params
+                'cache_sqlite_table',  # Cache settings, not provider params
+                'cache_sqlite_wal',  # Cache settings, not provider params
+                'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                'cache_sqlite_max_entries',  # Cache settings, not provider params
+                'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                'cache_namespace',  # Cache settings, not provider params
             }
         )
         request_params.update(kwargs)
