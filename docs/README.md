@@ -12,11 +12,30 @@ Welcome to the AI Utilities documentation! This folder contains detailed guides 
 - Format conversion and advanced workflows
 - Installation and configuration guide
 
+### 🧠 [Smart Caching Guide](caching.md)
+- Complete caching system documentation
+- Multiple cache backends (null, memory, sqlite)
+- Namespace isolation and configuration
+- Performance optimization and best practices
+- TTL expiration and LRU eviction
+
+### 🔍 [Vector Search Guide](vector_extensions.md)
+- Knowledge base and semantic search
+- Document indexing and retrieval
+- Embedding-based search capabilities
+- Integration with AI models
+
 ### 🚀 [Testing Setup Guide](testing-setup.md)
 - Complete testing setup and configuration
 - Provider-specific testing instructions
 - Troubleshooting and best practices
 - Code examples and usage patterns
+
+### 🧪 [Testing Guide](testing_guide.md)
+- Comprehensive testing documentation
+- Test categories and selection strategies
+- Understanding test output and deselected tests
+- Writing tests with cache backends
 
 ### 🤖 [All Providers Guide](all-providers-guide.md)
 - Comprehensive guide for all 8 AI providers
@@ -52,10 +71,18 @@ ai_utilities/
 ## 📖 Getting Started
 
 1. Read the [main README](../README.md) for project overview
+<<<<<<< HEAD
 2. Check the [Audio Processing Guide](audio_processing.md) for audio features
 3. Follow the [Testing Setup Guide](testing-setup.md) for configuration
 4. Check the [All Providers Guide](all-providers-guide.md) for provider setup
 5. Explore the [examples](../examples/) for usage patterns
+=======
+2. Check the [Smart Caching Guide](caching.md) for performance optimization
+3. Follow the [Testing Setup Guide](testing-setup.md) for configuration
+4. Review the [Testing Guide](testing_guide.md) for test categories
+5. Check the [All Providers Guide](all-providers-guide.md) for provider setup
+6. Explore the [examples](../examples/) for usage patterns
+>>>>>>> feature/smart-caching
 
 ## 🤝 Contributing
 

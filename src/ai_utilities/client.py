@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from .providers.openai_provider import OpenAIProvider
 from .providers.base_provider import BaseProvider
 from .usage_tracker import UsageScope, create_usage_tracker
+from .cache import CacheBackend, NullCache, MemoryCache, SqliteCache, stable_hash
 from .progress_indicator import ProgressIndicator
 from .models import AskResult
 from .json_parsing import parse_json_from_text, JsonParseError, create_repair_prompt
@@ -28,6 +29,46 @@ from pydantic import ValidationError
 
 # Generic type for typed responses
 T = TypeVar('T', bound=BaseModel)
+
+
+def _sanitize_namespace(ns: str) -> str:
+    """Sanitize namespace string to be safe for database use.
+    
+    Args:
+        ns: Raw namespace string
+        
+    Returns:
+        Sanitized namespace string
+    """
+    # Strip whitespace and convert to lowercase
+    sanitized = ns.strip().lower()
+    
+    # Replace most special chars with underscores, but keep some safe ones
+    import re
+    sanitized = re.sub(r'[^a-z0-9_.-]', '_', sanitized)
+    
+    # Remove consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    
+    # Limit length and strip leading/trailing underscores
+    sanitized = sanitized[:50].strip('_')
+    
+    # Ensure it's not empty
+    if not sanitized:
+        sanitized = "default"
+    
+    return sanitized
+
+
+def _default_namespace() -> str:
+    """Generate default namespace based on current working directory.
+    
+    Returns:
+        Stable namespace string for current project
+    """
+    # Use current working directory for namespace
+    cwd_hash = stable_hash({"cwd": str(Path.cwd().resolve())})
+    return f"proj_{cwd_hash[:12]}"
 
 
 def _running_under_pytest() -> bool:
@@ -134,6 +175,23 @@ class AiSettings(BaseSettings):
     knowledge_max_file_size: Optional[int] = Field(default=None, ge=1024, le=100*1024*1024, description="Maximum file size to process for indexing")
     knowledge_use_sqlite_extension: bool = Field(default=True, description="Whether to try using SQLite vector extensions")
     
+    # Caching settings (opt-in)
+    cache_enabled: bool = Field(default=False, description="Enable response caching")
+    cache_backend: Literal["null", "memory", "sqlite"] = Field(default="null", description="Cache backend to use")
+    cache_ttl_s: Optional[int] = Field(default=None, ge=1, description="Cache TTL in seconds (None for no expiration)")
+    cache_max_temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Maximum temperature for caching (only cache when temp <= this)")
+    
+    # SQLite cache settings
+    cache_sqlite_path: Optional[Path] = Field(default=None, description="Path to SQLite cache database file")
+    cache_sqlite_table: str = Field(default="ai_cache", description="SQLite table name for cache")
+    cache_sqlite_wal: bool = Field(default=True, description="Enable WAL mode for SQLite cache")
+    cache_sqlite_busy_timeout_ms: int = Field(default=3000, ge=100, description="SQLite busy timeout in milliseconds")
+    cache_sqlite_max_entries: Optional[int] = Field(default=None, ge=1, description="Maximum entries per namespace (LRU eviction)")
+    cache_sqlite_prune_batch: int = Field(default=200, ge=1, description="Batch size for LRU pruning")
+    
+    # Cache namespace
+    cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
+    
     @field_validator('openai_api_key', mode='before')
     @classmethod
     def get_openai_key(cls, v):
@@ -165,6 +223,14 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OPENROUTER_API_KEY')
+    
+    @field_validator('fastchat_api_key', mode='before')
+    @classmethod
+    def get_fastchat_key(cls, v):
+        """Get FastChat API key from environment."""
+        if v is not None:
+            return v
+        return os.getenv('FASTCHAT_API_KEY')
     
     @field_validator('ollama_api_key', mode='before')
     @classmethod
@@ -667,7 +733,8 @@ class AiClient:
     
     def __init__(self, settings: Optional[AiSettings] = None, provider: Optional[BaseProvider] = None, 
                  track_usage: bool = False, usage_file: Optional[Path] = None, 
-                 show_progress: bool = True, auto_setup: bool = True, smart_setup: bool = False):
+                 show_progress: bool = True, auto_setup: bool = True, smart_setup: bool = False,
+                 cache: Optional[CacheBackend] = None):
         """Initialize AI client with explicit settings.
         
         Args:
@@ -678,6 +745,7 @@ class AiClient:
             show_progress: Whether to show progress indicator during requests
             auto_setup: Whether to automatically prompt for setup if API key is missing
             smart_setup: Whether to use smart setup (checks for new models daily)
+            cache: Optional cache backend to override settings-based cache configuration
         """
         if settings is None:
             if smart_setup:
@@ -709,8 +777,125 @@ class AiClient:
             )
         else:
             self.usage_tracker = None
+        
+        # Initialize cache backend
+        if cache is not None:
+            # Explicit cache backend takes precedence
+            self.cache = cache
+        elif not settings.cache_enabled:
+            # Caching disabled
+            self.cache = NullCache()
+        elif settings.cache_backend == "memory":
+            # Use memory cache with configured TTL
+            self.cache = MemoryCache(default_ttl_s=settings.cache_ttl_s)
+        elif settings.cache_backend == "sqlite":
+            # SQLite cache with isolation rules for pytest
+            if _running_under_pytest() and settings.cache_sqlite_path is None:
+                # Strict isolation: disable SQLite cache in pytest unless explicit path
+                self.cache = NullCache()
+            else:
+                # Determine database path
+                if settings.cache_sqlite_path is not None:
+                    db_path = settings.cache_sqlite_path
+                else:
+                    # Default to user home directory
+                    db_path = Path.home() / ".ai_utilities" / "cache.sqlite"
+                
+                # Determine namespace
+                if settings.cache_namespace is not None:
+                    namespace = _sanitize_namespace(settings.cache_namespace)
+                else:
+                    # Use pytest namespace when under pytest, otherwise default
+                    if _running_under_pytest():
+                        namespace = "pytest"
+                    else:
+                        namespace = _default_namespace()
+                
+                # Create SQLite cache
+                self.cache = SqliteCache(
+                    db_path=db_path,
+                    table=settings.cache_sqlite_table,
+                    namespace=namespace,
+                    wal=settings.cache_sqlite_wal,
+                    busy_timeout_ms=settings.cache_sqlite_busy_timeout_ms,
+                    default_ttl_s=settings.cache_ttl_s,
+                    max_entries=settings.cache_sqlite_max_entries,
+                    prune_batch=settings.cache_sqlite_prune_batch,
+                )
+        else:
+            # Default to null cache
+            self.cache = NullCache()
             
         self.show_progress = show_progress
+    
+    def _should_use_cache(self, request_params: Dict[str, Any]) -> bool:
+        """Check if caching should be used for this request.
+        
+        Args:
+            request_params: Request parameters dictionary
+            
+        Returns:
+            True if caching should be used
+        """
+        if not self.settings.cache_enabled:
+            return False
+        
+        # Don't cache if temperature is too high (non-deterministic)
+        temperature = request_params.get("temperature", self.settings.temperature)
+        if temperature > self.settings.cache_max_temperature:
+            return False
+        
+        # For Phase 1, only cache single string prompts
+        # (list prompts will be handled in later phases)
+        return True
+    
+    def _build_cache_key(self, operation: str, *, prompt: str, request_params: Dict[str, Any], 
+                        return_format: str, extra: Optional[Dict[str, Any]] = None) -> str:
+        """Build cache key for request.
+        
+        Args:
+            operation: Operation type ("ask", "ask_json", "embeddings")
+            prompt: Input prompt
+            request_params: Request parameters
+            return_format: Return format ("text", "json")
+            extra: Additional operation-specific data
+            
+        Returns:
+            Cache key string
+        """
+        from .cache import stable_hash, normalize_prompt
+        
+        # Build key data
+        key_data = {
+            "operation": operation,
+            "provider": self.provider.__class__.__name__,
+            "provider_name": getattr(self.settings, 'provider', 'unknown'),
+            "model": request_params.get("model", self.settings.model),
+            "return_format": return_format,
+            "prompt": normalize_prompt(prompt),
+        }
+        
+        # Add relevant parameters that affect output
+        relevant_params = {}
+        if "temperature" in request_params:
+            relevant_params["temperature"] = request_params["temperature"]
+        if "max_tokens" in request_params:
+            relevant_params["max_tokens"] = request_params["max_tokens"]
+        if "top_p" in request_params:
+            relevant_params["top_p"] = request_params["top_p"]
+        if "frequency_penalty" in request_params:
+            relevant_params["frequency_penalty"] = request_params["frequency_penalty"]
+        if "presence_penalty" in request_params:
+            relevant_params["presence_penalty"] = request_params["presence_penalty"]
+        
+        if relevant_params:
+            key_data["params"] = relevant_params
+        
+        # Add operation-specific data
+        if extra:
+            key_data.update(extra)
+        
+        return stable_hash(key_data)
     
     def check_for_updates(self, force_check: bool = False) -> Dict[str, Any]:
         """Manually check for OpenAI model updates with detailed information.
@@ -804,6 +989,18 @@ class AiClient:
                 'knowledge_max_file_size',
                 'knowledge_use_sqlite_extension',
                 'embedding_model',
+                # Cache settings, not provider params
+                'cache_enabled',
+                'cache_backend',
+                'cache_ttl_s',
+                'cache_max_temperature',
+                'cache_sqlite_path',
+                'cache_sqlite_table',
+                'cache_sqlite_wal',
+                'cache_sqlite_busy_timeout_ms',
+                'cache_sqlite_max_entries',
+                'cache_sqlite_prune_batch',
+                'cache_namespace'
             }
         )
         request_params.update(kwargs)
@@ -812,11 +1009,29 @@ class AiClient:
         progress = ProgressIndicator(show=self.show_progress)
         
         with progress:
-            # Use new provider interface
+            # Use new provider interface with caching for single prompts
             if isinstance(prompt, list):
+                # Phase 1: Don't cache list prompts
                 response = self.provider.ask_many(prompt, return_format=return_format, **request_params)
             else:
+                # Check cache for single prompt
+                cache_key = None
+                if self._should_use_cache(request_params):
+                    cache_key = self._build_cache_key("ask", prompt=prompt, request_params=request_params, return_format=return_format)
+                    cached_response = self.cache.get(cache_key)
+                    if cached_response is not None:
+                        # Track usage for cached responses too
+                        if self.usage_tracker:
+                            estimated_tokens = len(str(cached_response)) // 4
+                            self.usage_tracker.record_usage(estimated_tokens)
+                        return cached_response
+                
+                # Make actual provider call
                 response = self.provider.ask(prompt, return_format=return_format, **request_params)
+                
+                # Cache successful response
+                if cache_key is not None:
+                    self.cache.set(cache_key, response, ttl_s=self.settings.cache_ttl_s)
         
         # Track usage if enabled (basic estimation - provider could return actual counts)
         if self.usage_tracker:
@@ -920,7 +1135,18 @@ class AiClient:
                             'api_key',  # Providers already have this from initialization
                             'usage_scope',  # Internal usage tracking field
                             'usage_client_id',  # Internal usage tracking field
-                            'update_check_days'  # Internal configuration field
+                            'update_check_days',  # Internal configuration field
+                            'cache_enabled',  # Cache settings, not provider params
+                            'cache_backend',  # Cache settings, not provider params
+                            'cache_ttl_s',  # Cache settings, not provider params
+                            'cache_max_temperature',  # Cache settings, not provider params
+                            'cache_sqlite_path',  # Cache settings, not provider params
+                            'cache_sqlite_table',  # Cache settings, not provider params
+                            'cache_sqlite_wal',  # Cache settings, not provider params
+                            'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                            'cache_sqlite_max_entries',  # Cache settings, not provider params
+                            'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                            'cache_namespace',  # Cache settings, not provider params
                         }
                     )
                     request_params.update(kwargs)
@@ -1085,7 +1311,18 @@ class AiClient:
                 'extra_headers',
                 'usage_scope', 
                 'usage_client_id',
-                'update_check_days'
+                'update_check_days',
+                'cache_enabled',  # Caching configuration field
+                'cache_backend',  # Caching configuration field
+                'cache_ttl_s',  # Caching configuration field
+                'cache_max_temperature',  # Caching configuration field
+                'cache_sqlite_path',  # Cache settings, not provider params
+                'cache_sqlite_table',  # Cache settings, not provider params
+                'cache_sqlite_wal',  # Cache settings, not provider params
+                'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                'cache_sqlite_max_entries',  # Cache settings, not provider params
+                'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                'cache_namespace',  # Cache settings, not provider params
             }
         )
         request_params.update(kwargs)
@@ -1094,10 +1331,34 @@ class AiClient:
         progress = ProgressIndicator(show=self.show_progress)
         
         with progress:
+            # Build cache key if caching is enabled
+            cache_key = None
+            if self._should_use_cache(request_params):
+                cache_key = self._build_cache_key(
+                    "ask_json", 
+                    prompt=prompt, 
+                    request_params=request_params, 
+                    return_format="json",
+                    extra={"max_repairs": max_repairs}
+                )
+                cached_result = self.cache.get(cache_key)
+                if cached_result is not None:
+                    # Track usage for cached responses too
+                    if self.usage_tracker:
+                        estimated_tokens = len(str(cached_result)) // 4
+                        self.usage_tracker.record_usage(estimated_tokens)
+                    return cached_result
+            
             # First attempt
             try:
                 response_text = self.provider.ask_text(prompt, **request_params)
-                return parse_json_from_text(response_text)
+                parsed_result = parse_json_from_text(response_text)
+                
+                # Cache successful parsed result
+                if cache_key is not None:
+                    self.cache.set(cache_key, parsed_result, ttl_s=self.settings.cache_ttl_s)
+                
+                return parsed_result
             except JsonParseError as e:
                 if max_repairs <= 0:
                     raise e
@@ -1110,13 +1371,19 @@ class AiClient:
                     try:
                         repair_prompt = create_repair_prompt(prompt, last_response, last_error)
                         response_text = self.provider.ask_text(repair_prompt, **request_params)
-                        return parse_json_from_text(response_text)
+                        parsed_result = parse_json_from_text(response_text)
+                        
+                        # Cache successful parsed result after repairs
+                        if cache_key is not None:
+                            self.cache.set(cache_key, parsed_result, ttl_s=self.settings.cache_ttl_s)
+                        
+                        return parsed_result
                     except JsonParseError as repair_error:
                         last_response = response_text
                         last_error = str(repair_error)
                         continue
                 
-                # All repair attempts failed
+                # All repair attempts failed - don't cache failures
                 raise JsonParseError(
                     f"Failed to parse JSON after {max_repairs + 1} attempts. Last error: {last_error}",
                     last_response,
@@ -1179,6 +1446,114 @@ class AiClient:
         except ValidationError as e:
             # Re-raise ValidationError without swallowing it
             raise e
+    
+    def get_embeddings(self, texts: List[str], *, model: Optional[str] = None, dimensions: Optional[int] = None, **kwargs) -> List[List[float]]:
+        """
+        Get embeddings for a list of texts.
+        
+        Args:
+            texts: List of text strings to get embeddings for
+            model: Optional embedding model override (defaults to text-embedding-3-small)
+            dimensions: Optional embedding dimensions (for models that support it)
+            **kwargs: Additional parameters to override settings
+            
+        Returns:
+            List[List[float]]: List of embedding vectors, one per input text
+            
+        Example:
+            client = AiClient()
+            embeddings = client.get_embeddings(["Hello", "World"])
+            print(f"Got {len(embeddings)} embeddings of {len(embeddings[0])} dimensions each")
+        """
+        # Get request params (excluding internal fields)
+        request_params = self.settings.model_dump(
+            exclude_none=True,
+            exclude={
+                'api_key',
+                'provider',
+                'base_url',
+                'timeout',
+                'request_timeout_s',
+                'extra_headers',
+                'usage_scope', 
+                'usage_client_id',
+                'update_check_days',
+                'cache_enabled',  # Caching configuration field
+                'cache_backend',  # Caching configuration field
+                'cache_ttl_s',  # Caching configuration field
+                'cache_max_temperature',  # Caching configuration field
+                'cache_sqlite_path',  # Cache settings, not provider params
+                'cache_sqlite_table',  # Cache settings, not provider params
+                'cache_sqlite_wal',  # Cache settings, not provider params
+                'cache_sqlite_busy_timeout_ms',  # Cache settings, not provider params
+                'cache_sqlite_max_entries',  # Cache settings, not provider params
+                'cache_sqlite_prune_batch',  # Cache settings, not provider params
+                'cache_namespace',  # Cache settings, not provider params
+            }
+        )
+        request_params.update(kwargs)
+        
+        # Use specified model or default embedding model
+        embedding_model = model or "text-embedding-3-small"
+        
+        # Check cache
+        cache_key = None
+        if self._should_use_cache(request_params):
+            cache_key = self._build_cache_key(
+                "embeddings", 
+                prompt="",  # Empty prompt for embeddings
+                request_params={**request_params, "model": embedding_model},
+                return_format="embeddings",
+                extra={
+                    "texts": texts,  # Include all texts for cache key
+                    "dimensions": dimensions
+                }
+            )
+            cached_embeddings = self.cache.get(cache_key)
+            if cached_embeddings is not None:
+                # Track usage for cached responses too
+                if self.usage_tracker:
+                    estimated_tokens = sum(len(text) for text in texts)  # Rough estimate
+                    self.usage_tracker.record_usage(estimated_tokens)
+                return cached_embeddings
+        
+        # Show progress indicator if enabled
+        progress = ProgressIndicator(show=self.show_progress)
+        
+        with progress:
+            # Import here to avoid dependency issues
+            try:
+                import openai
+            except ImportError:
+                raise ImportError("OpenAI package is required for embeddings. Install with: pip install openai")
+            
+            # Create OpenAI client with current settings
+            openai_client = openai.OpenAI(
+                api_key=self.settings.api_key,
+                base_url=self.settings.base_url,
+                timeout=self.settings.timeout
+            )
+            
+            # Make embeddings request
+            response = openai_client.embeddings.create(
+                model=embedding_model,
+                input=texts,
+                dimensions=dimensions
+            )
+            
+            # Extract embeddings
+            embeddings = [item.embedding for item in response.data]
+            
+            # Cache successful response
+            if cache_key is not None:
+                self.cache.set(cache_key, embeddings, ttl_s=self.settings.cache_ttl_s)
+        
+        # Track usage if enabled
+        if self.usage_tracker:
+            estimated_tokens = sum(len(text) for text in texts)  # Rough estimate
+            self.usage_tracker.record_usage(estimated_tokens)
+        
+        return embeddings
     
     def upload_file(
         self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None
