@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented dependency freshness monitoring
 - Added security scanning to CI pipeline
 
+### Fixed
+- **CI Dependency Conflict** - Updated urllib3 version constraint and added types-requests to resolve CI failures
+- **Test Infrastructure** - Fixed all 4 failing tests (embeddings caching, main integration, deprecation warnings)
+- **Dead Code Issues** - Removed 28 unused imports and variables causing lint errors
+- **Demo Test Failures** - Removed 9 obsolete demo tests after demo system simplification
+
 ---
 
 ## [Unreleased]
