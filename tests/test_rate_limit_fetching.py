@@ -93,7 +93,7 @@ class TestRateLimitFetcher:
         expected_dir = Path.home() / ".ai_utilities" / "rate_limits"
         assert fetcher.cache_dir == expected_dir
     
-    @patch('ai_utilities.rate_limit_fetcher.OpenAIClient')
+    @patch('ai_utilities.openai_client.OpenAIClient')
     def test_get_rate_limits_first_time(self, mock_openai_client):
         """Test getting rate limits for the first time (no cache)."""
         # Mock OpenAI client
@@ -173,7 +173,7 @@ class TestRateLimitFetcher:
         with open(fetcher.cache_file, 'w') as f:
             json.dump(cache_data, f)
         
-        with patch('ai_utilities.rate_limit_fetcher.OpenAIClient') as mock_openai_client:
+        with patch('ai_utilities.openai_client.OpenAIClient') as mock_openai_client:
             mock_client_instance = Mock()
             mock_response = Mock()
             mock_response.headers = {}
@@ -207,7 +207,7 @@ class TestRateLimitFetcher:
         with open(fetcher.cache_file, 'w') as f:
             json.dump(cache_data, f)
         
-        with patch('ai_utilities.rate_limit_fetcher.OpenAIClient') as mock_openai_client:
+        with patch('ai_utilities.openai_client.OpenAIClient') as mock_openai_client:
             mock_client_instance = Mock()
             mock_response = Mock()
             mock_response.headers = {}
@@ -253,7 +253,7 @@ class TestRateLimitFetcher:
         unknown_limit = fetcher.get_model_rate_limit("unknown-model")
         assert unknown_limit is None
     
-    @patch('ai_utilities.rate_limit_fetcher.OpenAIClient')
+    @patch('ai_utilities.openai_client.OpenAIClient')
     def test_fetch_from_response_headers(self, mock_openai_client):
         """Test fetching rate limits from response headers."""
         # Mock response with rate limit headers
@@ -275,7 +275,7 @@ class TestRateLimitFetcher:
         assert limits["gpt-3.5-turbo"].requests_per_minute == 3000
         assert limits["gpt-3.5-turbo"].tokens_per_minute == 1500000
     
-    @patch('ai_utilities.rate_limit_fetcher.OpenAIClient')
+    @patch('ai_utilities.openai_client.OpenAIClient')
     def test_fetch_from_response_headers_invalid_headers(self, mock_openai_client):
         """Test handling invalid response headers."""
         # Mock response with invalid headers
@@ -393,7 +393,7 @@ class TestRateLimitFetcherErrorHandling:
         limits = fetcher.get_rate_limits()
         assert len(limits) >= 8  # Should fall back to known limits
     
-    @patch('ai_utilities.rate_limit_fetcher.OpenAIClient')
+    @patch('ai_utilities.openai_client.OpenAIClient')
     def test_api_call_failure(self, mock_openai_client):
         """Test handling of API call failures."""
         # Mock API failure

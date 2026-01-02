@@ -14,6 +14,7 @@ Key improvements:
 - Default value handling
 """
 
+import configparser
 import logging
 import os
 from pathlib import Path
@@ -96,9 +97,6 @@ class AIConfigManager:
         
         if path.exists():
             try:
-                import configparser
-                
-                # Parse INI file
                 config_parser = configparser.ConfigParser()
                 config_parser.read(path)
                 
@@ -204,8 +202,6 @@ class AIConfigManager:
         path = Path(file_path or self.config_path)
         
         try:
-            import configparser
-            
             config_parser = configparser.ConfigParser()
             
             # AI section
@@ -249,7 +245,7 @@ class AIConfigManager:
         """Get current configuration, loading if necessary."""
         if self._config is None:
             self.load_config()
-        return self._config
+        return self._config  # type: ignore[return-value]  # _config is set by load_config()
     
     def get_model_config(self, model_name: str) -> ModelConfig:
         """Get configuration for a specific model."""
@@ -497,7 +493,6 @@ def get_model_from_config(config_path: str = "config.ini", model: Optional[str] 
     
     # Create OpenAIModel (using existing implementation)
     # Convert Pydantic config to ConfigParser format for compatibility
-    import configparser
 
     from .openai_model import OpenAIModel
     compat_config = configparser.ConfigParser()

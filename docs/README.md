@@ -2,6 +2,29 @@
 
 Welcome to the AI Utilities documentation! This folder contains detailed guides and documentation for the project.
 
+## 🚦 Public API
+
+The stable public API includes these main imports:
+
+```python
+from ai_utilities import (
+    AiClient,           # Main synchronous AI client
+    AsyncAiClient,      # Asynchronous AI client  
+    AiSettings,         # Configuration settings
+    create_client,      # Client factory function
+    AskResult,          # Response result type
+    UploadedFile,       # File upload model
+    # Audio processing
+    AudioProcessor,     # Audio transcription/generation
+    # Usage tracking
+    UsageTracker,       # Request usage tracking
+    # Utilities
+    TokenCounter,       # Token counting utility
+)
+```
+
+All other objects are considered internal and may change between versions.
+
 ## 📚 Available Documentation
 
 ### 🎵 [Audio Processing Guide](audio_processing.md)
