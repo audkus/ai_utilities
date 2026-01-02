@@ -6,7 +6,8 @@ prevents contamination between different parts of the application.
 """
 
 import os
-from typing import Dict
+from contextlib import contextmanager
+from typing import Dict, Optional
 
 
 def cleanup_ai_env_vars() -> None:
@@ -48,7 +49,52 @@ def validate_ai_env_vars() -> Dict[str, str]:
     }
     
     for key, value in os.environ.items():
-        if key.startswith('AI_') and key in known_vars:
+        if key in known_vars:
             valid_vars[key] = value
     
     return valid_vars
+
+
+@contextmanager
+def isolated_env_context(env_vars: Optional[Dict[str, str]] = None):
+    """
+    Context manager for isolated environment variable manipulation.
+    
+    Temporarily sets environment variables and restores them after the context.
+    This is safer than direct os.environ manipulation.
+    
+    Args:
+        env_vars: Dictionary of environment variables to set temporarily
+    
+    Yields:
+        None
+    
+    Example:
+        with isolated_env_context({'AI_MODEL': 'test-model'}):
+            # AI_MODEL is set to 'test-model' here
+            config = AIConfig()
+        # Original environment is restored here
+    """
+    # Store original environment variables that we'll modify
+    original_env = {}
+    
+    if env_vars:
+        for key, value in env_vars.items():
+            # Store original value if it exists
+            if key in os.environ:
+                original_env[key] = os.environ[key]
+            # Set new value
+            os.environ[key] = value
+    
+    try:
+        yield
+    finally:
+        # Restore original environment
+        for key, value in original_env.items():
+            os.environ[key] = value
+        
+        # Remove any variables that didn't exist originally
+        if env_vars:
+            for key in env_vars:
+                if key not in original_env and key in os.environ:
+                    del os.environ[key]

@@ -83,12 +83,12 @@ tests/test_files_api.py::test_download_file_success PASSED
 ============================== 24 passed in 2.45s ==============================
         """
         
-        total, passed, failed, skipped = dashboard._parse_pytest_output(output)
+        passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
         
-        assert total == 24
         assert passed == 24
         assert failed == 0
         assert skipped == 0
+        assert errors == 0
     
     def test_parse_pytest_output_with_failures(self):
         """Test parsing pytest output with failures."""
@@ -104,37 +104,37 @@ tests/test_integration.py::test_list SKIPPED
 ============================== 1 passed, 1 failed, 1 skipped in 1.23s ==============================
         """
         
-        total, passed, failed, skipped = dashboard._parse_pytest_output(output)
+        passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
         
-        assert total == 3  # 1 passed + 1 failed + 1 skipped
         assert passed == 1
         assert failed == 1
         assert skipped == 1
+        assert errors == 0
     
     def test_parse_pytest_output_empty(self):
         """Test parsing empty pytest output."""
         dashboard = AITestDashboard()
         
-        total, passed, failed, skipped = dashboard._parse_pytest_output("")
+        passed, failed, skipped, errors = dashboard._parse_pytest_output("")
         
-        assert total == 0
         assert passed == 0
         assert failed == 0
         assert skipped == 0
+        assert errors == 0
     
     def test_parse_pytest_output_non_string(self):
         """Test parsing non-string pytest output."""
         dashboard = AITestDashboard()
         
-        total, passed, failed, skipped = dashboard._parse_pytest_output(None)
+        passed, failed, skipped, errors = dashboard._parse_pytest_output(None)
         
-        assert total == 0
         assert passed == 0
         assert failed == 0
         assert skipped == 0
+        assert errors == 0
     
     @patch('subprocess.run')
-    def test_run_test_suite_success(self, mock_run):
+    def test_run_test_suite_success(self):
         """Test running a test suite successfully."""
         dashboard = AITestDashboard()
         
@@ -294,10 +294,10 @@ class TestTestDashboardIntegration:
         
         # Test with output indicating missing tests
         output = "collected 0 items\n\n0 passed in 0.1s\n"
-        total, passed, failed, skipped = dashboard._parse_pytest_output(output)
+        passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
         
-        assert total == 0
         assert passed == 0
+        assert failed == 0
     
     def test_dashboard_counts_are_accurate(self):
         """Test that dashboard test counts match actual pytest results."""
@@ -305,12 +305,11 @@ class TestTestDashboardIntegration:
         
         # Test various output formats to ensure accurate parsing
         test_cases = [
-            ("24 passed in 2.45s", (24, 24, 0, 0)),
-            ("10 passed, 5 failed in 3.1s", (15, 10, 5, 0)),
-            ("8 passed, 2 failed, 3 skipped in 2.0s", (13, 8, 2, 3)),
-            ("0 passed in 0.1s", (0, 0, 0, 0)),
+            ("24 passed in 2.45s", (24, 0, 0, 0)),
+            ("10 passed, 5 failed in 3.1s", (10, 5, 0, 0)),
+            ("8 passed, 2 failed, 3 skipped in 2.0s", (8, 2, 3, 0)),
         ]
         
         for output, expected in test_cases:
-            total, passed, failed, skipped = dashboard._parse_pytest_output(output)
-            assert (total, passed, failed, skipped) == expected
+            passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
+            assert (passed, failed, skipped, errors) == expected
