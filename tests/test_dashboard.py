@@ -106,12 +106,9 @@ tests/test_integration.py::test_list SKIPPED
         
         passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
         
-        # The function matches "1 passed, 1 failed" pattern, skipped is extracted separately
         assert passed == 1
         assert failed == 1
-        # Note: skipped is 0 because the pattern doesn't capture it, but fallback should catch it
-        # For now, let's adjust to actual behavior
-        assert skipped == 0  # Current behavior
+        assert skipped == 1
         assert errors == 0
     
     def test_parse_pytest_output_empty(self):
@@ -298,10 +295,10 @@ class TestTestDashboardIntegration:
         
         # Test with output indicating missing tests
         output = "collected 0 items\n\n0 passed in 0.1s\n"
-        total, passed, failed, skipped = dashboard._parse_pytest_output(output)
+        passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
         
-        assert total == 0
         assert passed == 0
+        assert failed == 0
     
     def test_dashboard_counts_are_accurate(self):
         """Test that dashboard test counts match actual pytest results."""
@@ -309,12 +306,11 @@ class TestTestDashboardIntegration:
         
         # Test various output formats to ensure accurate parsing
         test_cases = [
-            ("24 passed in 2.45s", (24, 24, 0, 0)),
-            ("10 passed, 5 failed in 3.1s", (15, 10, 5, 0)),
-            ("8 passed, 2 failed, 3 skipped in 2.0s", (13, 8, 2, 3)),
-            ("0 passed in 0.1s", (0, 0, 0, 0)),
+            ("24 passed in 2.45s", (24, 0, 0, 0)),
+            ("10 passed, 5 failed in 3.1s", (10, 5, 0, 0)),
+            ("8 passed, 2 failed, 3 skipped in 2.0s", (8, 2, 3, 0)),
         ]
         
         for output, expected in test_cases:
-            total, passed, failed, skipped = dashboard._parse_pytest_output(output)
-            assert (total, passed, failed, skipped) == expected
+            passed, failed, skipped, errors = dashboard._parse_pytest_output(output)
+            assert (passed, failed, skipped, errors) == expected

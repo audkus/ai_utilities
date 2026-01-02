@@ -843,6 +843,7 @@ class AITestDashboard:
         patterns = [
             r'(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+skipped,\s+(\d+)\s+errors',
             r'(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+skipped',
+            r'(\d+)\s+passed,\s+(\d+)\s+failed,\s+(\d+)\s+skipped',
             r'(\d+)\s+passed,\s+(\d+)\s+failed',
             r'(\d+)\s+passed',
         ]
@@ -853,8 +854,14 @@ class AITestDashboard:
                 groups = match.groups()
                 if len(groups) == 4:  # failed, passed, skipped, errors
                     return int(groups[1]), int(groups[0]), int(groups[2]), int(groups[3])
-                elif len(groups) == 3:  # failed, passed, skipped
-                    return int(groups[1]), int(groups[0]), int(groups[2]), 0
+                elif len(groups) == 3:
+                    # Check pattern format to determine group order
+                    if pattern.startswith(r'(\d+)\s+passed'):
+                        # passed, failed, skipped
+                        return int(groups[0]), int(groups[1]), int(groups[2]), 0
+                    else:
+                        # failed, passed, skipped
+                        return int(groups[1]), int(groups[0]), int(groups[2]), 0
                 elif len(groups) == 2:  # passed, failed
                     return int(groups[0]), int(groups[1]), 0, 0
                 elif len(groups) == 1:  # passed only

@@ -33,6 +33,7 @@ print(response)
 - **🎵 Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
 - More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
+- **Smart Caching Guide** → [`docs/caching.md`](docs/caching.md)
 - **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
 - **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
 - **Test Dashboard** → [`docs/test_dashboard.md`](docs/test_dashboard.md)
@@ -144,6 +145,64 @@ transcription, new_audio = processor.transcribe_and_generate(
 2. Environment variables (`os.environ`)
 3. `.env` file values (loaded via `pydantic-settings`)
 4. Defaults
+
+---
+
+## 🧠 Smart Caching
+
+AI Utilities includes intelligent caching with multiple backends to reduce API costs and improve response times.
+
+### Quick Start
+
+```python
+from ai_utilities import AiClient, AiSettings
+from pathlib import Path
+
+# Enable memory caching
+settings = AiSettings(
+    cache_enabled=True,
+    cache_backend="memory",
+    cache_ttl_s=3600  # 1 hour
+)
+client = AiClient(settings=settings)
+
+# First call hits the API
+response1 = client.ask("What is machine learning?")
+
+# Second call hits the cache (instant, no API cost)
+response2 = client.ask("What is machine learning?")
+```
+
+### Cache Backends
+
+| Backend | Persistence | Speed | Use Case |
+|---------|-------------|-------|----------|
+| **null** | None | Fastest | Testing, fresh responses |
+| **memory** | Process lifetime | Fast | Development, short-lived apps |
+| **sqlite** | Persistent | Medium | Production, long-running apps |
+
+### SQLite Cache with Namespaces
+
+```python
+settings = AiSettings(
+    cache_enabled=True,
+    cache_backend="sqlite",
+    cache_sqlite_path=Path.home() / ".ai_utilities" / "cache.sqlite",
+    cache_namespace="my-project",  # Isolates cache per project
+    cache_ttl_s=3600,
+    cache_sqlite_max_entries=1000
+)
+client = AiClient(settings=settings)
+```
+
+**Key Features:**
+- ✅ **Namespace isolation** - Prevents cross-project cache pollution
+- ✅ **TTL expiration** - Automatic cleanup of stale entries
+- ✅ **LRU eviction** - Memory-efficient size management
+- ✅ **Thread-safe** - Concurrent access support
+- ✅ **Persistent** - Survives process restarts
+
+[📖 **Complete Caching Guide** → `docs/caching.md`](docs/caching.md)
 
 ---
 
