@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from ..file_models import UploadedFile
-from ..openai_client import OpenAI
 from .base_provider import BaseProvider
 from .provider_capabilities import ProviderCapabilities
 from .provider_exceptions import (
     ProviderCapabilityError,
     ProviderConfigurationError,
+    MissingOptionalDependencyError,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,14 @@ class OpenAICompatibleProvider(BaseProvider):
         # Add extra headers if provided
         if self.extra_headers:
             client_kwargs["default_headers"] = self.extra_headers
+            
+        # Lazy import OpenAI to avoid dependency issues
+        try:
+            from ..openai_client import OpenAI
+        except ImportError as e:
+            raise MissingOptionalDependencyError(
+                "OpenAI-compatible provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
+            ) from e
             
         self.client = OpenAI(**client_kwargs)
         logger.info(f"Initialized OpenAI-compatible provider with base_url: {self.base_url}")

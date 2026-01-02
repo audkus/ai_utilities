@@ -5,11 +5,9 @@ saving, format conversion, and validation. Uses Python standard library
 and optional dependencies for audio processing.
 """
 
-import os
 import mimetypes
 from pathlib import Path
-from typing import Optional, Tuple, Union, Dict, Any, BinaryIO
-from io import BytesIO
+from typing import Union, Dict, Any
 
 try:
     import wave

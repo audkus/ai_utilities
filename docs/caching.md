@@ -2,6 +2,32 @@
 
 AI Utilities includes an intelligent caching system that dramatically improves performance and reduces API costs by caching responses across multiple backends with namespace isolation.
 
+## 🔒 Cache Stability Guarantee (v1.x)
+
+**Cache keys are stable within a major version** and include:
+- Provider and model name
+- Prompt content and parameters  
+- Request configuration (temperature, max_tokens, etc.)
+- Namespace identifier
+
+**Cache format is stable within v1.x** - you can safely upgrade patch/minor versions without cache invalidation.
+
+**When to bump cache_namespace:**
+- Changing prompt templates or system prompts
+- Modifying request parameters that affect responses
+- Switching between different models/providers
+- Major application behavior changes
+
+```python
+# Good: Stable cache key
+result = client.ask(
+    "Explain quantum computing", 
+    cache_namespace="physics-tutorials"  # Bump this if prompt changes
+)
+
+# Cache key includes: provider + model + prompt + params + namespace
+```
+
 ## 🚀 Quick Start
 
 ```python

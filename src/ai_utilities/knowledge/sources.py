@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 import logging
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import List, Set
 
 from .exceptions import KnowledgeValidationError
 from .models import Source
@@ -216,7 +216,6 @@ class FileSourceLoader:
             comments = []
             
             for i, line in enumerate(lines):
-                stripped = line.strip()
                 # Extract comments
                 if '#' in line:
                     comment_start = line.index('#')

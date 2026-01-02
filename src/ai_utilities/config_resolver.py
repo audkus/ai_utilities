@@ -7,7 +7,7 @@ Handles resolution of provider, API key, and base URL with proper precedence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 
 
@@ -38,7 +38,7 @@ class ResolvedConfig:
     timeout: Optional[float] = None
     
     # Provider-specific settings
-    provider_kwargs: Dict[str, Any] = None
+    provider_kwargs: Optional[Dict[str, Any]] = None
     
     def __post_init__(self):
         if self.provider_kwargs is None:
@@ -146,7 +146,7 @@ def resolve_api_key(
     api_key: Optional[str] = None,
     settings_api_key: Optional[str] = None,
     settings: Optional[Any] = None,
-    env_vars: Dict[str, str] = None
+    env_vars: Optional[Dict[str, str]] = None
 ) -> str:
     """Resolve API key using precedence rules.
     

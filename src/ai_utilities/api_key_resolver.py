@@ -23,8 +23,6 @@ class MissingApiKeyError(RuntimeError):
         
         # Platform detection
         is_windows = sys.platform == "win32"
-        is_macos = sys.platform == "darwin"
-        is_linux = sys.platform.startswith("linux")
         
         # Build platform-specific instructions
         if is_windows:

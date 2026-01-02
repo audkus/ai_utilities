@@ -11,7 +11,6 @@ from .client import AiSettings
 from .file_models import UploadedFile
 from .models import AskResult
 from .providers.base import AsyncProvider
-from .providers.openai_provider import OpenAIProvider
 from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 
 
@@ -20,6 +19,8 @@ class AsyncOpenAIProvider(AsyncProvider):
     
     def __init__(self, settings: AiSettings):
         self.settings = settings
+        # Lazy import OpenAIProvider to avoid dependency issues
+        from .providers.openai_provider import OpenAIProvider
         self._sync_provider = OpenAIProvider(settings)
     
     async def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, dict, list]:

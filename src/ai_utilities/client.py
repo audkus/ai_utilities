@@ -15,8 +15,6 @@ from configparser import ConfigParser
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from datetime import datetime, timedelta
-
-from .providers.openai_provider import OpenAIProvider
 from .providers.base_provider import BaseProvider
 from .usage_tracker import UsageScope, create_usage_tracker
 from .cache import CacheBackend, NullCache, MemoryCache, SqliteCache, stable_hash
@@ -284,7 +282,7 @@ class AiSettings(BaseSettings):
             return value
     
     @classmethod
-    def create_isolated(cls, env_vars: dict = None, **data):
+    def create_isolated(cls, env_vars: Optional[dict] = None, **data):
         """Create AiSettings with isolated environment variables (deprecated - use override_env)."""
         from .env_overrides import override_env
         
@@ -922,6 +920,7 @@ class AiClient:
         print("=== Reconfiguring AI Settings ===")
         self.settings = AiSettings.interactive_setup(force_reconfigure=True)
         # Update provider with new settings
+        from .providers.openai_provider import OpenAIProvider
         self.provider = OpenAIProvider(self.settings)
     
     def ask(self, prompt: Union[str, List[str]], *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, List[str]]:
@@ -1524,7 +1523,7 @@ class AiClient:
             try:
                 import openai
             except ImportError:
-                raise ImportError("OpenAI package is required for embeddings. Install with: pip install openai")
+                raise ImportError("OpenAI package is required for embeddings. Install with: pip install ai-utilities[openai]")
             
             # Create OpenAI client with current settings
             openai_client = openai.OpenAI(

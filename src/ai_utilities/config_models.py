@@ -202,7 +202,7 @@ class AIConfig(BaseModel):
         super().__init__(**data)
     
     @classmethod
-    def create_isolated(cls, env_vars: dict = None, **data):
+    def create_isolated(cls, env_vars: Optional[dict] = None, **data):
         """Create AIConfig with isolated environment variables."""
         from .env_utils import isolated_env_context
         
