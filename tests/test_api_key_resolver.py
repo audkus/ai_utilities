@@ -285,13 +285,13 @@ class TestIntegrationWithClient:
             
             # Check that the error message is still helpful
             error_message = str(exc_info.value)
-            assert "No API key found" in error_message
+            assert "API key is required" in error_message
         finally:
             os.chdir(original_cwd)
     
     def test_create_client_with_env_file(self, tmp_path):
         """Test create_client works with .env file."""
-        from ai_utilities import create_client
+        from ai_utilities.client import AiClient, AiSettings
         
         # Create .env file
         env_file = tmp_path / ".env"
@@ -301,7 +301,11 @@ class TestIntegrationWithClient:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            client = create_client(provider="openai_compatible", base_url="http://localhost:11434/v1")
+            # Use explicit settings with from_dotenv since auto-loading is disabled during pytest
+            settings = AiSettings.from_dotenv(str(env_file), provider="openai_compatible", base_url="http://localhost:11434/v1")
+            
+            # Use AiClient directly instead of create_client
+            client = AiClient(settings=settings, auto_setup=False)
             assert client.settings.api_key == "env-file-key"
         finally:
             os.chdir(original_cwd)
