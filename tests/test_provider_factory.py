@@ -81,8 +81,12 @@ class TestProviderFactory:
         assert isinstance(provider, OpenAICompatibleProvider)
         assert provider.extra_headers == extra_headers
     
-    def test_openai_provider_missing_api_key(self):
+    def test_openai_provider_missing_api_key(self, monkeypatch):
         """Test OpenAI provider fails without API key."""
+        # Clear environment variables to ensure test isolation
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("AI_API_KEY", raising=False)
+        
         settings = AiSettings(provider="openai", api_key=None)
         
         with pytest.raises(ProviderConfigurationError) as exc_info:
