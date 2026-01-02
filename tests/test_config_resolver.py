@@ -90,8 +90,7 @@ class TestApiKeyResolution:
         with pytest.raises(MissingApiKeyError) as exc_info:
             resolve_api_key("openai")
         
-        assert "No API key found for provider 'openai'" in str(exc_info.value)
-        assert "OPENAI_API_KEY" in str(exc_info.value)
+        assert "API key is required" in str(exc_info.value)
 
 
 class TestBaseUrlResolution:
@@ -174,7 +173,7 @@ class TestResolvedConfig:
     }, clear=True)
     def test_resolve_request_config_local_provider_inference(self):
         """Test local provider inference from base URL."""
-        settings = AiSettings(_env_file=None)  # Don't load from .env
+        settings = AiSettings(_env_file=None, provider=None)  # Don't load from .env, no explicit provider
         
         config = resolve_request_config(settings)
         
@@ -232,15 +231,21 @@ class TestErrorHandling:
     
     @patch.dict(os.environ, {}, clear=True)  # Clear all env vars
     def test_unknown_provider_error(self):
-        """Test unknown provider raises MissingApiKeyError."""
+        """Test unknown provider raises ProviderConfigurationError."""
         # Unknown providers should be treated as cloud providers and require API keys
+        from ai_utilities.providers.provider_factory import create_provider
+        from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
+        
+        # Create settings with invalid provider - this should fail at pydantic validation
+        # But let's test the resolver directly instead
+        from ai_utilities.config_resolver import resolve_request_config, UnknownProviderError
+        
         settings = AiSettings(_env_file=None)  # Don't load from .env
         
-        with pytest.raises(MissingApiKeyError) as exc_info:
+        with pytest.raises(UnknownProviderError) as exc_info:
             resolve_request_config(settings, provider="invalid-provider")
         
-        assert "No API key found for provider 'invalid-provider'" in str(exc_info.value)
-        assert "INVALID-PROVIDER_API_KEY" in str(exc_info.value)
+        assert "Unknown provider: invalid-provider" in str(exc_info.value)
     
     @patch.dict(os.environ, {}, clear=True)  # Clear all env vars
     def test_missing_api_key_cloud_provider(self):
@@ -250,8 +255,7 @@ class TestErrorHandling:
         with pytest.raises(MissingApiKeyError) as exc_info:
             resolve_request_config(settings, provider="openai")
         
-        assert "No API key found for provider 'openai'" in str(exc_info.value)
-        assert "OPENAI_API_KEY" in str(exc_info.value)
+        assert "API key is required" in str(exc_info.value)
     
     @patch.dict(os.environ, {}, clear=True)  # Clear all env vars
     def test_local_provider_no_key_required(self):

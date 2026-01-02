@@ -8,6 +8,7 @@ without import-time side effects.
 import os
 import json
 import time
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Sequence, Union, TypeVar, Type
 from configparser import ConfigParser
@@ -27,6 +28,14 @@ from pydantic import ValidationError
 
 # Generic type for typed responses
 T = TypeVar('T', bound=BaseModel)
+
+
+def _running_under_pytest() -> bool:
+    """Check if we're running under pytest (including collection/import)."""
+    return (
+        "PYTEST_CURRENT_TEST" in os.environ
+        or "pytest" in sys.modules
+    )
 
 
 class AiSettings(BaseSettings):
@@ -77,14 +86,12 @@ class AiSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="AI_",
         extra='ignore',
-        env_file='.env',
-        env_file_encoding='utf-8',
         case_sensitive=False
     )
     
     # Provider selection - expanded to support multiple providers
     provider: Optional[Literal["openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
-        default=None, 
+        default="openai", 
         description="AI provider to use (inferred from base_url if not specified)"
     )
     
@@ -115,6 +122,17 @@ class AiSettings(BaseSettings):
     # Usage tracking settings
     usage_scope: str = Field(default="per_client", description="Usage tracking scope: per_client, per_process, global")
     usage_client_id: Optional[str] = Field(default=None, description="Custom client ID for usage tracking")
+    
+    # Knowledge settings
+    knowledge_enabled: bool = Field(default=False, description="Whether knowledge indexing and search is enabled")
+    knowledge_db_path: Optional[str] = Field(default=None, description="Path to the SQLite knowledge database")
+    knowledge_roots: Optional[str] = Field(default=None, description="Comma-separated list of root directories to index")
+    embedding_model: str = Field(default="text-embedding-3-small", description="Embedding model for knowledge indexing")
+    knowledge_chunk_size: Optional[int] = Field(default=None, ge=100, le=10000, description="Target size of text chunks in characters")
+    knowledge_chunk_overlap: Optional[int] = Field(default=None, ge=0, le=1000, description="Number of characters to overlap between chunks")
+    knowledge_min_chunk_size: Optional[int] = Field(default=None, ge=10, le=1000, description="Minimum size of a chunk to be considered valid")
+    knowledge_max_file_size: Optional[int] = Field(default=None, ge=1024, le=100*1024*1024, description="Maximum file size to process for indexing")
+    knowledge_use_sqlite_extension: bool = Field(default=True, description="Whether to try using SQLite vector extensions")
     
     @field_validator('openai_api_key', mode='before')
     @classmethod
@@ -166,15 +184,6 @@ class AiSettings(BaseSettings):
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""
-        # Tests should be isolated from developer machine .env files.
-        # Pytest sets PYTEST_CURRENT_TEST; when present, avoid implicit env_file loading
-        # unless the caller explicitly provides _env_file.
-        if "PYTEST_CURRENT_TEST" in os.environ and "_env_file" not in data:
-            project_root = Path(__file__).resolve().parents[2]
-            cwd = Path.cwd().resolve()
-            if cwd == project_root:
-                data["_env_file"] = None
-
         # Check for contextvar overrides and merge with data
         from .env_overrides import get_env_overrides
         
@@ -235,6 +244,14 @@ class AiSettings(BaseSettings):
     def validate_api_key(cls, v):
         """API key is required unless explicitly set to None for testing."""
         return v
+    
+    @classmethod
+    def from_dotenv(cls, env_file: Union[str, Path] = ".env", **data) -> "AiSettings":
+        """
+        Explicitly load settings from a dotenv file + environment variables.
+        Uses pydantic-settings _env_file + _env_file_encoding.
+        """
+        return cls(_env_file=str(env_file), _env_file_encoding="utf-8", **data)
     
     @classmethod
     def from_ini(cls, path: Union[str, Path]) -> "AiSettings":
@@ -670,7 +687,11 @@ class AiClient:
                 # Use basic interactive setup (only if API key missing)
                 settings = AiSettings.interactive_setup()
             else:
-                settings = AiSettings()
+                # Auto-load .env only outside pytest
+                if not _running_under_pytest() and Path(".env").exists():
+                    settings = AiSettings.from_dotenv(".env")
+                else:
+                    settings = AiSettings()
         
         self.settings = settings
         
@@ -764,6 +785,7 @@ class AiClient:
             exclude_none=True,
             exclude={
                 'api_key',  # Providers already have this from initialization
+                'openai_api_key',  # Alias for api_key
                 'provider',  # Not a per-request param
                 'base_url',  # Not a per-request param
                 'timeout',  # Provider init config, not a per-request param
@@ -771,7 +793,17 @@ class AiClient:
                 'extra_headers',  # Provider init config, not a per-request param
                 'usage_scope',  # Internal usage tracking field
                 'usage_client_id',  # Internal usage tracking field
-                'update_check_days'  # Internal configuration field
+                'update_check_days',  # Internal configuration field
+                # Knowledge-related settings (not supported by OpenAI API)
+                'knowledge_enabled',
+                'knowledge_db_path',
+                'knowledge_roots',
+                'knowledge_chunk_size',
+                'knowledge_chunk_overlap',
+                'knowledge_min_chunk_size',
+                'knowledge_max_file_size',
+                'knowledge_use_sqlite_extension',
+                'embedding_model',
             }
         )
         request_params.update(kwargs)
@@ -1478,6 +1510,439 @@ class AiClient:
             
         except Exception as e:
             raise FileTransferError("audio validation", self.provider.__class__.__name__, e) from e
+    
+    def _ensure_knowledge_enabled(self):
+        """Ensure knowledge functionality is enabled."""
+        if not self.settings.knowledge_enabled:
+            from .knowledge.exceptions import KnowledgeDisabledError
+            raise KnowledgeDisabledError(
+                "Knowledge functionality is disabled. Set AI_KNOWLEDGE_ENABLED=true to enable."
+            )
+    
+    def _get_knowledge_config(self):
+        """Get knowledge configuration from settings."""
+        from .config_models import KnowledgeConfig
+        from pathlib import Path
+        
+        # Convert string paths to Path objects
+        roots = []
+        if self.settings.knowledge_roots:
+            roots = [Path(root.strip()) for root in self.settings.knowledge_roots.split(',') if root.strip()]
+        
+        db_path = Path(self.settings.knowledge_db_path) if self.settings.knowledge_db_path else Path("knowledge.db")
+        
+        return KnowledgeConfig(
+            knowledge_enabled=self.settings.knowledge_enabled,
+            knowledge_db_path=db_path,
+            knowledge_roots=roots,
+            embedding_model=self.settings.embedding_model,
+            chunk_size=self.settings.knowledge_chunk_size or 1000,
+            chunk_overlap=self.settings.knowledge_chunk_overlap or 200,
+            min_chunk_size=self.settings.knowledge_min_chunk_size or 100,
+            max_file_size=self.settings.knowledge_max_file_size or (10 * 1024 * 1024),
+            use_sqlite_extension=self.settings.knowledge_use_sqlite_extension,
+        )
+    
+    def index_knowledge(self, directory: Optional[Union[str, Path]] = None, 
+                       force_reindex: bool = False, recursive: bool = True) -> Dict[str, Any]:
+        """
+        Index knowledge from files into the vector database.
+        
+        Args:
+            directory: Directory to index (uses knowledge_roots from settings if None)
+            force_reindex: Whether to force reindexing all files
+            recursive: Whether to search subdirectories
+            
+        Returns:
+            Dictionary with indexing statistics
+            
+        Raises:
+            KnowledgeDisabledError: If knowledge functionality is disabled
+            KnowledgeIndexError: If indexing fails
+        """
+        self._ensure_knowledge_enabled()
+        
+        try:
+            # Get knowledge configuration
+            knowledge_config = self._get_knowledge_config()
+            
+            # Import knowledge components
+            from .knowledge.indexer import KnowledgeIndexer
+            from .knowledge.sources import FileSourceLoader
+            from .knowledge.chunking import TextChunker
+            from .knowledge.backend import SqliteVectorBackend
+            
+            # Initialize components
+            backend = SqliteVectorBackend(
+                db_path=knowledge_config.knowledge_db_path,
+                embedding_dimension=1536,  # OpenAI embedding dimension
+                vector_extension=knowledge_config.vector_extension,
+            )
+            
+            file_loader = FileSourceLoader(
+                max_file_size=knowledge_config.max_file_size
+            )
+            
+            chunker = TextChunker(
+                chunk_size=knowledge_config.chunk_size,
+                chunk_overlap=knowledge_config.chunk_overlap,
+                min_chunk_size=knowledge_config.min_chunk_size,
+            )
+            
+            indexer = KnowledgeIndexer(
+                backend=backend,
+                file_loader=file_loader,
+                chunker=chunker,
+                embedding_client=self,
+                embedding_model=knowledge_config.embedding_model,
+            )
+            
+            # Determine what to index
+            if directory:
+                directory = Path(directory)
+                stats = indexer.index_directory(directory, recursive=recursive, force_reindex=force_reindex)
+            else:
+                # Index all configured roots
+                all_stats = {
+                    'total_files': 0,
+                    'processed_files': 0,
+                    'skipped_files': 0,
+                    'error_files': 0,
+                    'total_chunks': 0,
+                    'total_embeddings': 0,
+                    'processing_time': 0.0,
+                    'errors': [],
+                }
+                
+                for root_dir in knowledge_config.knowledge_roots:
+                    root_path = Path(root_dir)
+                    if root_path.exists():
+                        stats = indexer.index_directory(root_path, recursive=recursive, force_reindex=force_reindex)
+                        
+                        # Aggregate statistics
+                        for key in all_stats:
+                            if key == 'errors':
+                                all_stats[key].extend(stats.get(key, []))
+                            elif isinstance(all_stats[key], (int, float)):
+                                all_stats[key] += stats.get(key, 0)
+                
+                stats = all_stats
+            
+            return stats
+            
+        except Exception as e:
+            from .knowledge.exceptions import KnowledgeIndexError
+            raise KnowledgeIndexError(f"Knowledge indexing failed: {e}", cause=e) from e
+    
+    def search_knowledge(self, query: str, top_k: int = 5, 
+                        similarity_threshold: float = 0.0) -> List[Dict[str, Any]]:
+        """
+        Search the knowledge base for relevant information.
+        
+        Args:
+            query: Search query
+            top_k: Number of results to return
+            similarity_threshold: Minimum similarity threshold (0.0-1.0)
+            
+        Returns:
+            List of search results with chunk content and metadata
+            
+        Raises:
+            KnowledgeDisabledError: If knowledge functionality is disabled
+            KnowledgeSearchError: If search fails
+        """
+        self._ensure_knowledge_enabled()
+        
+        try:
+            # Get knowledge configuration
+            knowledge_config = self._get_knowledge_config()
+            
+            # Import knowledge components
+            from .knowledge.search import KnowledgeSearch
+            from .knowledge.backend import SqliteVectorBackend
+            
+            # Initialize components
+            backend = SqliteVectorBackend(
+                db_path=knowledge_config.knowledge_db_path,
+                embedding_dimension=1536,
+                vector_extension=knowledge_config.vector_extension,
+            )
+            
+            search = KnowledgeSearch(
+                backend=backend,
+                embedding_client=self,
+                embedding_model=knowledge_config.embedding_model,
+            )
+            
+            # Perform search
+            hits = search.search(
+                query=query,
+                top_k=top_k,
+                similarity_threshold=similarity_threshold,
+            )
+            
+            # Convert to dictionaries
+            results = []
+            for hit in hits:
+                results.append({
+                    'text': hit.text,
+                    'similarity_score': hit.similarity_score,
+                    'rank': hit.rank,
+                    'source_path': str(hit.source_path),
+                    'source_type': hit.source_type,
+                    'chunk_id': hit.chunk.chunk_id,
+                    'chunk_index': hit.chunk.chunk_index,
+                    'metadata': hit.chunk.metadata,
+                })
+            
+            return results
+            
+        except Exception as e:
+            from .knowledge.exceptions import KnowledgeSearchError
+            raise KnowledgeSearchError(f"Knowledge search failed: {e}", cause=e) from e
+    
+    def ask_with_knowledge(self, prompt: str, top_k: int = 5, 
+                          similarity_threshold: float = 0.0,
+                          max_context_chars: int = 4000, **kwargs) -> 'AskResult':
+        """
+        Ask a question with knowledge context retrieved from the indexed documents.
+        
+        Args:
+            prompt: The question or prompt
+            top_k: Number of knowledge chunks to retrieve
+            similarity_threshold: Minimum similarity threshold for knowledge retrieval
+            max_context_chars: Maximum total characters for knowledge context (default: 4000)
+            **kwargs: Additional arguments passed to ask()
+            
+        Returns:
+            AskResult with AI response that includes knowledge context
+            
+        Raises:
+            KnowledgeDisabledError: If knowledge functionality is disabled
+            KnowledgeSearchError: If knowledge retrieval fails
+        """
+        self._ensure_knowledge_enabled()
+        
+        # Retrieve relevant knowledge
+        knowledge_results = self.search_knowledge(
+            query=prompt,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
+        )
+        
+        # Apply guardrails to knowledge results
+        processed_results = self._process_knowledge_results(
+            knowledge_results, 
+            max_context_chars=max_context_chars
+        )
+        
+        # Format knowledge context with compact metadata
+        if processed_results:
+            context_parts = []
+            for i, result in enumerate(processed_results, 1):
+                # Extract file name and heading from metadata if available
+                file_name = Path(result['source_path']).name
+                heading = ""
+                if result.get('metadata') and 'heading' in result['metadata']:
+                    heading = f" - {result['metadata']['heading']}"
+                
+                # Compact format with file, heading, and chunk ID
+                context_parts.append(
+                    f"[{i}] {file_name}{heading} (chunk {result.get('chunk_id', 'unknown').split(':')[-1]})\n"
+                    f"{result['text']}"
+                )
+            
+            knowledge_context = "\n\n".join(context_parts)
+            
+            # Create enhanced prompt with knowledge context
+            enhanced_prompt = (
+                f"Context from relevant documents:\n\n"
+                f"{knowledge_context}\n\n"
+                f"Based on the above context, please answer: {prompt}\n\n"
+                f"If the context doesn't contain relevant information, "
+                f"please say so and provide the best answer you can."
+            )
+        else:
+            # No relevant knowledge found
+            enhanced_prompt = (
+                f"No relevant information found in the knowledge base. "
+                f"Please answer: {prompt}"
+            )
+        
+        # Get AI response with enhanced prompt
+        response_text = self.ask(enhanced_prompt, **kwargs)
+        
+        # Create AskResult with knowledge metadata
+        from .models import AskResult
+        result = AskResult(
+            prompt=enhanced_prompt,
+            response=response_text,
+            error=None,
+            duration_s=0.0,  # Could track timing if needed
+            knowledge_used=len(processed_results) > 0,
+            knowledge_sources=[r['source_path'] for r in processed_results],
+            knowledge_count=len(processed_results),
+        )
+        
+        return result
+    
+    def _process_knowledge_results(self, results: List[Dict], max_context_chars: int) -> List[Dict]:
+        """
+        Apply guardrails to knowledge results:
+        - Deduplicate near-identical chunks
+        - Limit total character count
+        - Prioritize by similarity score
+        """
+        if not results:
+            return []
+        
+        # 1. Deduplicate near-identical chunks
+        deduped_results = self._deduplicate_chunks(results)
+        
+        # 2. Sort by similarity score (highest first)
+        deduped_results.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        # 3. Apply character limit
+        limited_results = []
+        total_chars = 0
+        
+        for result in deduped_results:
+            # Estimate characters needed for this result (including metadata)
+            text_chars = len(result['text'])
+            metadata_chars = 100  # Rough estimate for metadata formatting
+            estimated_chars = text_chars + metadata_chars
+            
+            if total_chars + estimated_chars <= max_context_chars:
+                limited_results.append(result)
+                total_chars += estimated_chars
+            else:
+                # Try to fit a truncated version if it's the first result
+                if not limited_results and text_chars > max_context_chars - metadata_chars:
+                    # Truncate the text to fit
+                    max_text = max_context_chars - metadata_chars - 20  # Leave room for "..."
+                    truncated = result['text'][:max_text] + "..."
+                    result_copy = result.copy()
+                    result_copy['text'] = truncated
+                    limited_results.append(result_copy)
+                    total_chars = max_context_chars
+                break
+        
+        # 4. Sort back by original ranking (similarity)
+        limited_results.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        return limited_results
+    
+    def _deduplicate_chunks(self, results: List[Dict]) -> List[Dict]:
+        """
+        Remove near-identical chunks based on text similarity.
+        Uses simple heuristics to avoid duplicate content.
+        """
+        if not results:
+            return []
+        
+        deduped = []
+        seen_texts = set()
+        
+        for result in results:
+            text = result['text'].strip()
+            
+            # Simple deduplication checks
+            is_duplicate = False
+            
+            # Check exact matches
+            if text in seen_texts:
+                is_duplicate = True
+            else:
+                # Check for near-duplicates using multiple strategies
+                for seen_text in seen_texts:
+                    # Strategy 1: Check if large portion of text is identical
+                    # Find longest common substring
+                    common = self._longest_common_substring(text, seen_text)
+                    if common and len(common) > 80:  # Substantial common content
+                        # Check if common content is a significant portion of both texts
+                        ratio1 = len(common) / len(text)
+                        ratio2 = len(common) / len(seen_text)
+                        if ratio1 > 0.35 and ratio2 > 0.35:  # Lowered from 0.5
+                            is_duplicate = True
+                            break
+                    
+                    # Strategy 2: Check word-level similarity for shorter chunks
+                    if len(text) < 500 and len(seen_text) < 500:
+                        words1 = set(text.lower().split())
+                        words2 = set(seen_text.lower().split())
+                        if words1 and words2:
+                            intersection = words1.intersection(words2)
+                            union = words1.union(words2)
+                            similarity = len(intersection) / len(union)
+                            if similarity > 0.65:  # Lowered from 0.7
+                                is_duplicate = True
+                                break
+            
+            if not is_duplicate:
+                deduped.append(result)
+                seen_texts.add(text)
+        
+        return deduped
+    
+    def _longest_common_substring(self, s1: str, s2: str) -> str:
+        """Find the longest common substring between two strings."""
+        # Simple implementation - good enough for deduplication
+        m = len(s1)
+        n = len(s2)
+        dp = [[0] * (n + 1) for _ in range(m + 1)]
+        max_length = 0
+        end_pos = 0
+        
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if s1[i - 1] == s2[j - 1]:
+                    dp[i][j] = dp[i - 1][j - 1] + 1
+                    if dp[i][j] > max_length:
+                        max_length = dp[i][j]
+                        end_pos = i
+                else:
+                    dp[i][j] = 0
+        
+        return s1[end_pos - max_length:end_pos] if max_length > 0 else ""
+    
+    def get_embeddings(self, texts: List[str], model: Optional[str] = None, dimensions: Optional[int] = None) -> List[List[float]]:
+        """
+        Generate embeddings for the given texts.
+        
+        Args:
+            texts: List of texts to embed
+            model: Embedding model to use (defaults to embedding_model from settings)
+            dimensions: Number of dimensions for the embedding (supported by some models)
+            
+        Returns:
+            List of embedding vectors
+            
+        Raises:
+            ValueError: If no API key is configured
+        """
+        if not self.settings.api_key:
+            raise ValueError("API key is required for embeddings")
+        
+        model = model or self.settings.embedding_model
+        
+        # Use OpenAI embeddings API
+        from openai import OpenAI
+        
+        client = OpenAI(api_key=self.settings.api_key)
+        
+        # Build parameters
+        params = {
+            "model": model,
+            "input": texts
+        }
+        
+        # Add dimensions if specified and supported
+        if dimensions is not None:
+            params["dimensions"] = dimensions
+        
+        response = client.embeddings.create(**params)
+        
+        return [item.embedding for item in response.data]
 
 
 # Convenience function for backward compatibility

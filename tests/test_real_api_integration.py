@@ -152,8 +152,12 @@ class TestRealAPIIntegration:
         
         print(f"✅ Provider factory compatible response: {response}")
     
-    def test_error_handling_without_api_key(self):
+    def test_error_handling_without_api_key(self, monkeypatch):
         """Test that proper errors are raised without API keys (no network calls)."""
+        # Clear environment variables to ensure test isolation
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("AI_API_KEY", raising=False)
+        
         # This should work without API keys since it's just validation
         with pytest.raises(ProviderConfigurationError) as exc_info:
             settings = AiSettings(provider="openai", api_key=None)
