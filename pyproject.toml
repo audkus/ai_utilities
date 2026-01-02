@@ -27,7 +27,7 @@ dependencies = [
   "pydantic-settings>=2.0,<3",
   "portalocker>=2.0,<3",
   "requests>=2.31,<3",
-  "urllib3>=1.26,<2",  # Pin to v1.x for LibreSSL compatibility
+  "urllib3>=1.26,<3",  # Updated to allow v2.x for compatibility
 ]
 
 [project.optional-dependencies]
@@ -47,6 +47,7 @@ dev = [
   "ruff>=0.6,<1",
   "mypy>=1.10,<2",
   "types-setuptools",
+  "types-requests>=2.32.4",
   "python-dotenv>=0.21.0,<1",
   "ai-utilities[providers]",  # Include providers for dev
 ]
