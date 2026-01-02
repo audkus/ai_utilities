@@ -134,7 +134,7 @@ tests/test_integration.py::test_list SKIPPED
         assert errors == 0
     
     @patch('subprocess.run')
-    def test_run_test_suite_success(self):
+    def test_run_test_suite_success(self, mock_run):
         """Test running a test suite successfully."""
         dashboard = AITestDashboard()
         

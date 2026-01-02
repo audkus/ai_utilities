@@ -1,0 +1,274 @@
+"""
+Tests for knowledge file source loading.
+
+Tests the file loading and text extraction functionality.
+"""
+
+from __future__ import annotations
+
+import pytest
+from pathlib import Path
+
+from ai_utilities.knowledge.sources import FileSourceLoader
+from ai_utilities.knowledge.exceptions import KnowledgeValidationError
+
+
+class TestFileSourceLoader:
+    """Test the FileSourceLoader class."""
+    
+    def test_supported_extensions(self) -> None:
+        """Test that supported extensions are correctly identified."""
+        loader = FileSourceLoader()
+        
+        supported_extensions = {
+            '.md', '.txt', '.py', '.log', '.rst', '.yaml', '.yml', '.json'
+        }
+        
+        assert loader.SUPPORTED_EXTENSIONS == supported_extensions
+        
+        for ext in supported_extensions:
+            assert loader.is_supported_file(Path(f"test{ext}"))
+        
+        assert not loader.is_supported_file(Path("test.pdf"))
+        assert not loader.is_supported_file(Path("test.doc"))
+    
+    def test_load_source_valid_file(self, tmp_path) -> None:
+        """Test loading a valid source file."""
+        loader = FileSourceLoader()
+        
+        # Create a test file
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("Hello, world!")
+        
+        source = loader.load_source(test_file)
+        
+        assert source.source_id == str(test_file)
+        assert source.path == test_file.absolute()
+        assert source.file_size > 0
+        assert source.mime_type == "text/plain"
+        assert source.file_extension == "txt"
+        assert source.is_text_file is True
+    
+    def test_load_source_nonexistent_file(self) -> None:
+        """Test loading a non-existent file raises error."""
+        loader = FileSourceLoader()
+        
+        with pytest.raises(FileNotFoundError):
+            loader.load_source(Path("/nonexistent/file.txt"))
+    
+    def test_load_source_directory(self, tmp_path) -> None:
+        """Test loading a directory raises error."""
+        loader = FileSourceLoader()
+        
+        with pytest.raises(KnowledgeValidationError):
+            loader.load_source(tmp_path)
+    
+    def test_load_source_unsupported_type(self, tmp_path) -> None:
+        """Test loading an unsupported file type raises error."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.pdf"
+        test_file.write_bytes(b"fake pdf content")
+        
+        with pytest.raises(KnowledgeValidationError):
+            loader.load_source(test_file)
+    
+    def test_load_source_too_large(self, tmp_path) -> None:
+        """Test loading a file that's too large raises error."""
+        loader = FileSourceLoader(max_file_size=100)
+        
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("x" * 200)  # Larger than max_file_size
+        
+        with pytest.raises(KnowledgeValidationError):
+            loader.load_source(test_file)
+    
+    def test_extract_text_plain(self, tmp_path) -> None:
+        """Test extracting text from plain text files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("Hello, world!\n\nThis is a test.")
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "Hello, world!" in text
+        assert "This is a test." in text
+        assert text.strip() == "Hello, world!\n\nThis is a test."
+    
+    def test_extract_text_markdown(self, tmp_path) -> None:
+        """Test extracting text from markdown files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.md"
+        test_file.write_text("""---
+title: Test Document
+---
+
+# Heading 1
+
+This is a paragraph with **bold** and *italic* text.
+
+## Heading 2
+
+- Item 1
+- Item 2
+
+`code inline`
+
+```
+code block
+```
+
+[Link text](url)
+""")
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "Heading 1" in text
+        assert "Heading 2" in text
+        assert "bold" in text
+        assert "italic" in text
+        assert "Item 1" in text
+        assert "Item 2" in text
+        assert "code inline" not in text  # Should be removed
+        assert "code block" not in text    # Should be removed
+        assert "Link text" in text
+        assert "url" not in text           # Should be removed
+    
+    def test_extract_text_python(self, tmp_path) -> None:
+        """Test extracting text from Python files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.py"
+        test_file.write_text('''"""Module docstring."""
+
+def test_function():
+    """Function docstring."""
+    # This is a comment
+    return "hello"
+
+class TestClass:
+    """Class docstring."""
+    
+    def method(self):
+        """Method docstring."""
+        # Another comment
+        pass
+''')
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "Module docstring." in text
+        assert "Function docstring." in text
+        assert "Class docstring." in text
+        assert "Method docstring." in text
+        assert "This is a comment" in text
+        assert "Another comment" in text
+        assert "def test_function" not in text  # Code should be removed
+    
+    def test_extract_text_log(self, tmp_path) -> None:
+        """Test extracting text from log files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.log"
+        test_file.write_text("""2024-01-01 10:00:00 INFO Starting application
+2024-01-01 10:00:01 ERROR Failed to connect to database
+2024-01-01 10:00:02 WARN Retrying connection
+[2024-01-01 10:00:03] Connection established
+app: Configuration loaded
+""")
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "Starting application" in text
+        assert "Failed to connect to database" in text
+        assert "Retrying connection" in text
+        assert "Connection established" in text
+        assert "Configuration loaded" in text
+    
+    def test_extract_text_yaml(self, tmp_path) -> None:
+        """Test extracting text from YAML files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.yaml"
+        test_file.write_text("""name: test-app
+version: 1.0.0
+database:
+  host: localhost
+  port: 5432
+  name: testdb
+features:
+  - auth
+  - logging
+  - monitoring
+""")
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "test-app" in text
+        assert "1.0.0" in text
+        assert "localhost" in text
+        assert "5432" in text
+        assert "testdb" in text
+        assert "auth" in text
+        assert "logging" in text
+        assert "monitoring" in text
+    
+    def test_extract_text_json(self, tmp_path) -> None:
+        """Test extracting text from JSON files."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.json"
+        test_file.write_text('''{
+  "name": "test-app",
+  "version": "1.0.0",
+  "database": {
+    "host": "localhost",
+    "port": 5432
+  },
+  "features": ["auth", "logging"]
+}''')
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "test-app" in text
+        assert "1.0.0" in text
+        assert "localhost" in text
+        assert "5432" in text
+        assert "auth" in text
+        assert "logging" in text
+    
+    def test_extract_text_encoding_fallback(self, tmp_path) -> None:
+        """Test text extraction with encoding fallback."""
+        loader = FileSourceLoader()
+        
+        # Create a file with Latin-1 encoding
+        test_file = tmp_path / "test.txt"
+        content = "Héllo, wörld! ñoño".encode('latin-1')
+        test_file.write_bytes(content)
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert "Héllo" in text
+        assert "wörld" in text
+        assert "ñoño" in text
+    
+    def test_extract_empty_file(self, tmp_path) -> None:
+        """Test extracting text from an empty file."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "empty.txt"
+        test_file.write_text("")
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        assert text == ""
