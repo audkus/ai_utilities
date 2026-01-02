@@ -144,8 +144,7 @@ class AiSettings(BaseSettings):
     groq_api_key: Optional[str] = Field(default=None, description="Groq API key (GROQ_API_KEY)")
     together_api_key: Optional[str] = Field(default=None, description="Together AI API key (TOGETHER_API_KEY)")
     openrouter_api_key: Optional[str] = Field(default=None, description="OpenRouter API key (OPENROUTER_API_KEY)")
-    
-    # Local provider keys (optional)
+    fastchat_api_key: Optional[str] = Field(default=None, description="FastChat API key (FASTCHAT_API_KEY)")
     ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
     lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
     

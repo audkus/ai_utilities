@@ -224,9 +224,11 @@ class TestNamespaceHelpers:
     
     @pytest.mark.skipif(not _running_under_pytest(), reason="Only runs under pytest")
     def test_default_namespace_under_pytest(self):
-        """Test that default namespace is 'pytest' when running under pytest."""
+        """Test that default namespace works correctly when running under pytest."""
         ns = _default_namespace()
-        assert ns == "pytest"
+        # Should return a project-based namespace, not "pytest"
+        assert ns.startswith("proj_")
+        assert len(ns) == 17  # "proj_" + 12 char hash
     
     def test_running_under_pytest(self):
         """Test pytest detection."""
