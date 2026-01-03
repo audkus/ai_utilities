@@ -668,6 +668,7 @@ ai_utilities/
 ## Documentation & Links
 
 - **Full Documentation** → [`docs/`](docs/)
+- **Support & Maintenance** → [`SUPPORT.md`](SUPPORT.md)
 - **Reliability Guide** → [`docs/reliability_guide.md`](docs/reliability_guide.md)
 - **Security Guide** → [`docs/security_guide.md`](docs/security_guide.md)
 - **Migration Guide** → [`MIGRATION.md`](MIGRATION.md)
