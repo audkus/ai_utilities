@@ -158,7 +158,11 @@ jobs:
       run: |
         python -c "
         import time
+        import os
         from ai_utilities import AiSettings, AiClient
+        
+        # Set fake API key to avoid errors in performance test
+        os.environ['AI_API_KEY'] = 'fake-key-for-performance-testing'
         
         # Test import speed
         start = time.time()
@@ -166,7 +170,7 @@ jobs:
         import_time = time.time() - start
         print(f'OK: Import time: {import_time:.3f}s')
         
-        # Test object creation speed
+        # Test object creation speed (with fake API key)
         start = time.time()
         settings = AiSettings(provider='openai')
         client = AiClient(settings=settings)
