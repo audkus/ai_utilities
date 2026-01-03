@@ -48,10 +48,10 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: '🔧 Update dependencies'
-        title: '🔧 Automated dependency update'
+        commit-message: 'Update dependencies'
+        title: 'Automated dependency update'
         body: |
-          ## 🤖 Automated Dependency Update
+          ## Automated Dependency Update
           
           This PR updates project dependencies to their latest versions.
           
@@ -59,7 +59,7 @@ jobs:
           - Updated requirements.txt
           - Updated requirements-dev.txt
           
-          ### ✅ Verification
+          ### Verification
           - [x] Tests pass
           - [x] Type checking passes
           - [x] No breaking changes detected
