@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     
     - name: Cache pip dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
@@ -52,7 +52,7 @@ jobs:
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         flags: unittests
