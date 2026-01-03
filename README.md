@@ -280,7 +280,110 @@ client = AiClient(settings=settings)
 
 [📖 **Complete Caching Guide** → `docs/caching.md`](docs/caching.md)
 
----
+----
+
+## 📊 Analytics Hooks
+
+AI Utilities includes optional analytics hooks that allow you to capture request/response telemetry without affecting existing behavior.
+
+### Quick Start
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+def analytics_handler(event):
+    """Handle analytics events - log to console, database, etc."""
+    print(f"{event.event_type}: {event.latency_ms}ms, tokens: {event.tokens_in + event.tokens_out}")
+
+# Configure analytics hook
+settings = AiSettings(
+    provider="openai",
+    analytics_hook=analytics_handler
+)
+
+client = AiClient(settings)
+response = client.ask("What is machine learning?")
+# Output: request: 0ms, tokens: 0
+# Output: response: 1250ms, tokens: 45
+```
+
+### Event Types
+
+Analytics hooks receive these events during AI requests:
+
+| Event | When Emitted | Key Fields |
+|-------|-------------|------------|
+| **AiRequestEvent** | Before provider call | `request_id`, `provider`, `model` |
+| **AiResponseEvent** | After successful response | `request_id`, `latency_ms`, `tokens_in/out`, `cache_hit` |
+| **AiErrorEvent** | When provider fails | `request_id`, `latency_ms`, `error_type`, `error_message` |
+
+### Advanced Usage
+
+```python
+from ai_utilities.analytics.hooks import CompositeAnalyticsHook
+from ai_utilities.analytics.events import AiEventBase
+
+# Multiple analytics handlers
+def log_to_database(event: AiEventBase):
+    """Save event to database."""
+    pass
+
+def track_costs(event: AiEventBase):
+    """Calculate and track costs."""
+    if event.tokens_in and event.tokens_out:
+        total_tokens = event.tokens_in + event.tokens_out
+        print(f"Cost: ${total_tokens * 0.00002:.4f}")
+
+# Combine multiple hooks
+composite_hook = CompositeAnalyticsHook([
+    log_to_database,
+    track_costs
+])
+
+settings = AiSettings(analytics_hook=composite_hook)
+client = AiClient(settings)
+```
+
+### Zero Overhead
+
+Analytics hooks have **zero performance impact** when not configured:
+
+```python
+# No analytics - completely unchanged behavior
+settings = AiSettings(provider="openai")  # analytics_hook=None by default
+client = AiClient(settings)
+```
+
+**Error Safety**: Hook failures never break your AI requests - errors are automatically swallowed to prevent disrupting user code.
+
+**📖 Full Documentation:** See [`src/ai_utilities/analytics/`](src/ai_utilities/analytics/) for complete API reference.
+
+### Provider Capabilities
+
+Check what features are supported by your current provider configuration:
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+settings = AiSettings(provider="openai")
+client = AiClient(settings)
+
+caps = client.capabilities()
+print(caps)  # AiCapabilities(text)
+
+# Future multi-modal support (currently disabled until implemented)
+print(caps.vision)   # False
+print(caps.audio)    # False  
+print(caps.files)    # False
+```
+
+**Conservative Approach**: Capabilities indicate what **this library** supports, not necessarily what the provider supports. Features return `False` until the library has stable APIs for them.
+
+**Future Preview**: The library includes stub methods for future multi-modal features:
+- `client.analyze_image(image, prompt)` - Image analysis (NotImplementedError)
+- `client.transcribe_audio(audio)` - Audio transcription (NotImplementedError)
+
+----
 
 ## Providers
 

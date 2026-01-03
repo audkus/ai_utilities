@@ -9,8 +9,9 @@ import os
 import json
 import time
 import sys
+import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union, TypeVar, Type
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, TypeVar, Type, Callable
 from configparser import ConfigParser
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,8 @@ from .models import AskResult
 from .json_parsing import parse_json_from_text, JsonParseError, create_repair_prompt
 from .file_models import UploadedFile
 from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
+from .analytics.events import AiEventBase, AiRequestEvent, AiResponseEvent, AiErrorEvent
+from .analytics.hooks import AnalyticsHook
 from pydantic import ValidationError
 
 # Generic type for typed responses
@@ -188,6 +191,9 @@ class AiSettings(BaseSettings):
     
     # Cache namespace
     cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
+    
+    # Analytics settings
+    analytics_hook: Optional[Callable[[AiEventBase], None]] = Field(default=None, description="Analytics hook for request/response telemetry (optional)")
     
     @field_validator('openai_api_key', mode='before')
     @classmethod
@@ -998,7 +1004,8 @@ class AiClient:
                 'cache_sqlite_busy_timeout_ms',
                 'cache_sqlite_max_entries',
                 'cache_sqlite_prune_batch',
-                'cache_namespace'
+                'cache_namespace',
+                'analytics_hook'  # Analytics hook, not a provider parameter
             }
         )
         request_params.update(kwargs)
@@ -1006,30 +1013,118 @@ class AiClient:
         # Show progress indicator if enabled
         progress = ProgressIndicator(show=self.show_progress)
         
+        # Generate request ID for analytics
+        request_id = str(uuid.uuid4())
+        start_time = time.monotonic()
+        
+        # Emit request event if analytics hook is configured
+        if self.settings.analytics_hook:
+            try:
+                request_event = AiRequestEvent(
+                    request_id=request_id,
+                    provider=self.settings.provider or "unknown",
+                    model=request_params.get('model') or self.settings.model,
+                )
+                self.settings.analytics_hook(request_event)
+            except Exception:
+                # Swallow analytics errors to prevent breaking user code
+                pass
+        
         with progress:
-            # Use new provider interface with caching for single prompts
-            if isinstance(prompt, list):
-                # Phase 1: Don't cache list prompts
-                response = self.provider.ask_many(prompt, return_format=return_format, **request_params)
-            else:
-                # Check cache for single prompt
-                cache_key = None
-                if self._should_use_cache(request_params):
-                    cache_key = self._build_cache_key("ask", prompt=prompt, request_params=request_params, return_format=return_format)
-                    cached_response = self.cache.get(cache_key)
-                    if cached_response is not None:
-                        # Track usage for cached responses too
-                        if self.usage_tracker:
-                            estimated_tokens = len(str(cached_response)) // 4
-                            self.usage_tracker.record_usage(estimated_tokens)
-                        return cached_response
+            try:
+                # Use new provider interface with caching for single prompts
+                if isinstance(prompt, list):
+                    # Phase 1: Don't cache list prompts
+                    response = self.provider.ask_many(prompt, return_format=return_format, **request_params)
+                else:
+                    # Check cache for single prompt
+                    cache_key = None
+                    cache_hit = False
+                    if self._should_use_cache(request_params):
+                        cache_key = self._build_cache_key("ask", prompt=prompt, request_params=request_params, return_format=return_format)
+                        cached_response = self.cache.get(cache_key)
+                        if cached_response is not None:
+                            cache_hit = True
+                            # Track usage for cached responses too
+                            if self.usage_tracker:
+                                estimated_tokens = len(str(cached_response)) // 4
+                                self.usage_tracker.record_usage(estimated_tokens)
+                            
+                            # Emit response event for cache hit if analytics hook is configured
+                            if self.settings.analytics_hook:
+                                try:
+                                    latency_ms = int((time.monotonic() - start_time) * 1000)
+                                    response_event = AiResponseEvent(
+                                        request_id=request_id,
+                                        provider=self.settings.provider or "unknown",
+                                        model=request_params.get('model') or self.settings.model,
+                                        cache={"hit": True, "namespace": self.cache.namespace if hasattr(self.cache, 'namespace') else None},
+                                        latency_ms=latency_ms,
+                                        tokens_in=estimated_tokens if self.usage_tracker else None,
+                                    )
+                                    self.settings.analytics_hook(response_event)
+                                except Exception:
+                                    pass
+                            
+                            return cached_response
+                    
+                    # Make actual provider call
+                    response = self.provider.ask(prompt, return_format=return_format, **request_params)
+                    
+                    # Cache successful response
+                    if cache_key is not None:
+                        self.cache.set(cache_key, response, ttl_s=self.settings.cache_ttl_s)
                 
-                # Make actual provider call
-                response = self.provider.ask(prompt, return_format=return_format, **request_params)
+                # Emit response event if analytics hook is configured
+                if self.settings.analytics_hook:
+                    try:
+                        latency_ms = int((time.monotonic() - start_time) * 1000)
+                        # Estimate token usage if available
+                        tokens_in = None
+                        tokens_out = None
+                        if hasattr(response, 'usage') and response.usage:
+                            # If response has usage info from provider
+                            tokens_in = getattr(response.usage, 'prompt_tokens', None)
+                            tokens_out = getattr(response.usage, 'completion_tokens', None)
+                        else:
+                            # Rough estimation
+                            if isinstance(prompt, str):
+                                tokens_in = len(prompt) // 4
+                            else:
+                                tokens_in = sum(len(str(p)) // 4 for p in prompt)
+                            tokens_out = len(str(response)) // 4
+                        
+                        response_event = AiResponseEvent(
+                            request_id=request_id,
+                            provider=self.settings.provider or "unknown",
+                            model=request_params.get('model') or self.settings.model,
+                            cache={"hit": cache_hit, "namespace": self.cache.namespace if hasattr(self.cache, 'namespace') else None} if 'cache_hit' in locals() else None,
+                            latency_ms=latency_ms,
+                            tokens_in=tokens_in,
+                            tokens_out=tokens_out,
+                        )
+                        self.settings.analytics_hook(response_event)
+                    except Exception:
+                        pass
                 
-                # Cache successful response
-                if cache_key is not None:
-                    self.cache.set(cache_key, response, ttl_s=self.settings.cache_ttl_s)
+            except Exception as e:
+                # Emit error event if analytics hook is configured
+                if self.settings.analytics_hook:
+                    try:
+                        latency_ms = int((time.monotonic() - start_time) * 1000)
+                        error_event = AiErrorEvent(
+                            request_id=request_id,
+                            provider=self.settings.provider or "unknown",
+                            model=request_params.get('model') or self.settings.model,
+                            latency_ms=latency_ms,
+                            error_type=type(e).__name__,
+                            error_message=str(e)[:500],  # Truncate for safety
+                        )
+                        self.settings.analytics_hook(error_event)
+                    except Exception:
+                        pass
+                # Re-raise original exception
+                raise
         
         # Track usage if enabled (basic estimation - provider could return actual counts)
         if self.usage_tracker:
@@ -1038,6 +1133,30 @@ class AiClient:
             self.usage_tracker.record_usage(estimated_tokens)
         
         return response
+    
+    def capabilities(self):
+        """Return the capabilities supported by the current provider configuration.
+        
+        Returns:
+            AiCapabilities object indicating what features are supported.
+        """
+        # Check if provider has the new get_capabilities method
+        if hasattr(self.provider, 'get_capabilities'):
+            return self.provider.get_capabilities()
+        else:
+            # Fallback for providers with capabilities property
+            # Convert ProviderCapabilities to AiCapabilities
+            from ..capabilities import AiCapabilities
+            
+            provider_caps = self.provider.capabilities
+            return AiCapabilities(
+                text=provider_caps.supports_text,
+                vision=provider_caps.supports_images,  # Map images to vision
+                audio=False,  # Not supported by ProviderCapabilities
+                files=provider_caps.supports_files_upload,
+                embeddings=False,  # Not supported by ProviderCapabilities
+                tools=provider_caps.supports_tools
+            )
     
     def get_usage_stats(self):
         """Get current usage statistics if tracking is enabled.
@@ -2316,6 +2435,41 @@ class AiClient:
         response = client.embeddings.create(**params)
         
         return [item.embedding for item in response.data]
+    
+    def analyze_image(self, image: Union[str, Path, bytes], prompt: str, **kwargs) -> str:
+        """Analyze an image with AI (stub for future implementation).
+        
+        Args:
+            image: Image to analyze (file path, URL, or bytes)
+            prompt: Question or instruction about the image
+            **kwargs: Additional parameters
+            
+        Returns:
+            Text description or analysis of the image
+            
+        Raises:
+            NotImplementedError: This method is not yet implemented
+        """
+        raise NotImplementedError(
+            "Image analysis is not yet implemented. This is a placeholder for future multi-modal support."
+        )
+    
+    def transcribe_audio(self, audio: Union[str, Path, bytes], **kwargs) -> str:
+        """Transcribe audio to text (stub for future implementation).
+        
+        Args:
+            audio: Audio file to transcribe (file path, URL, or bytes)
+            **kwargs: Additional parameters
+            
+        Returns:
+            Transcribed text
+            
+        Raises:
+            NotImplementedError: This method is not yet implemented
+        """
+        raise NotImplementedError(
+            "Audio transcription is not yet implemented. This is a placeholder for future multi-modal support."
+        )
 
 
 # Convenience function for backward compatibility
