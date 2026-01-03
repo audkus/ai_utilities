@@ -17,7 +17,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from datetime import datetime, timedelta
 from .config_models import AiSettings
 from .providers.base_provider import BaseProvider
-from .usage_tracker import UsageScope, create_usage_tracker
+from .usage_tracker import UsageScope, UsageStats, create_usage_tracker
 from .cache import CacheBackend, NullCache, MemoryCache, SqliteCache, stable_hash
 from .progress_indicator import ProgressIndicator
 from .models import AskResult
@@ -426,7 +426,7 @@ class AiClient:
         
         return response
     
-    def get_usage_stats(self):
+    def get_usage_stats(self) -> Optional[UsageStats]:
         """Get current usage statistics if tracking is enabled.
         
         Returns:
@@ -436,7 +436,7 @@ class AiClient:
             return self.usage_tracker.get_stats()
         return None
     
-    def print_usage_summary(self):
+    def print_usage_summary(self) -> None:
         """Print usage summary if tracking is enabled."""
         if self.usage_tracker:
             self.usage_tracker.print_summary()
