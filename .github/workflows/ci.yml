@@ -29,7 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        # Use minimal matrix for PRs (oldest + newest), full matrix for main
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
@@ -81,7 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        # Use minimal matrix for PRs (oldest + newest), full matrix for main
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
