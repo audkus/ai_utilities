@@ -67,25 +67,21 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Create Release
-      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-        body: |
-          ## Release ${{ github.ref }}
-          
-          See [CHANGELOG.md](https://github.com/audkus/ai_utilities/blob/main/CHANGELOG.md) for detailed changes.
-          
-          ### Installation
-          ```bash
-          pip install ai-utilities
-          # or with providers
-          pip install ai-utilities[openai]
-          ```
+      run: |
+        gh release create ${{ github.ref_name }} --title "Release ${{ github.ref_name }}" --notes "
+        ## Release ${{ github.ref_name }}
+        
+        See [CHANGELOG.md](https://github.com/audkus/ai_utilities/blob/main/CHANGELOG.md) for detailed changes.
+        
+        ### Installation
+        \`\`\`bash
+        pip install ai-utilities
+        # or with providers
+        pip install ai-utilities[openai]
+        \`\`\`
+        "
 
   notify:
     needs: [test, build, create-release]
