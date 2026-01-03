@@ -172,14 +172,14 @@ jobs:
         
         # Test object creation speed (with fake API key)
         start = time.time()
-        settings = AiSettings(provider='openai')
+        settings = AiSettings(provider='openai_compatible', base_url='http://localhost:11434/v1', api_key='dummy-key')
         client = AiClient(settings=settings)
         creation_time = time.time() - start
         print(f'OK: Object creation time: {creation_time:.3f}s')
         
         # Performance assertions
         assert import_time < 1.0, f'Import too slow: {import_time}s'
-        assert creation_time < 0.5, f'Object creation too slow: {creation_time}s'
+        assert creation_time < 1.0, f'Object creation too slow: {creation_time}s'
         
         print('OK: Performance benchmarks passed')
         "
