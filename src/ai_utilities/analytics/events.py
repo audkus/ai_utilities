@@ -5,7 +5,7 @@ without affecting existing behavior or introducing import-time side effects.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -56,4 +56,4 @@ class AiErrorEvent(AiEventBase):
 
 
 # Type alias for any analytics event
-AiEvent = AiRequestEvent | AiResponseEvent | AiErrorEvent
+AiEvent = Union[AiRequestEvent, AiResponseEvent, AiErrorEvent]
