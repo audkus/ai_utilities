@@ -34,6 +34,13 @@ Production deployment, monitoring, and maintenance best practices
 - Cache management and optimization
 - Security considerations and audit logging
 
+### 🔒 **[Security Guide](security_guide.md)**
+Security best practices and guidelines for production deployments
+- API key management and secure configuration
+- Input validation and sanitization
+- Security monitoring and audit logging
+- Incident response and emergency procedures
+
 ### 🔄 **[Migration Guide](../MIGRATION.md)**
 Step-by-step migration to AI Utilities v1.0
 - Breaking changes and compatibility notes
