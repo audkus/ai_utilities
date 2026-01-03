@@ -1133,6 +1133,14 @@ class AiClient:
         
         return response
     
+    def capabilities(self):
+        """Return the capabilities supported by the current provider configuration.
+        
+        Returns:
+            AiCapabilities object indicating what features are supported.
+        """
+        return self.provider.capabilities()
+    
     def get_usage_stats(self):
         """Get current usage statistics if tracking is enabled.
         
@@ -2410,6 +2418,41 @@ class AiClient:
         response = client.embeddings.create(**params)
         
         return [item.embedding for item in response.data]
+    
+    def analyze_image(self, image: Union[str, Path, bytes], prompt: str, **kwargs) -> str:
+        """Analyze an image with AI (stub for future implementation).
+        
+        Args:
+            image: Image to analyze (file path, URL, or bytes)
+            prompt: Question or instruction about the image
+            **kwargs: Additional parameters
+            
+        Returns:
+            Text description or analysis of the image
+            
+        Raises:
+            NotImplementedError: This method is not yet implemented
+        """
+        raise NotImplementedError(
+            "Image analysis is not yet implemented. This is a placeholder for future multi-modal support."
+        )
+    
+    def transcribe_audio(self, audio: Union[str, Path, bytes], **kwargs) -> str:
+        """Transcribe audio to text (stub for future implementation).
+        
+        Args:
+            audio: Audio file to transcribe (file path, URL, or bytes)
+            **kwargs: Additional parameters
+            
+        Returns:
+            Transcribed text
+            
+        Raises:
+            NotImplementedError: This method is not yet implemented
+        """
+        raise NotImplementedError(
+            "Audio transcription is not yet implemented. This is a placeholder for future multi-modal support."
+        )
 
 
 # Convenience function for backward compatibility

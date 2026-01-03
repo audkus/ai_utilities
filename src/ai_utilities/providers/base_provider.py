@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, List, Literal, Optional, Sequence, Union
 
 from ..file_models import UploadedFile
+from ..capabilities import AiCapabilities
 
 
 class BaseProvider(ABC):
@@ -121,3 +122,12 @@ class BaseProvider(ABC):
             ProviderCapabilityError: If provider doesn't support image generation
         """
         pass
+    
+    def capabilities(self) -> AiCapabilities:
+        """Return the capabilities supported by this provider configuration.
+        
+        Returns:
+            AiCapabilities object indicating what features are supported.
+            Default implementation returns conservative capabilities (text only).
+        """
+        return AiCapabilities()  # Default: text=True, everything else=False
