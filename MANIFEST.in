@@ -48,3 +48,4 @@ exclude bandit-report.json
 exclude .github/workflows/README.md
 exclude .ai_utilities/
 exclude provider_health.json
+exclude provider_report_*.md
