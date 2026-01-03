@@ -23,8 +23,8 @@ try:
 except ImportError:
     HAS_NUMPY = False
 
-from .exceptions import KnowledgeIndexError, KnowledgeSearchError, SqliteExtensionUnavailableError
-from .models import Chunk, Source, SearchHit
+from .exceptions import SqliteExtensionUnavailableError
+from .models import Chunk, Source
 
 
 class SqliteVectorBackend:

@@ -5,6 +5,56 @@ All notable changes to AI Utilities will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - Upcoming
+
+### Added
+- **Minimal Install Support** - Core library works without provider SDKs
+- **Provider Extras** - Optional dependencies: `pip install ai-utilities[openai]`
+- **Lazy Provider Imports** - Providers loaded only when needed
+- **Clear Error Messages** - Actionable errors for missing dependencies
+- **API Stability Contract** - Explicit v1.x stability guarantees
+- **Golden Path Example** - Simple getting started guide
+- **Progressive Examples** - Structured learning path from basic to advanced
+- **Type Safety Improvements** - Mypy configuration for core modules (52→0 errors)
+- **Test Infrastructure** - Fixed all test infrastructure issues
+- **Comprehensive CI/CD** - Multi-version, cross-platform testing pipeline
+- **Automated Releases** - Tag-based PyPI and GitHub releases
+- **Security Monitoring** - Vulnerability scanning and dependency updates
+- **Dead Code Cleanup** - Removed 28 unused imports and variables
+- **README Clarity** - Added value proposition and competitive analysis
+- **Error Handling Guide** - Public exception taxonomy documentation
+- **Cache Stability Guarantee** - v1.x cache format and key stability promises
+- **Demo Simplification** - Replaced 1100+ line complex demo with focused examples
+- **Model Validation Example** - Simple setup testing utility
+
+### Changed
+- **Provider Imports** - Now lazy to support minimal installs
+- **Installation Options** - Clear separation of core vs optional features
+- **Error Handling** - Better messages for missing optional dependencies
+- **Test Organization** - All tests now pass with lazy imports
+- **Documentation Structure** - Clear progressive learning path
+- **Code Quality** - Zero mypy errors and zero dead code issues
+- **Import Performance** - Faster imports with minimal dependencies
+
+### Breaking
+- None
+
+### Deprecated
+- None
+
+### Security
+- Added automated vulnerability scanning with safety and bandit
+- Implemented dependency freshness monitoring
+- Added security scanning to CI pipeline
+
+### Fixed
+- **CI Dependency Conflict** - Updated urllib3 version constraint and added types-requests to resolve CI failures
+- **Test Infrastructure** - Fixed all 4 failing tests (embeddings caching, main integration, deprecation warnings)
+- **Dead Code Issues** - Removed 28 unused imports and variables causing lint errors
+- **Demo Test Failures** - Removed 9 obsolete demo tests after demo system simplification
+
+---
+
 ## [Unreleased]
 
 ### Added

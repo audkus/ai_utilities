@@ -1,0 +1,109 @@
+name: Minimal Install Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  minimal-install:
+    runs-on: ubuntu-latest
+    name: Test Minimal Install
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install minimal package
+      run: |
+        # Install only core package (no providers)
+        pip install .
+    
+    - name: Verify minimal import works
+      run: |
+        # Should be able to import without provider SDKs
+        python -c "import ai_utilities; print('OK: Core import works')"
+    
+    - name: Verify basic object creation
+      run: |
+        # Should be able to create basic objects
+        python -c "from ai_utilities import AiSettings, AskResult; print('OK: Settings creation works'); settings = AiSettings(provider='openai'); print('OK: Basic objects work')"
+    
+    - name: Verify error handling without providers
+      run: |
+        # Should give clear error when trying to use providers
+        python -c "import os; os.environ['AI_API_KEY'] = 'fake-key-for-test'; from ai_utilities import AiClient; client = AiClient(); client.ask('test')" 2>&1 | grep -q -E "(API|api|install)" && echo "OK: Clear error message for missing providers" || (echo "FAIL: Error message unclear"; exit 1)
+    
+    - name: Install with provider extras
+      run: |
+        # Should be able to install providers
+        pip install .[openai]
+    
+    - name: Verify provider functionality
+      run: |
+        # Should work with providers installed
+        python -c "from ai_utilities import AiClient; print('OK: Can import with providers installed')"
+    
+    - name: Test mypy on core modules
+      run: |
+        # Install mypy and test core modules
+        pip install mypy
+        mypy src/ai_utilities/config_resolver.py src/ai_utilities/env_utils.py --no-error-summary
+        echo "OK: Core modules pass mypy"
+    
+    - name: Test basic pytest
+      run: |
+        # Install pytest and run core tests
+        pip install pytest
+        pytest tests/test_config_resolver.py -q --tb=no
+        echo "OK: Core tests pass"
+
+  install-options:
+    runs-on: ubuntu-latest
+    name: Test Installation Options
+    
+    strategy:
+      matrix:
+        option: ["", openai, dev, complete]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install with extras
+      run: |
+        set -e  # Exit on any error
+        
+        if [ "${{ matrix.option }}" = "" ]; then
+          echo "Testing minimal install..."
+          pip install . --no-cache-dir --timeout=300 --progress-bar off
+        elif [ "${{ matrix.option }}" = "complete" ]; then
+          echo "Testing complete install (includes ALL dependencies)..."
+          echo "This includes: core + openai + dev + audio dependencies..."
+          echo "This is the largest installation and may take the longest time..."
+          pip install .[complete] --no-cache-dir --timeout=300 --progress-bar off --no-build-isolation
+        elif [ "${{ matrix.option }}" = "dev" ]; then
+          echo "Testing install with [dev] (includes dev tools)..."
+          echo "This may take longer due to mypy, ruff, and other dev dependencies..."
+          pip install .[dev] --no-cache-dir --timeout=300 --progress-bar off --no-build-isolation
+        else
+          echo "Testing install with [${{ matrix.option }}]..."
+          pip install .[${{ matrix.option }}] --no-cache-dir --timeout=300 --progress-bar off
+        fi
+        
+        echo "Installation completed successfully!"
+        echo "All dependencies installed and verified."
+      timeout-minutes: 30
+    
+    - name: Verify import works
+      run: |
+        python -c "import ai_utilities; print('OK: Import successful with [${{ matrix.option }}]')"

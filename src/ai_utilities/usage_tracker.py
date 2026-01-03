@@ -34,6 +34,8 @@ class UsageStats(BaseModel):
 class ThreadSafeUsageTracker:
     """Thread-safe usage tracker with configurable scoping and concurrent access support."""
     
+    _shared_locks: Dict[str, threading.RLock] = {}
+    
     def __init__(self, 
                  stats_file: Optional[Path] = None,
                  scope: UsageScope = UsageScope.PER_CLIENT,
@@ -56,9 +58,9 @@ class ThreadSafeUsageTracker:
         self.stats_file = stats_file
         # Use a shared lock based on the file path for proper synchronization
         self._file_lock = self._get_shared_file_lock(stats_file)
-        self._memory_cache = None
-        self._cache_timestamp = 0
-        self._cache_ttl = 0.0  # Disable cache to ensure data sharing between instances
+        self._memory_cache: Optional[UsageStats] = None
+        self._cache_timestamp: float = 0
+        self._cache_ttl: float = 0.0  # Disable cache to ensure data sharing between instances
         
         # Ensure directory exists
         self.stats_file.parent.mkdir(parents=True, exist_ok=True)
@@ -224,7 +226,7 @@ class ThreadSafeUsageTracker:
             Dictionary mapping file paths to UsageStats
         """
         stats_dir = self.stats_file.parent
-        aggregated = {}
+        aggregated: Dict[str, UsageStats] = {}
         
         if not stats_dir.exists():
             return aggregated
@@ -237,8 +239,9 @@ class ThreadSafeUsageTracker:
                     stats = UsageStats(**data)
                     portalocker.unlock(f)
                     aggregated[str(stats_file)] = stats
-            except Exception:
-                continue  # Skip corrupted files
+            except (json.JSONDecodeError, ValueError, IOError, OSError, Exception):
+                # Skip corrupted files, permission issues, or invalid data
+                continue
         
         return aggregated
     

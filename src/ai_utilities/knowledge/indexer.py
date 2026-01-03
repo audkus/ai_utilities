@@ -10,12 +10,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Set, Dict, Any
+from typing import List, Set, Dict, Any
 
 from .backend import SqliteVectorBackend
 from .chunking import TextChunker
-from .exceptions import KnowledgeDisabledError, KnowledgeIndexError, KnowledgeValidationError
-from .models import Chunk, Source
+from .exceptions import KnowledgeIndexError, KnowledgeValidationError
 from .sources import FileSourceLoader
 
 logger = logging.getLogger(__name__)

@@ -356,11 +356,13 @@ class TestOpenAIModelRefactoring:
     
     def test_clean_response_deprecation_warning(self, caplog):
         """Test that clean_response shows deprecation warning."""
+        caplog.set_level('WARNING')  # Ensure we capture warnings
+        
         with patch('ai_utilities.openai_model.ResponseProcessor') as mock_processor:
             mock_processor.extract_json.return_value = '{"test": "data"}'
             
-            model = OpenAIModel.__new__(OpenAIModel)  # Create without init
-            result = model.clean_response('{"test": "data"}')
+            # Call as static method
+            result = OpenAIModel.clean_response('{"test": "data"}')
             
             assert "deprecated" in caplog.text.lower()
             assert result == '{"test": "data"}'

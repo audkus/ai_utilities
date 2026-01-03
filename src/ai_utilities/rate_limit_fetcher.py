@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .config_models import ModelConfig
-from .openai_client import OpenAIClient
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +74,7 @@ class RateLimitFetcher:
             logger.info(f"Using fallback cache directory: {self.cache_dir}")
         
         # Initialize OpenAI client
+        from .openai_client import OpenAIClient
         self.client = OpenAIClient(api_key=api_key)
         
         logger.debug(f"RateLimitFetcher initialized with cache: {self.cache_file}")

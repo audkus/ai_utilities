@@ -7,9 +7,8 @@ including file metadata, transcription requests, and generation parameters.
 from enum import Enum
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Union
-from datetime import datetime
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator
 
 
 class AudioFormat(str, Enum):

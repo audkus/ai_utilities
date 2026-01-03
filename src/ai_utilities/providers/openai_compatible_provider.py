@@ -7,18 +7,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from ..file_models import UploadedFile
-from ..openai_client import OpenAI
 from .base_provider import BaseProvider
 from .provider_capabilities import ProviderCapabilities
 from .provider_exceptions import (
     ProviderCapabilityError,
     ProviderConfigurationError,
+    MissingOptionalDependencyError,
 )
 
 logger = logging.getLogger(__name__)
-
-# Track which warnings have been shown to avoid repetition
-_shown_warnings = set()
 
 
 class OpenAICompatibleProvider(BaseProvider):
@@ -66,7 +63,19 @@ class OpenAICompatibleProvider(BaseProvider):
         if self.extra_headers:
             client_kwargs["default_headers"] = self.extra_headers
             
+        # Lazy import OpenAI to avoid dependency issues
+        try:
+            from ..openai_client import OpenAI
+        except ImportError as e:
+            raise MissingOptionalDependencyError(
+                "OpenAI-compatible provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
+            ) from e
+            
         self.client = OpenAI(**client_kwargs)
+        
+        # Initialize warning tracking
+        self._shown_warnings = set()
+        
         logger.info(f"Initialized OpenAI-compatible provider with base_url: {self.base_url}")
     
     def _check_capability(self, capability: str) -> None:
@@ -88,19 +97,18 @@ class OpenAICompatibleProvider(BaseProvider):
         if capability in capability_map and not capability_map[capability]:
             raise ProviderCapabilityError(capability, "openai_compatible")
     
-    def _warn_once(self, warning_key: str, message: str) -> None:
+    def _show_warning_once(self, warning_key: str, message: str) -> None:
         """Show a warning only once to avoid repetition.
         
         Args:
             warning_key: Unique key to track this warning
             message: Warning message to display
         """
-        global _shown_warnings
-        if warning_key not in _shown_warnings:
+        if warning_key not in self._shown_warnings:
             # Add a newline to separate from progress indicator
             print(f"\n{message}")
             logger.warning(message)
-            _shown_warnings.add(warning_key)
+            self._shown_warnings.add(warning_key)
 
     def _prepare_request_params(self, **kwargs) -> Dict[str, Any]:
         """Backward-compatible alias for request param filtering.
@@ -145,7 +153,7 @@ class OpenAICompatibleProvider(BaseProvider):
             }
             
             explanation = explanations.get(param, "This parameter is not supported by all OpenAI-compatible servers")
-            self._warn_once(
+            self._show_warning_once(
                 f"unsupported_param_{param}",
                 f"Parameter '{param}' ignored: {explanation}"
             )
@@ -169,7 +177,7 @@ class OpenAICompatibleProvider(BaseProvider):
         # Check JSON mode capability
         if return_format == "json":
             self._check_capability("json_mode")
-            self._warn_once(
+            self._show_warning_once(
                 "json_mode_warning",
                 "JSON mode requested but not guaranteed to be supported by this OpenAI-compatible provider"
             )
