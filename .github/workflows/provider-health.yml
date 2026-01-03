@@ -94,12 +94,12 @@ jobs:
             const report = fs.readFileSync(reportFiles[0], 'utf8');
             
             // Create an issue if there are critical problems
-            if (report.includes('❌') || report.includes('CRITICAL ISSUES')) {
+            if (report.includes('FAIL') || report.includes('CRITICAL ISSUES')) {
               github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `Provider Health Alert - ${new Date().toISOString().split('T')[0]}`,
-                body: `## 🚨 Provider Health Alert\n\n${report}\n\n**Action Required**: Review provider status and update tests/configuration as needed.`,
+                title: `ALERT: Provider Health Alert - ${new Date().toISOString().split('T')[0]}`,
+                body: `## Provider Health Alert\n\n${report}\n\n**Action Required**: Review provider status and update tests/configuration as needed.`,
                 labels: ['provider-health', 'urgent']
               });
             }

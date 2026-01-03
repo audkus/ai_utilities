@@ -95,10 +95,10 @@ jobs:
     - name: Notify success
       if: ${{ needs.test.result == 'success' && needs.build.result == 'success' && needs.create-release.result == 'success' }}
       run: |
-        echo "🎉 Release ${{ github.ref }} published successfully!"
+        echo "SUCCESS: Release ${{ github.ref }} published successfully!"
     
     - name: Notify failure
       if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' || needs.create-release.result == 'failure' }}
       run: |
-        echo "❌ Release ${{ github.ref }} failed!"
+        echo "FAIL: Release ${{ github.ref }} failed!"
         exit 1
