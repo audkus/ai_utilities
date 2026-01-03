@@ -150,3 +150,9 @@ dmypy.json
 
 # Bandit security report
 bandit-report.json
+
+# Generated artifacts and runtime outputs
+.ai_utilities/
+provider_health.json
+provider_report_*.md
+reports/
