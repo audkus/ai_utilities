@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cache Stability Guarantee** - v1.x cache format and key stability promises
 - **Demo Simplification** - Replaced 1100+ line complex demo with focused examples
 - **Model Validation Example** - Simple setup testing utility
+- **Analytics Hooks** - Optional request/response telemetry without performance impact
+- **Capability Matrix** - Conservative provider capability reporting for future multi-modal support
+- **Event Types** - Request, response, and error events with latency, token usage, and cache information
+- **Composite Hooks** - Support for multiple analytics handlers with error isolation
+- **Typed Stubs** - Future multi-modal methods (analyze_image, transcribe_audio) with clear error messages
+- **Zero-Overhead Design** - Analytics have no performance impact when disabled
+- **Error Safety** - Hook failures never break user code, errors are automatically swallowed
 
 ### Changed
 - **Provider Imports** - Now lazy to support minimal installs
