@@ -7,6 +7,7 @@ of AI responses with configurable TTL and opt-in behavior.
 
 import hashlib
 import json
+import re
 import sqlite3
 import threading
 import time
@@ -189,7 +190,7 @@ class SqliteCache(CacheBackend):
             prune_batch: Batch size for LRU pruning operations
         """
         self.db_path = db_path
-        self.table = table
+        self.table = self._validate_table_name(table)
         self.namespace = namespace
         self.wal = wal
         self.busy_timeout_ms = busy_timeout_ms
@@ -199,6 +200,41 @@ class SqliteCache(CacheBackend):
         
         # Create database and tables
         self._init_database()
+    
+    def _validate_table_name(self, table: str) -> str:
+        """Validate table name to prevent SQL injection.
+        
+        Args:
+            table: Table name to validate
+            
+        Returns:
+            Validated table name
+            
+        Raises:
+            ValueError: If table name contains invalid characters
+        """
+        if not table:
+            raise ValueError("Table name cannot be empty")
+        
+        # Only allow alphanumeric characters and underscores
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+            raise ValueError(
+                f"Invalid table name '{table}'. "
+                "Table names must start with a letter or underscore, "
+                "and contain only letters, numbers, and underscores."
+            )
+        
+        # Prevent reserved SQL keywords
+        reserved_keywords = {
+            'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE',
+            'CREATE', 'DROP', 'ALTER', 'TABLE', 'INDEX', 'VIEW',
+            'PRAGMA', 'TRANSACTION', 'COMMIT', 'ROLLBACK'
+        }
+        
+        if table.upper() in reserved_keywords:
+            raise ValueError(f"Table name '{table}' cannot be a reserved SQL keyword")
+        
+        return table
     
     def _init_database(self) -> None:
         """Initialize database schema and indexes."""
@@ -217,7 +253,7 @@ class SqliteCache(CacheBackend):
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
             
             # Create table with namespace-aware primary key
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 CREATE TABLE IF NOT EXISTS {self.table} (
                     namespace TEXT NOT NULL,
                     key TEXT NOT NULL,
@@ -231,12 +267,12 @@ class SqliteCache(CacheBackend):
             """)
             
             # Create indexes for performance
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 CREATE INDEX IF NOT EXISTS idx_{self.table}_expires 
                 ON {self.table} (namespace, expires_at)
             """)
             
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 CREATE INDEX IF NOT EXISTS idx_{self.table}_access 
                 ON {self.table} (namespace, last_access_at)
             """)
@@ -259,7 +295,7 @@ class SqliteCache(CacheBackend):
         ) as conn:
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
             
-            cursor = conn.execute(f"""
+            cursor = conn.execute(f"""  # nosec B608 - table name validated
                 SELECT value_json, expires_at FROM {self.table}
                 WHERE namespace = ? AND key = ?
             """, (self.namespace, key))
@@ -273,7 +309,7 @@ class SqliteCache(CacheBackend):
             # Check expiration
             if expires_at is not None and time.time() > expires_at:
                 # Delete expired entry
-                conn.execute(f"""
+                conn.execute(f"""  # nosec B608 - table name validated
                     DELETE FROM {self.table}
                     WHERE namespace = ? AND key = ?
                 """, (self.namespace, key))
@@ -281,7 +317,7 @@ class SqliteCache(CacheBackend):
                 return None
             
             # Update access statistics
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 UPDATE {self.table}
                 SET access_count = access_count + 1, last_access_at = ?
                 WHERE namespace = ? AND key = ?
@@ -293,7 +329,7 @@ class SqliteCache(CacheBackend):
                 return json.loads(value_json)
             except (json.JSONDecodeError, ValueError):
                 # Remove corrupted entry
-                conn.execute(f"""
+                conn.execute(f"""  # nosec B608 - table name validated
                     DELETE FROM {self.table}
                     WHERE namespace = ? AND key = ?
                 """, (self.namespace, key))
@@ -328,7 +364,7 @@ class SqliteCache(CacheBackend):
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
             
             # Insert or replace entry
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 INSERT OR REPLACE INTO {self.table}
                 (namespace, key, value_json, created_at, expires_at, access_count, last_access_at)
                 VALUES (?, ?, ?, ?, ?, 1, ?)
@@ -350,7 +386,7 @@ class SqliteCache(CacheBackend):
             timeout=self.busy_timeout_ms / 1000.0
         ) as conn:
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608 - table name validated
                 DELETE FROM {self.table}
                 WHERE namespace = ?
             """, (self.namespace,))
@@ -363,7 +399,7 @@ class SqliteCache(CacheBackend):
             conn: Active database connection
         """
         # Count entries in namespace
-        cursor = conn.execute(f"""
+        cursor = conn.execute(f"""  # nosec B608 - table name validated
             SELECT COUNT(*) FROM {self.table} WHERE namespace = ?
         """, (self.namespace,))
         
@@ -373,7 +409,7 @@ class SqliteCache(CacheBackend):
         
         # Delete least recently used entries
         entries_to_delete = count - self.max_entries
-        conn.execute(f"""
+        conn.execute(f"""  # nosec B608 - table name validated
             DELETE FROM {self.table}
             WHERE (namespace, key) IN (
                 SELECT namespace, key FROM {self.table}
@@ -391,7 +427,7 @@ class SqliteCache(CacheBackend):
             timeout=self.busy_timeout_ms / 1000.0
         ) as conn:
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
-            conn.execute(f"DELETE FROM {self.table}")
+            conn.execute(f"DELETE FROM {self.table}")  # nosec B608 - table name validated
             conn.commit()
 
 
