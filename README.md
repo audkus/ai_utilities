@@ -92,6 +92,70 @@ print(f"Tokens used: {result.usage.total_tokens}")
 
 ---
 
+## Why use ai_utilities?
+
+This library is designed as a thin, opinionated utility layer for AI interactions. It is not a replacement for raw APIs, but rather provides consistent interfaces and common patterns for experimentation, testing, and long-term maintainability.
+
+### Without ai_utilities
+
+```python
+# Direct API usage - provider-specific and repetitive
+import openai
+
+client = openai.OpenAI(api_key="your-key")
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Explain AI"}],
+    temperature=0.7,
+    max_tokens=1000
+)
+
+# Manual error handling, no caching, no rate limiting
+# Different API for each provider
+# No structured JSON extraction
+# No usage tracking
+```
+
+### With ai_utilities
+
+```python
+# Consistent interface across providers
+from ai_utilities import AiClient
+
+client = AiClient()  # Automatic configuration
+response = client.ask("Explain AI")
+
+# Built-in caching, rate limiting, error handling
+# Same API for OpenAI, Anthropic, Ollama, etc.
+# Structured JSON extraction included
+# Usage tracking and monitoring
+```
+
+### Design Goals
+
+ai_utilities is intended to provide:
+
+- **Provider abstraction** - Switch between cloud and local models without code changes
+- **Configuration management** - Environment-based settings with Pydantic validation
+- **Test isolation** - Mock providers and deterministic testing patterns
+- **Caching and rate limiting** - Built-in cost control and performance optimization
+- **Error handling consistency** - Unified exception model across providers
+- **JSON robustness** - Reliable structured output extraction with error recovery
+- **Extensibility** - Designed for future multimodal and analytics features
+
+### Design Intent
+
+This library optimizes for development velocity and long-term maintainability rather than maximum feature access. It provides consistent patterns for common AI interaction tasks while allowing advanced users to access provider-specific capabilities through submodules when needed.
+
+The approach is designed to support experimentation, testing, and production applications that benefit from:
+- Unified interfaces across multiple providers
+- Built-in testing utilities and mock providers
+- Consistent error handling and logging
+- Automatic caching and rate limiting
+- Type safety and configuration validation
+
+---
+
 ## Install
 
 ### Minimal Install
