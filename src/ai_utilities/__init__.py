@@ -107,6 +107,28 @@ __all__ = [
     'save_audio_file',
     'validate_audio_file',
     'get_audio_info',
+    
+    # Compatibility exports (available but not guaranteed stable)
+    'ThreadSafeUsageTracker', 
+    'UsageScope',
+    'UsageStats',
+    'RateLimitFetcher',
+    'RateLimitInfo',
+    'TokenCounter',
+    'BaseProvider',
+    'OpenAIProvider',
+    'OpenAICompatibleProvider', 
+    'create_provider',
+    'ProviderCapabilities',
+    'ProviderCapabilityError',
+    'ProviderConfigurationError',
+    'FileTransferError',
+    'AudioFormat',
+    'AudioFile',
+    'TranscriptionRequest',
+    'TranscriptionResult',
+    'AudioGenerationRequest',
+    'AudioGenerationResult',
 ]
 
 # Version - automatically retrieved from package metadata
