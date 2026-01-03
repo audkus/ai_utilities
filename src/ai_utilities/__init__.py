@@ -4,10 +4,22 @@ ai_utilities - Clean v1 library for AI integrations.
 This package provides tools for AI integration with explicit configuration
 and no import-time side effects, including audio processing capabilities.
 
-Main Classes:
-    AiSettings: Configuration settings for AI client
-    AiClient: Main AI client for making requests
-    AudioProcessor: Audio transcription and generation
+🚀 STABLE PUBLIC API (v1.x):
+    Core classes and functions that are guaranteed to remain stable:
+    - AiClient, AsyncAiClient, AiSettings, create_client
+    - AskResult, UploadedFile
+    - JsonParseError, parse_json_from_text
+    - AudioProcessor, load_audio_file, save_audio_file, validate_audio_file, get_audio_info
+
+📦 COMPATIBILITY EXPORTS:
+    Available for backwards compatibility but may change in future releases:
+    - Usage tracking: UsageTracker*, create_usage_tracker
+    - Rate limiting: RateLimitFetcher, RateLimitInfo
+    - Token counting: TokenCounter
+    - Providers: BaseProvider, OpenAIProvider, create_provider, etc.
+    - Audio models: AudioFormat, TranscriptionRequest, etc.
+
+    (*) Consider using ai_utilities.usage, ai_utilities.rate_limit, etc. in future.
 
 Example Usage:
     from ai_utilities import AiClient, AiSettings
