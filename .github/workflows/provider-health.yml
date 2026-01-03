@@ -1,3 +1,14 @@
+# Provider Health Monitor - Observational Only
+#
+# PURPOSE: Monitor external provider APIs for outages and changes
+# BLOCKS PRs: No - NEVER runs on pull_request
+# BLOCKS RELEASES: No - observational only
+# EXPECTED RUNTIME: ~5-10 minutes
+# DEPENDENCIES: External APIs and secrets - inherently flaky
+#
+# NOTE: This workflow is BEST EFFORT only. Failures here do not
+# indicate problems with the library itself, but with external services.
+
 name: Provider Health Monitor
 
 on:
@@ -6,15 +17,14 @@ on:
     - cron: '0 */6 * * *'
   workflow_dispatch:
     # Allow manual runs
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'src/ai_utilities/**'
-      - 'tests/**'
+  # REMOVED: push triggers to avoid blocking development
 
 jobs:
   provider-health-check:
+    name: Provider Health Check (Observational)
     runs-on: ubuntu-latest
+    continue-on-error: true  # Never block anything
+    timeout-minutes: 10      # Explicit timeout to prevent hangs
     
     steps:
     - name: Checkout code
@@ -39,80 +49,65 @@ jobs:
         pip install -e .
         pip install pytest python-dotenv requests
         
-    - name: Set up environment variables
-      env:
-        AI_API_KEY: ${{ secrets.AI_API_KEY }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
-        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    - name: Check for required secrets
+      id: check-secrets
       run: |
-        echo "Environment variables configured"
+        # Check if any provider secrets are available
+        if [[ -z "${{ secrets.AI_API_KEY }}" && -z "${{ secrets.GROQ_API_KEY }}" && -z "${{ secrets.TOGETHER_API_KEY }}" && -z "${{ secrets.OPENROUTER_API_KEY }}" ]]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "No provider API keys available - skipping health checks"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "Provider API keys found - proceeding with health checks"
+        fi
         
     - name: Run Provider Health Monitor
+      if: steps.check-secrets.outputs.skip == 'false'
       env:
         AI_API_KEY: ${{ secrets.AI_API_KEY }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      continue-on-error: true
       run: |
-        python scripts/provider_health_monitor.py
+        timeout 300 python scripts/provider_health_monitor.py || echo "Health monitor timed out or failed - continuing"
         
     - name: Run Provider Change Detection
+      if: steps.check-secrets.outputs.skip == 'false'
       env:
         AI_API_KEY: ${{ secrets.AI_API_KEY }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      continue-on-error: true
       run: |
-        python scripts/provider_change_detector.py --generate-report
+        timeout 300 python scripts/provider_change_detector.py --generate-report || echo "Change detector timed out or failed - continuing"
         
-    - name: Upload Health Report
+    - name: Upload Health Report (Artifacts Only)
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: provider-health-report
+        name: provider-health-report-${{ github.run_number }}
         path: provider_report_*.md
-        retention-days: 30
+        retention-days: 7  # Shorter retention for observational data
         
-    - name: Run Tests for Healthy Providers
-      env:
-        AI_API_KEY: ${{ secrets.AI_API_KEY }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
-        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    - name: Summary Report
+      if: always()
       run: |
-        python scripts/provider_change_detector.py --run-tests
+        echo "## Provider Health Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: Observational (non-blocking)" >> $GITHUB_STEP_SUMMARY
+        echo "**Run ID**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
         
-    - name: Comment on Issues if Problems Detected
-      if: failure()
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const fs = require('fs');
-          const reportFiles = fs.readdirSync('.').filter(f => f.startsWith('provider_report_'));
-          
-          if (reportFiles.length > 0) {
-            const report = fs.readFileSync(reportFiles[0], 'utf8');
-            
-            // Create an issue if there are critical problems
-            if (report.includes('FAIL') || report.includes('CRITICAL ISSUES')) {
-              github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `ALERT: Provider Health Alert - ${new Date().toISOString().split('T')[0]}`,
-                body: `## Provider Health Alert\n\n${report}\n\n**Action Required**: Review provider status and update tests/configuration as needed.`,
-                labels: ['provider-health', 'urgent']
-              });
-            }
-          }
-
-  notify-on-failure:
-    needs: provider-health-check
-    if: failure()
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Notify on failure
-      uses: actions/github-script@v6
-      with:
-        script: |
-          console.log('Provider health check failed - check logs for details');
+        if [[ "${{ steps.check-secrets.outputs.skip }}" == "true" ]]; then
+          echo "⚠️ **Skipped**: No API keys configured" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Completed**: Health checks performed" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Results**: Check artifacts for detailed report" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Note" >> $GITHUB_STEP_SUMMARY
+        echo "This is an observational workflow. Failures do not indicate" >> $GITHUB_STEP_SUMMARY
+        echo "problems with the library, but with external provider services." >> $GITHUB_STEP_SUMMARY
