@@ -5,10 +5,13 @@ All notable changes to AI Utilities will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - Upcoming
+## [1.0.0] - 2025-01-03
 
-### Added
-- **Minimal Install Support** - Core library works without provider SDKs
+### 🚀 Major Release - Production Ready
+
+This release represents a complete hardening and production-ready version of AI Utilities with enterprise-grade features, comprehensive testing, and stable APIs.
+
+#### Core Infrastructure
 - **Provider Extras** - Optional dependencies: `pip install ai-utilities[openai]`
 - **Lazy Provider Imports** - Providers loaded only when needed
 - **Clear Error Messages** - Actionable errors for missing dependencies
@@ -26,6 +29,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cache Stability Guarantee** - v1.x cache format and key stability promises
 - **Demo Simplification** - Replaced 1100+ line complex demo with focused examples
 - **Model Validation Example** - Simple setup testing utility
+
+#### Enterprise Features (Phase 10)
+- **API Surface Cleanup** - Reduced public API to 15 stable exports while maintaining backwards compatibility
+- **Performance Benchmarks** - Comprehensive benchmark suite with baseline measurements and regression detection
+- **Security Documentation** - Complete security guide with API key management, input validation, and incident response
+- **Error Code Standardization** - 53 standardized error codes across 9 categories with structured error information
+- **Metrics Collection** - Production monitoring with Prometheus, OpenTelemetry, and JSON export formats
+- **Reliability Guide** - Production deployment, monitoring, and maintenance documentation
+- **Migration Guide** - Step-by-step upgrade path from earlier versions
+
+#### Hardening Phases (1-9)
+- **Phase 1**: Single responsibility refactoring with clean architecture
+- **Phase 2**: Import isolation with no side effects on import
+- **Phase 3**: Comprehensive test coverage (587 tests passing)
+- **Phase 4**: Packaging hygiene with clean distribution
+- **Phase 5**: Code layout improvements (AiSettings moved to config_models.py)
+- **Phase 6**: Complete type annotations throughout codebase
+- **Phase 7**: Additional test coverage for offline and caching scenarios
+- **Phase 8**: Documentation improvements with reliability and migration guides
+- **Phase 9**: Final validation and release preparation
+
+#### Testing & Quality
+- **587 Tests Passing** - Comprehensive coverage including offline functionality and advanced caching
+- **Test Coverage** - Public API stability, configuration models, provider error handling
+- **Performance Testing** - Baseline measurements for all major operations
+- **Security Testing** - Input validation, error handling, and audit procedures
 
 ### Changed
 - **Provider Imports** - Now lazy to support minimal installs

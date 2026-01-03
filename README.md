@@ -675,6 +675,7 @@ ai_utilities/
 
 - **Full Documentation** → [`docs/`](docs/)
 - **📚 Reliability Guide** → [`docs/reliability_guide.md`](docs/reliability_guide.md)
+- **🔒 Security Guide** → [`docs/security_guide.md`](docs/security_guide.md)
 - **🔄 Migration Guide** → [`MIGRATION.md`](MIGRATION.md)
 - **Usage Examples** → [`examples/`](examples/)
 - **Provider Setup** → [`docs/all-providers-guide.md`](docs/all-providers-guide.md)
