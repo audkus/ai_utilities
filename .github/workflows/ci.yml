@@ -112,7 +112,7 @@ jobs:
     - name: Run bandit security linter
       run: |
         bandit -r src/ -f json -o bandit-report.json || true
-        bandit -r src/ -iii  # Only report high severity issues
+        bandit -r src/ --severity-level high  # Only fail on high severity issues
 
   build-docs:
     runs-on: ubuntu-latest
