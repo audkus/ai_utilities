@@ -47,6 +47,16 @@ from .config_models import AiSettings
 from .file_models import UploadedFile
 from .json_parsing import JsonParseError, parse_json_from_text
 from .models import AskResult
+from .audio import (
+    AudioProcessor,
+    load_audio_file,
+    save_audio_file,
+    validate_audio_file,
+    get_audio_info,
+)
+from .usage_tracker import UsageTracker, create_usage_tracker
+
+# Also import internal items for backwards compatibility but don't advertise them
 from .providers import (
     BaseProvider,
     FileTransferError,
@@ -63,56 +73,36 @@ from .usage_tracker import (
     ThreadSafeUsageTracker,
     UsageScope,
     UsageStats,
-    UsageTracker,
-    create_usage_tracker,
 )
 from .audio import (
-    AudioProcessor,
     AudioFormat,
     AudioFile,
     TranscriptionRequest,
     TranscriptionResult,
     AudioGenerationRequest,
     AudioGenerationResult,
-    load_audio_file,
-    save_audio_file,
-    validate_audio_file,
-    get_audio_info,
 )
 
+# Stable public API exports - these are guaranteed to remain stable in v1.x
 __all__ = [
+    # Core client classes
     'AiClient',
-    'AsyncAiClient',
-    'AiSettings', 
+    'AsyncAiClient', 
+    'AiSettings',
     'create_client',
     'AskResult',
+    
+    # File handling
     'UploadedFile',
-    'JsonParseError',
+    'JsonParseError', 
     'parse_json_from_text',
+    
+    # Usage tracking
     'UsageTracker',
-    'ThreadSafeUsageTracker',
-    'UsageScope',
-    'UsageStats',
     'create_usage_tracker',
-    'TokenCounter',
-    'RateLimitFetcher',
-    'RateLimitInfo',
-    'BaseProvider',
-    'OpenAIProvider',
-    'OpenAICompatibleProvider',
-    'create_provider',
-    'ProviderCapabilities',
-    'ProviderCapabilityError',
-    'ProviderConfigurationError',
-    'FileTransferError',
-    # Audio processing
+    
+    # Audio processing (stable but may be moved to submodule in future)
     'AudioProcessor',
-    'AudioFormat',
-    'AudioFile',
-    'TranscriptionRequest',
-    'TranscriptionResult',
-    'AudioGenerationRequest',
-    'AudioGenerationResult',
     'load_audio_file',
     'save_audio_file',
     'validate_audio_file',
