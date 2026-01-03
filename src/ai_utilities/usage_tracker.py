@@ -239,8 +239,9 @@ class ThreadSafeUsageTracker:
                     stats = UsageStats(**data)
                     portalocker.unlock(f)
                     aggregated[str(stats_file)] = stats
-            except Exception:
-                continue  # Skip corrupted files
+            except (json.JSONDecodeError, ValueError, IOError, OSError, Exception):
+                # Skip corrupted files, permission issues, or invalid data
+                continue
         
         return aggregated
     

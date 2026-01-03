@@ -150,8 +150,8 @@ def resolve_api_key(
                             key_value = line[11:].strip()  # Remove 'AI_API_KEY='
                             if key_value and key_value != 'your-key-here':
                                 return key_value
-            except Exception:
-                # Silently ignore .env read errors
+            except (IOError, OSError):
+                # Silently ignore .env read errors (file not found, permission issues)
                 pass
     
     # 5. No API key found - raise helpful error

@@ -1,7 +1,7 @@
 """Async AI client with concurrency and retry logic."""
 
 import asyncio
-import random
+import secrets
 import time
 from collections.abc import Sequence
 from pathlib import Path
@@ -229,8 +229,10 @@ class AsyncAiClient:
                 if on_progress:
                     try:
                         on_progress(completed_count, len(prompts))
-                    except Exception:
-                        pass  # Don't let progress callback errors break processing
+                    except (TypeError, ValueError, RuntimeError):
+                        # Don't let progress callback errors break processing
+                        # Common callback errors: wrong args, validation errors, runtime issues
+                        pass
                 
                 return result
         
@@ -366,7 +368,10 @@ class AsyncAiClient:
             # Exponential backoff with jitter before retry
             if remaining_prompts and retry_count <= max_retries:
                 base_delay = 2 ** (retry_count - 1)  # 1, 2, 4 seconds
-                jitter = random.uniform(0, 0.1 * base_delay)
+                # Use secrets for cryptographically secure jitter (timing only, not sensitive)
+                jitter_range = int(0.1 * base_delay * 1000)  # Convert to milliseconds
+                jitter_ms = secrets.randbelow(jitter_range + 1) if jitter_range > 0 else 0
+                jitter = jitter_ms / 1000.0  # Convert back to seconds
                 await asyncio.sleep(base_delay + jitter)
         
         # Fill in any remaining None results (shouldn't happen)
