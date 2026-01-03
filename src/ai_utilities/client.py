@@ -25,6 +25,7 @@ from .json_parsing import parse_json_from_text, JsonParseError, create_repair_pr
 from .file_models import UploadedFile
 from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 from .analytics.events import AiEventBase, AiRequestEvent, AiResponseEvent, AiErrorEvent
+from .analytics.hooks import AnalyticsHook
 from pydantic import ValidationError
 
 # Generic type for typed responses
@@ -192,7 +193,7 @@ class AiSettings(BaseSettings):
     cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
     
     # Analytics settings
-    analytics_hook: Optional[Callable[["AiEventBase"], None]] = Field(default=None, description="Analytics hook for request/response telemetry (optional)")
+    analytics_hook: Optional[Callable[[AiEventBase], None]] = Field(default=None, description="Analytics hook for request/response telemetry (optional)")
     
     @field_validator('openai_api_key', mode='before')
     @classmethod
