@@ -101,10 +101,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         if [[ "${{ steps.check-secrets.outputs.skip }}" == "true" ]]; then
-          echo "⚠️ **Skipped**: No API keys configured" >> $GITHUB_STEP_SUMMARY
+          echo "**Skipped**: No API keys configured" >> $GITHUB_STEP_SUMMARY
         else
-          echo "✅ **Completed**: Health checks performed" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **Results**: Check artifacts for detailed report" >> $GITHUB_STEP_SUMMARY
+          echo "**Completed**: Health checks performed" >> $GITHUB_STEP_SUMMARY
+          echo "**Results**: Check artifacts for detailed report" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
