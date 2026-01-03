@@ -1,0 +1,61 @@
+{
+  "OpenAI": {
+    "last_check": "2025-12-29T08:44:53.313621",
+    "status": "healthy",
+    "issues": [],
+    "response_time": 2.583764
+  },
+  "Groq": {
+    "last_check": "2025-12-29T08:44:55.897457",
+    "status": "healthy",
+    "issues": [],
+    "response_time": 0.727052
+  },
+  "Together AI": {
+    "last_check": "2025-12-29T08:44:56.624560",
+    "status": "healthy",
+    "issues": [],
+    "response_time": 1.76335
+  },
+  "OpenRouter": {
+    "last_check": "2025-12-29T08:44:58.388017",
+    "status": "healthy",
+    "issues": [],
+    "response_time": 3.434287
+  },
+  "Ollama": {
+    "last_check": "2025-12-29T08:45:01.822591",
+    "status": "healthy",
+    "issues": [],
+    "response_time": 3.223259
+  },
+  "LM Studio": {
+    "last_check": "2025-12-29T08:45:05.045907",
+    "status": "degraded",
+    "issues": [
+      "Test model local-model not available",
+      "Using alternative model: deepseek-r1-distill-qwen-7b"
+    ],
+    "response_time": 0.438803
+  },
+  "Text-Generation-WebUI": {
+    "last_check": "2025-12-29T08:45:05.484780",
+    "status": "down",
+    "issues": [
+      "API key not found",
+      "Models endpoint returned 403",
+      "API call failed: Error code: 403"
+    ],
+    "response_time": 0.01146
+  },
+  "FastChat": {
+    "last_check": "2025-12-29T08:45:05.496360",
+    "status": "down",
+    "issues": [
+      "API key not found",
+      "Endpoint unreachable: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /v1/models (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10edd9790>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "API call failed: Connection error."
+    ],
+    "response_time": 1.438916
+  }
+}
