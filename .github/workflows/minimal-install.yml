@@ -37,21 +37,7 @@ jobs:
     - name: Verify error handling without providers
       run: |
         # Should give clear error when trying to use providers
-        python -c "
-import os
-os.environ['AI_API_KEY'] = 'fake-key-for-test'
-from ai_utilities import AiClient
-client = AiClient()
-try:
-    client.ask('test')
-except Exception as e:
-    error_msg = str(e).lower()
-    if 'api' in error_msg or 'key' in error_msg or 'install' in error_msg:
-        print('OK: Clear error message for missing providers')
-    else:
-        print(f'FAIL: Error message unclear - {error_msg}')
-        exit(1)
-"
+        python -c "import os; os.environ['AI_API_KEY'] = 'fake-key-for-test'; from ai_utilities import AiClient; client = AiClient(); client.ask('test')" 2>&1 | grep -q -E "(API|api|install)" && echo "OK: Clear error message for missing providers" || (echo "FAIL: Error message unclear"; exit 1)
     
     - name: Install with provider extras
       run: |
