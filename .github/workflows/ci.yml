@@ -7,6 +7,12 @@
 # TIERS:
 # - REQUIRED (blocking): unit tests, mypy, lint, minimal install
 # - OPTIONAL (non-blocking): performance, integration, security, compatibility
+#
+# MATRIX RATIONALE:
+# - Python 3.9: Minimum supported version (oldest dependencies)
+# - Python 3.11: Middle version (most common in production)
+# - Python 3.12: Latest version (future compatibility)
+# - Removed 3.10 to reduce CI runtime while maintaining coverage
 
 name: CI
 
@@ -23,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.11", "3.12"]
     
     steps:
     - uses: actions/checkout@v4
@@ -91,6 +97,13 @@ jobs:
         python -c "import ai_utilities; print('OK: Minimal install works')"
 
   # OPTIONAL TIER - These jobs do NOT block PRs
+  # RATIONALE: These jobs provide additional signal but are allowed to fail
+  # - Integration tests: Require API keys, depend on external services
+  # - Security scan: Provides awareness but doesn't affect functionality
+  # - Documentation: Important but not critical for code correctness
+  # - Compatibility: Cross-platform testing is nice-to-have
+  # NOTE: All use continue-on-error: true to prevent blocking releases
+  
   integration-test:
     name: Integration Tests (Optional)
     runs-on: ubuntu-latest
@@ -207,6 +220,8 @@ jobs:
         "
 
   # Simplified notification - only report on REQUIRED tier
+  # RATIONALE: Focus on what actually blocks development
+  # Optional job failures are visible in GitHub Actions UI but don't need notification
   notify:
     name: CI Results
     runs-on: ubuntu-latest
