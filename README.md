@@ -14,13 +14,13 @@ A Python library for AI model interaction with Pydantic configuration, clean arc
 
 | Feature | Direct SDK | AI Utilities |
 |---------|------------|--------------|
-| **Multi-provider** | ❌ Separate SDKs needed | ✅ Single interface |
-| **Caching** | ❌ Manual implementation | ✅ Built-in, automatic |
-| **Rate Limits** | ❌ Manual tracking | ✅ Automatic management |
-| **Type Safety** | ⚠️ Basic types | ✅ Full Pydantic models |
-| **Error Handling** | ⚠️ Provider-specific | ✅ Unified exceptions |
-| **Configuration** | ⚠️ Environment variables | ✅ Pydantic settings |
-| **Testing** | ❌ Manual mocking | ✅ Test utilities included |
+| **Multi-provider** | X Separate SDKs needed | ✓ Single interface |
+| **Caching** | X Manual implementation | ✓ Built-in, automatic |
+| **Rate Limits** | X Manual tracking | ✓ Automatic management |
+| **Type Safety** | ⚠ Basic types | ✓ Full Pydantic models |
+| **Error Handling** | ⚠ Provider-specific | ✓ Unified exceptions |
+| **Configuration** | ⚠ Environment variables | ✓ Pydantic settings |
+| **Testing** | X Manual mocking | ✓ Test utilities included |
 
 **Use AI Utilities when you need:**
 - Production applications with multiple AI providers
@@ -72,10 +72,10 @@ print(f"Tokens used: {result.usage.total_tokens}")
 ```
 
 **Key Benefits:**
-- ✅ **Automatic caching** - Same question = instant response, no API cost
-- ✅ **Rate limiting** - Never get throttled or surprised by costs
-- ✅ **Type safety** - Full IDE support with autocomplete
-- ✅ **Error handling** - Clear, actionable error messages
+- ✓ **Automatic caching** - Same question = instant response, no API cost
+- ✓ **Rate limiting** - Never get throttled or surprised by costs
+- ✓ **Type safety** - Full IDE support with autocomplete
+- ✓ **Error handling** - Clear, actionable error messages
 
 **Where to look next:**
 - **🌟 Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
@@ -272,11 +272,11 @@ client = AiClient(settings=settings)
 ```
 
 **Key Features:**
-- ✅ **Namespace isolation** - Prevents cross-project cache pollution
-- ✅ **TTL expiration** - Automatic cleanup of stale entries
-- ✅ **LRU eviction** - Memory-efficient size management
-- ✅ **Thread-safe** - Concurrent access support
-- ✅ **Persistent** - Survives process restarts
+- ✓ **Namespace isolation** - Prevents cross-project cache pollution
+- ✓ **TTL expiration** - Automatic cleanup of stale entries
+- ✓ **LRU eviction** - Memory-efficient size management
+- ✓ **Thread-safe** - Concurrent access support
+- ✓ **Persistent** - Survives process restarts
 
 [📖 **Complete Caching Guide** → `docs/caching.md`](docs/caching.md)
 
@@ -331,15 +331,15 @@ settings = AiSettings(
 ### Provider Capabilities
 
 Legend:
-- ✅ full support
-- ⚠️ partial / best-effort (varies by provider/model; may require JSON repair)
-- ❌ not supported
+- ✓ full support
+- ⚠ partial / best-effort (varies by provider/model; may require JSON repair)
+- X not supported
 
 | Provider Type | Text | JSON | Async | Streaming |
 |--------------|------|------|-------|-----------|
-| OpenAI (native) | ✅ | ✅ | ✅ | ✅ |
-| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | ✅ | ⚠️ | ✅ | ⚠️ |
-| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | ✅ | ⚠️ | ✅ | ❌ |
+| OpenAI (native) | ✓ | ✓ | ✓ | ✓ |
+| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | ✓ | ⚠ | ✓ | ⚠ |
+| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | ✓ | ⚠ | ✓ | X |
 
 **Notes:**
 - "Async" means our AsyncAiClient concurrency (parallel calls), not streaming tokens.
@@ -494,8 +494,8 @@ trend_analysis = client.ask(
 
 | Provider | Upload | Download | Notes |
 |----------|--------|----------|-------|
-| **OpenAI** | ✅ | ✅ | Full support with all file types |
-| **OpenAI-Compatible** | ❌ | ❌ | Raises capability errors |
+| **OpenAI** | ✓ | ✓ | Full support with all file types |
+| **OpenAI-Compatible** | X | X | Raises capability errors |
 
 **📖 Full Documentation:** See [`docs/files.md`](docs/files.md) for comprehensive Files API documentation.
 
@@ -530,14 +530,14 @@ python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output
 ```
 
 **🚀 Enterprise Features:**
-- ✅ **Chunked Execution**: Individual file isolation prevents cascading failures
-- ✅ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
-- ✅ **Complete Visibility**: Shows exactly which tests are excluded and why
-- ✅ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
-- ✅ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
-- ✅ **Real-time Progress**: Live test execution with per-file granularity
-- ✅ **Provider Coverage**: Analysis across 9 AI providers
-- ✅ **Production Readiness**: Clear assessment and failure diagnostics
+- ✓ **Chunked Execution**: Individual file isolation prevents cascading failures
+- ✓ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
+- ✓ **Complete Visibility**: Shows exactly which tests are excluded and why
+- ✓ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
+- ✓ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
+- ✓ **Real-time Progress**: Live test execution with per-file granularity
+- ✓ **Provider Coverage**: Analysis across 9 AI providers
+- ✓ **Production Readiness**: Clear assessment and failure diagnostics
 
 **📊 Test Visibility Example:**
 ```
@@ -545,7 +545,7 @@ python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output
    📋 Total tests available: 524
    🔧 Integration tests: 46 (excluded by default)
    🎛️  Dashboard tests: 30 (excluded to prevent self-reference)
-   ✅ Tests to execute: 448
+   ✓ Tests to execute: 448
    📉 Excluded tests: 76
 ```
 

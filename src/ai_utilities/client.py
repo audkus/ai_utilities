@@ -401,25 +401,25 @@ class AiSettings(BaseSettings):
                     else:
                         print("  Linux/Mac: export AI_API_KEY='your-key-here'")
                     print("  Then restart your application")
-                    print("\n⚠️  Exiting application. Please restart after setting the environment variable.")
+                    print("\nWARNING: Exiting application. Please restart after setting the environment variable.")
                     import sys
                     sys.exit(1)  # Exit with error code to indicate setup incomplete
                     
                 elif choice == "2":
-                    print("\n⚠️  Warning: API key will be visible in terminal history")
+                    print("\nWARNING: API key will be visible in terminal history")
                     confirm = input("Continue anyway? (y/N): ").strip().lower()
                     if confirm in ['y', 'yes']:
                         api_key = input("OpenAI API key: ").strip()
                         if api_key:
                             os.environ["AI_API_KEY"] = api_key
-                            print("✓ API key set for current session")
+                            print("OK: API key set for current session")
                     
                 elif choice == "3":
                     api_key = input("OpenAI API key: ").strip()
                     if api_key:
                         os.environ["AI_API_KEY"] = api_key
                         cls._save_to_env_file("AI_API_KEY", api_key)
-                        print("✓ API key saved to .env file")
+                        print("OK: API key saved to .env file")
                 
                 else:
                     print("Invalid choice. Skipping API key configuration.")
@@ -627,19 +627,19 @@ class AiSettings(BaseSettings):
             update_info = cls.check_for_updates(current_api_key, interval)
             
             if 'error' in update_info:
-                print(f"⚠️ Could not check for updates: {update_info['error']}")
+                print(f"WARNING: Could not check for updates: {update_info['error']}")
             elif update_info['has_updates']:
-                print(f"🆕 New OpenAI models detected!")
-                print(f"📊 Total models available: {update_info['total_models']}")
+                print(f"NEW: New OpenAI models detected!")
+                print(f"INFO: Total models available: {update_info['total_models']}")
                 
                 if update_info['new_models']:
-                    print(f"\n🆕 NEW MODELS ({len(update_info['new_models'])}):")
+                    print(f"\nNEW MODELS ({len(update_info['new_models'])}):")
                     for model in update_info['new_models']:
                         print(f"   • {model}")
                 
                 # Show current models (truncated if too many)
                 current_models = update_info['current_models']
-                print(f"\n📋 CURRENT MODELS ({len(current_models)}):")
+                print(f"\nCURRENT MODELS ({len(current_models)}):")
                 
                 # Show first 10 models, then indicate if there are more
                 display_models = current_models[:10]
@@ -650,18 +650,18 @@ class AiSettings(BaseSettings):
                     print(f"   ... and {len(current_models) - 10} more models")
                 
                 if update_info.get('cached'):
-                    print(f"\n💾 Using cached results from {update_info['last_check']}")
+                    print(f"\nCACHED: Using cached results from {update_info['last_check']}")
                 else:
-                    print(f"\n🔄 Fresh check completed at {update_info['last_check']}")
+                    print(f"\nFRESH: Check completed at {update_info['last_check']}")
                 
                 response = input("\nWould you like to review your configuration? (y/N): ").strip().lower()
                 if response in ['y', 'yes']:
                     return cls.interactive_setup(force_reconfigure=True)
             else:
-                print(f"✓ Your configuration is up to date")
-                print(f"📊 Total models available: {update_info['total_models']}")
+                print(f"OK: Your configuration is up to date")
+                print(f"INFO: Total models available: {update_info['total_models']}")
                 if update_info.get('cached'):
-                    print(f"💾 Using cached results from {update_info['last_check']}")
+                    print(f"CACHED: Using cached results from {update_info['last_check']}")
         
         # Return settings without prompting
         return cls()
@@ -904,7 +904,7 @@ class AiClient:
             Dictionary with detailed update information
         """
         if not self.settings.api_key:
-            print("⚠️ Cannot check for updates: API key not configured")
+            print("WARNING: Cannot check for updates: API key not configured")
             return {'error': 'API key not configured'}
         
         print("=== Checking for OpenAI Updates ===")
