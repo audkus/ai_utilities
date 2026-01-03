@@ -153,8 +153,9 @@ def load_audio_file(file_path: Union[str, Path]) -> AudioFile:
                         metadata[key] = str(value[0])
                     else:
                         metadata[key] = str(value)
-        except Exception:
-            pass  # Continue with basic info if mutagen fails
+        except (ImportError, AttributeError, OSError, Exception):
+            # Continue with basic info if mutagen fails or format not supported
+            pass
     
     # Try WAV-specific extraction
     if format == AudioFormat.WAV and WAVE_AVAILABLE:
@@ -167,8 +168,9 @@ def load_audio_file(file_path: Union[str, Path]) -> AudioFile:
                 channels = wav_file.getnchannels()
                 if sample_rate is None:
                     sample_rate = wav_file.getframerate()
-        except Exception:
-            pass  # Continue with what we have
+        except (OSError, ValueError, Exception):
+            # Continue with what we have if WAV file is corrupted or unreadable
+            pass
     
     return AudioFile(
         file_path=path,
@@ -217,8 +219,9 @@ def analyze_audio_file(file_path: Union[str, Path]) -> AudioAnalysisResult:
             format_details['frame_rate'] = audio_segment.frame_rate
             format_details['sample_width'] = audio_segment.sample_width
             bit_depth = audio_segment.sample_width * 8
-        except Exception:
-            pass  # pydub might not support this format
+        except (ImportError, Exception):
+            # pydub might not support this format or failed to read it
+            pass
     
     # Ensure we have the basic information
     duration = audio_file.duration_seconds
