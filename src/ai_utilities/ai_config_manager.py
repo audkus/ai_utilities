@@ -36,7 +36,7 @@ class AIConfigManager:
     type safety, validation, and immutability.
     """
     
-    def __init__(self, config_path: Optional[str] = None, api_key: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, api_key: Optional[str] = None) -> None:
         """
         Initialize the configuration manager.
         

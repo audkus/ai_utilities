@@ -7,7 +7,7 @@ prevents contamination between different parts of the application.
 
 import os
 from contextlib import contextmanager
-from typing import Dict, Optional
+from typing import Dict, Optional, Generator
 
 
 def cleanup_ai_env_vars() -> None:
@@ -56,7 +56,7 @@ def validate_ai_env_vars() -> Dict[str, str]:
 
 
 @contextmanager
-def isolated_env_context(env_vars: Optional[Dict[str, str]] = None):
+def isolated_env_context(env_vars: Optional[Dict[str, str]] = None) -> Generator[None, None, None]:
     """
     Context manager for isolated environment variable manipulation.
     
