@@ -610,9 +610,12 @@ ai_utilities/
 ## Documentation & Links
 
 - **Full Documentation** → [`docs/`](docs/)
+- **📚 Reliability Guide** → [`docs/reliability_guide.md`](docs/reliability_guide.md)
+- **🔄 Migration Guide** → [`MIGRATION.md`](MIGRATION.md)
 - **Usage Examples** → [`examples/`](examples/)
 - **Provider Setup** → [`docs/all-providers-guide.md`](docs/all-providers-guide.md)
 - **Testing Guide** → [`docs/testing-setup.md`](docs/testing-setup.md)
+- **Troubleshooting** → [`docs/provider_troubleshooting.md`](docs/provider_troubleshooting.md)
 - **GitHub Releases** → [Releases](https://github.com/audkus/ai_utilities/releases)
 - **Issues & Discussions** → [GitHub](https://github.com/audkus/ai_utilities)
 - **Contributing** → [CONTRIBUTING.md](CONTRIBUTING.md)
