@@ -87,8 +87,10 @@ jobs:
           echo "Testing minimal install..."
           pip install . --no-cache-dir --timeout=300 --progress-bar off
         elif [ "${{ matrix.option }}" = "complete" ]; then
-          echo "Testing complete install..."
-          pip install .[complete] --no-cache-dir --timeout=300 --progress-bar off
+          echo "Testing complete install (includes ALL dependencies)..."
+          echo "This includes: core + openai + dev + audio dependencies..."
+          echo "This is the largest installation and may take the longest time..."
+          pip install .[complete] --no-cache-dir --timeout=300 --progress-bar off --no-build-isolation
         elif [ "${{ matrix.option }}" = "dev" ]; then
           echo "Testing install with [dev] (includes dev tools)..."
           echo "This may take longer due to mypy, ruff, and other dev dependencies..."
@@ -99,7 +101,7 @@ jobs:
         fi
         
         echo "Installation completed successfully!"
-      timeout-minutes: 20
+      timeout-minutes: 25
     
     - name: Verify import works
       run: |
