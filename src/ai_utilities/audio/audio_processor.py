@@ -19,8 +19,6 @@ from .audio_models import (
 )
 from .audio_utils import (
     load_audio_file,
-    save_audio_file,
-    validate_audio_file,
     AudioProcessingError,
 )
 
@@ -126,11 +124,6 @@ class AudioProcessor:
             # Use the provider's OpenAI client directly
             if hasattr(self.client.provider, 'client'):
                 openai_client = self.client.provider.client
-                
-                # Prepare files for upload
-                files = {
-                    "file": ("audio.wav", audio_data, "audio/wav")
-                }
                 
                 # Prepare data
                 data = {

@@ -6,14 +6,14 @@ extra text, code fences, or minor syntax errors.
 """
 
 import json
-from typing import Any
+from typing import Any, Optional
 from json import JSONDecodeError
 
 
 class JsonParseError(Exception):
     """Raised when JSON cannot be parsed from text."""
     
-    def __init__(self, message: str, text: str, original_error: Exception = None):
+    def __init__(self, message: str, text: str, original_error: Optional[Exception] = None):
         super().__init__(message)
         self.text = text
         self.original_error = original_error

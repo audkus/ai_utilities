@@ -88,7 +88,7 @@ class RateLimiter:
         self.requests_made = 0
         self.tokens_used = 0
         self.tokens_used_today = 0
-        self.last_reset = datetime.now().isoformat()
+        self.last_reset = datetime.now()
 
         # Lock for synchronizing access to shared resources
         self.lock = threading.Lock()

@@ -2,37 +2,87 @@
 
 A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
 
+## 🎯 Why This Library Exists
+
+- **Unified Interface** - Single API for multiple AI providers (OpenAI, Anthropic, local models)
+- **Smart Caching** - Automatic response caching with namespace isolation and TTL support
+- **Rate Limiting** - Built-in rate limit management prevents API throttling and cost overruns
+- **Type Safety** - Full Pydantic integration with comprehensive mypy support
+- **Enterprise Ready** - Production-tested with comprehensive error handling and monitoring
+
+## 🆚 Compared to Using Provider SDK Directly
+
+| Feature | Direct SDK | AI Utilities |
+|---------|------------|--------------|
+| **Multi-provider** | X Separate SDKs needed | ✓ Single interface |
+| **Caching** | X Manual implementation | ✓ Built-in, automatic |
+| **Rate Limits** | X Manual tracking | ✓ Automatic management |
+| **Type Safety** | ⚠ Basic types | ✓ Full Pydantic models |
+| **Error Handling** | ⚠ Provider-specific | ✓ Unified exceptions |
+| **Configuration** | ⚠ Environment variables | ✓ Pydantic settings |
+| **Testing** | X Manual mocking | ✓ Test utilities included |
+
+**Use AI Utilities when you need:**
+- Production applications with multiple AI providers
+- Cost control through intelligent caching and rate limiting
+- Type safety and comprehensive error handling
+- Enterprise features like monitoring and configuration management
+
+**Use direct SDK when you need:**
+- Maximum control over a single provider
+- Access to provider-specific features
+- Minimal dependencies for simple scripts
+
+## 👥 Who Is It For?
+
+- **Production Teams** building AI-powered applications with reliability requirements
+- **Startups** needing cost control through intelligent caching and rate limiting
+- **Enterprise Developers** requiring type safety, monitoring, and configuration management
+- **Data Scientists** who want to experiment with multiple providers without learning different APIs
+- **Teams** collaborating on AI projects with standardized error handling and logging
+
 ## Quickstart
 
 ```bash
-# Install
-pip install ai-utilities
+# Install with provider support
+pip install ai-utilities[openai]
 
 # Set API key
-export AI_API_KEY="your-openai-key"
-
-# Use in Python
-python -c "
-from ai_utilities import AiClient
-client = AiClient()
-print(client.ask('What is AI?'))
-"
+export OPENAI_API_KEY="your-openai-key"
 ```
 
-**Or create a Python file:**
+### 🌟 Recommended Usage
+
 ```python
-# quickstart.py
 from ai_utilities import AiClient
 
+# Create client with automatic caching
 client = AiClient()
-response = client.ask("What is AI?")
-print(response)
+
+# Ask questions with intelligent caching
+result = client.ask(
+    "Explain quantum computing in simple terms",
+    cache_namespace="learning"
+)
+
+print(result.text)
+
+# Monitor usage automatically
+print(f"Tokens used: {result.usage.total_tokens}")
 ```
+
+**Key Benefits:**
+- ✓ **Automatic caching** - Same question = instant response, no API cost
+- ✓ **Rate limiting** - Never get throttled or surprised by costs
+- ✓ **Type safety** - Full IDE support with autocomplete
+- ✓ **Error handling** - Clear, actionable error messages
 
 **Where to look next:**
+- **🌟 Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
+- **📚 Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
 - **🎵 Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
-- More examples → [`examples/`](examples/)
 - Configuration reference → [Configuration](#configuration)
+- **🚨 Error Handling Guide** → [`docs/error_handling.md`](docs/error_handling.md)
 - **Smart Caching Guide** → [`docs/caching.md`](docs/caching.md)
 - **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
 - **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
@@ -44,10 +94,17 @@ print(response)
 
 ## Install
 
-### Standard Install
+### Minimal Install
 ```bash
 pip install ai-utilities
 ```
+*Core library only - no provider SDKs included*
+
+### With Provider Support
+```bash
+pip install ai-utilities[openai]
+```
+*Includes OpenAI SDK for provider functionality*
 
 ### Development Install
 ```bash
@@ -67,6 +124,25 @@ pip install ai-utilities[audio]
 # Full installation with all features
 pip install ai-utilities[all]
 ```
+
+---
+
+## 📋 API Stability (v1.x)
+
+The following are considered stable public APIs and will follow semantic versioning:
+
+- `AiClient` - Main client for AI interactions
+- `AsyncAiClient` - Async version of AiClient  
+- `AiSettings` - Configuration and settings
+- `AskResult` - Response objects from AI requests
+
+**Internal modules** (providers, cache backends, dashboards, scripts) may change in minor or patch releases unless explicitly documented otherwise.
+
+**Version 1.x guarantees API stability**; new features may be added in minor releases.
+
+**Semantic Versioning**: This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) - version 1.x maintains backward compatibility for stable APIs.
+
+**Deprecation Policy**: Deprecated APIs will remain functional for at least one minor release and emit a warning before removal.
 
 ---
 
@@ -196,11 +272,11 @@ client = AiClient(settings=settings)
 ```
 
 **Key Features:**
-- ✅ **Namespace isolation** - Prevents cross-project cache pollution
-- ✅ **TTL expiration** - Automatic cleanup of stale entries
-- ✅ **LRU eviction** - Memory-efficient size management
-- ✅ **Thread-safe** - Concurrent access support
-- ✅ **Persistent** - Survives process restarts
+- ✓ **Namespace isolation** - Prevents cross-project cache pollution
+- ✓ **TTL expiration** - Automatic cleanup of stale entries
+- ✓ **LRU eviction** - Memory-efficient size management
+- ✓ **Thread-safe** - Concurrent access support
+- ✓ **Persistent** - Survives process restarts
 
 [📖 **Complete Caching Guide** → `docs/caching.md`](docs/caching.md)
 
@@ -255,15 +331,15 @@ settings = AiSettings(
 ### Provider Capabilities
 
 Legend:
-- ✅ full support
-- ⚠️ partial / best-effort (varies by provider/model; may require JSON repair)
-- ❌ not supported
+- ✓ full support
+- ⚠ partial / best-effort (varies by provider/model; may require JSON repair)
+- X not supported
 
 | Provider Type | Text | JSON | Async | Streaming |
 |--------------|------|------|-------|-----------|
-| OpenAI (native) | ✅ | ✅ | ✅ | ✅ |
-| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | ✅ | ⚠️ | ✅ | ⚠️ |
-| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | ✅ | ⚠️ | ✅ | ❌ |
+| OpenAI (native) | ✓ | ✓ | ✓ | ✓ |
+| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | ✓ | ⚠ | ✓ | ⚠ |
+| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | ✓ | ⚠ | ✓ | X |
 
 **Notes:**
 - "Async" means our AsyncAiClient concurrency (parallel calls), not streaming tokens.
@@ -418,8 +494,8 @@ trend_analysis = client.ask(
 
 | Provider | Upload | Download | Notes |
 |----------|--------|----------|-------|
-| **OpenAI** | ✅ | ✅ | Full support with all file types |
-| **OpenAI-Compatible** | ❌ | ❌ | Raises capability errors |
+| **OpenAI** | ✓ | ✓ | Full support with all file types |
+| **OpenAI-Compatible** | X | X | Raises capability errors |
 
 **📖 Full Documentation:** See [`docs/files.md`](docs/files.md) for comprehensive Files API documentation.
 
@@ -454,14 +530,14 @@ python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output
 ```
 
 **🚀 Enterprise Features:**
-- ✅ **Chunked Execution**: Individual file isolation prevents cascading failures
-- ✅ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
-- ✅ **Complete Visibility**: Shows exactly which tests are excluded and why
-- ✅ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
-- ✅ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
-- ✅ **Real-time Progress**: Live test execution with per-file granularity
-- ✅ **Provider Coverage**: Analysis across 9 AI providers
-- ✅ **Production Readiness**: Clear assessment and failure diagnostics
+- ✓ **Chunked Execution**: Individual file isolation prevents cascading failures
+- ✓ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
+- ✓ **Complete Visibility**: Shows exactly which tests are excluded and why
+- ✓ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
+- ✓ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
+- ✓ **Real-time Progress**: Live test execution with per-file granularity
+- ✓ **Provider Coverage**: Analysis across 9 AI providers
+- ✓ **Production Readiness**: Clear assessment and failure diagnostics
 
 **📊 Test Visibility Example:**
 ```
@@ -469,7 +545,7 @@ python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output
    📋 Total tests available: 524
    🔧 Integration tests: 46 (excluded by default)
    🎛️  Dashboard tests: 30 (excluded to prevent self-reference)
-   ✅ Tests to execute: 448
+   ✓ Tests to execute: 448
    📉 Excluded tests: 76
 ```
 

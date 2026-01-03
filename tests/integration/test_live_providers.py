@@ -14,7 +14,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from ai_utilities import AiClient, AiSettings, create_client
-from ai_utilities.demo.model_registry import ProviderId
 
 
 # Skip all integration tests unless explicitly enabled

@@ -7,14 +7,14 @@ of AI responses with configurable TTL and opt-in behavior.
 
 import hashlib
 import json
+import re
 import sqlite3
 import threading
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
-import pydantic.v1 as pydantic
 
 
 class CacheBackend(ABC):
@@ -190,7 +190,7 @@ class SqliteCache(CacheBackend):
             prune_batch: Batch size for LRU pruning operations
         """
         self.db_path = db_path
-        self.table = table
+        self.table = self._validate_table_name(table)
         self.namespace = namespace
         self.wal = wal
         self.busy_timeout_ms = busy_timeout_ms
@@ -200,6 +200,41 @@ class SqliteCache(CacheBackend):
         
         # Create database and tables
         self._init_database()
+    
+    def _validate_table_name(self, table: str) -> str:
+        """Validate table name to prevent SQL injection.
+        
+        Args:
+            table: Table name to validate
+            
+        Returns:
+            Validated table name
+            
+        Raises:
+            ValueError: If table name contains invalid characters
+        """
+        if not table:
+            raise ValueError("Table name cannot be empty")
+        
+        # Only allow alphanumeric characters and underscores
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+            raise ValueError(
+                f"Invalid table name '{table}'. "
+                "Table names must start with a letter or underscore, "
+                "and contain only letters, numbers, and underscores."
+            )
+        
+        # Prevent reserved SQL keywords
+        reserved_keywords = {
+            'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE',
+            'CREATE', 'DROP', 'ALTER', 'TABLE', 'INDEX', 'VIEW',
+            'PRAGMA', 'TRANSACTION', 'COMMIT', 'ROLLBACK'
+        }
+        
+        if table.upper() in reserved_keywords:
+            raise ValueError(f"Table name '{table}' cannot be a reserved SQL keyword")
+        
+        return table
     
     def _init_database(self) -> None:
         """Initialize database schema and indexes."""
@@ -229,18 +264,18 @@ class SqliteCache(CacheBackend):
                     last_access_at REAL NOT NULL,
                     PRIMARY KEY(namespace, key)
                 )
-            """)
+            """)  # nosec: B608 - table name validated
             
             # Create indexes for performance
             conn.execute(f"""
                 CREATE INDEX IF NOT EXISTS idx_{self.table}_expires 
                 ON {self.table} (namespace, expires_at)
-            """)
+            """)  # nosec: B608 - table name validated
             
             conn.execute(f"""
                 CREATE INDEX IF NOT EXISTS idx_{self.table}_access 
                 ON {self.table} (namespace, last_access_at)
-            """)
+            """)  # nosec: B608 - table name validated
             
             conn.commit()
     
@@ -263,7 +298,7 @@ class SqliteCache(CacheBackend):
             cursor = conn.execute(f"""
                 SELECT value_json, expires_at FROM {self.table}
                 WHERE namespace = ? AND key = ?
-            """, (self.namespace, key))
+            """, (self.namespace, key))  # nosec: B608 - table name validated
             
             row = cursor.fetchone()
             if row is None:
@@ -277,7 +312,7 @@ class SqliteCache(CacheBackend):
                 conn.execute(f"""
                     DELETE FROM {self.table}
                     WHERE namespace = ? AND key = ?
-                """, (self.namespace, key))
+                """, (self.namespace, key))  # nosec: B608 - table name validated
                 conn.commit()
                 return None
             
@@ -286,7 +321,7 @@ class SqliteCache(CacheBackend):
                 UPDATE {self.table}
                 SET access_count = access_count + 1, last_access_at = ?
                 WHERE namespace = ? AND key = ?
-            """, (time.time(), self.namespace, key))
+            """, (time.time(), self.namespace, key))  # nosec: B608 - table name validated
             conn.commit()
             
             # Deserialize and return value
@@ -297,7 +332,7 @@ class SqliteCache(CacheBackend):
                 conn.execute(f"""
                     DELETE FROM {self.table}
                     WHERE namespace = ? AND key = ?
-                """, (self.namespace, key))
+                """, (self.namespace, key))  # nosec: B608 - table name validated
                 conn.commit()
                 return None
     
@@ -335,7 +370,7 @@ class SqliteCache(CacheBackend):
                 VALUES (?, ?, ?, ?, ?, 1, ?)
             """, (
                 self.namespace, key, value_json, current_time, expires_at, current_time
-            ))
+            ))  # nosec: B608 - table name validated
             
             # Prune if necessary
             if self.max_entries is not None:
@@ -354,7 +389,7 @@ class SqliteCache(CacheBackend):
             conn.execute(f"""
                 DELETE FROM {self.table}
                 WHERE namespace = ?
-            """, (self.namespace,))
+            """, (self.namespace,))  # nosec: B608 - table name validated
             conn.commit()
     
     def _prune_namespace(self, conn: sqlite3.Connection) -> None:
@@ -366,7 +401,7 @@ class SqliteCache(CacheBackend):
         # Count entries in namespace
         cursor = conn.execute(f"""
             SELECT COUNT(*) FROM {self.table} WHERE namespace = ?
-        """, (self.namespace,))
+        """, (self.namespace,))  # nosec: B608 - table name validated
         
         count = cursor.fetchone()[0]
         if count <= self.max_entries:
@@ -382,7 +417,7 @@ class SqliteCache(CacheBackend):
                 ORDER BY last_access_at ASC
                 LIMIT ?
             )
-        """, (self.namespace, min(entries_to_delete, self.prune_batch)))
+        """, (self.namespace, min(entries_to_delete, self.prune_batch)))  # nosec: B608 - table name validated
     
     def clear_all_namespaces(self) -> None:
         """Clear all entries in all namespaces (for internal/dev use)."""
@@ -392,7 +427,7 @@ class SqliteCache(CacheBackend):
             timeout=self.busy_timeout_ms / 1000.0
         ) as conn:
             conn.execute(f"PRAGMA busy_timeout={self.busy_timeout_ms}")
-            conn.execute(f"DELETE FROM {self.table}")
+            conn.execute(f"DELETE FROM {self.table}")  # nosec: B608 - table name validated
             conn.commit()
 
 

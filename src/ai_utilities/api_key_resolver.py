@@ -23,8 +23,6 @@ class MissingApiKeyError(RuntimeError):
         
         # Platform detection
         is_windows = sys.platform == "win32"
-        is_macos = sys.platform == "darwin"
-        is_linux = sys.platform.startswith("linux")
         
         # Build platform-specific instructions
         if is_windows:
@@ -54,47 +52,47 @@ source ~/.zshrc  # or source ~/.bashrc"""
         
         # Build the complete message
         message = f"""
-🔑 API Key Required: AI_API_KEY
+KEY REQUIRED: AI_API_KEY
 
-The AI utilities library requires an OpenAI API key to function. 
+The AI utilities library requires an OpenAI API key to function.
 The 'AI_API_KEY' environment variable was not found in any location.
 
-📋 QUICK SETUP OPTIONS:
+QUICK SETUP OPTIONS:
 
-1️⃣  RECOMMENDED: Create a .env file (works in terminal AND PyCharm):
+1. RECOMMENDED: Create a .env file (works in terminal AND PyCharm):
    Create a file named '.env' in your project directory with:
    AI_API_KEY=your-openai-api-key-here
 
-2️⃣  ENVIRONMENT VARIABLE (current session only):
+2. ENVIRONMENT VARIABLE (current session only):
 {env_commands}
 
-3️⃣  PERMANENT ENVIRONMENT VARIABLE:
+3. PERMANENT ENVIRONMENT VARIABLE:
 {permanent_commands}
 
-4️⃣  PYCHARM IDE CONFIGURATION:
+4. PYCHARM IDE CONFIGURATION:
    • Run/Debug Configurations → Environment variables
    • Add: AI_API_KEY=your-openai-api-key-here
 
-5️⃣  DIRECT OVERRIDE (for tests/one-off usage):
+5. DIRECT OVERRIDE (for tests/one-off usage):
    create_client(api_key="your-openai-api-key-here")
    # or
    AiSettings(api_key="your-openai-api-key-here")
 
-🔍 PRECEDENCE ORDER:
+PRECEDENCE ORDER:
 1. Explicit api_key parameter (highest priority)
 2. AI_API_KEY environment variable
 3. .env file in project directory
 4. System environment variables
 
-📁 FILE LOCATIONS CHECKED:
+FILE LOCATIONS CHECKED:
 • Current working directory: {Path.cwd()}/.env
 • Environment variables: AI_API_KEY
 • System environment
 
-💡 TIP: The .env method is recommended for local development as it works
+TIP: The .env method is recommended for local development as it works
    seamlessly across terminals, IDEs, and different operating systems.
 
-🚀 After setup, restart your terminal or IDE and try again.
+After setup, restart your terminal or IDE and try again.
 """
         
         return message
@@ -152,8 +150,8 @@ def resolve_api_key(
                             key_value = line[11:].strip()  # Remove 'AI_API_KEY='
                             if key_value and key_value != 'your-key-here':
                                 return key_value
-            except Exception:
-                # Silently ignore .env read errors
+            except (IOError, OSError):
+                # Silently ignore .env read errors (file not found, permission issues)
                 pass
     
     # 5. No API key found - raise helpful error
