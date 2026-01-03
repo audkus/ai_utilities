@@ -1,0 +1,67 @@
+# Performance Benchmarks - Optional Tooling
+#
+# PURPOSE: Track performance regressions and establish baselines
+# BLOCKS PRs: No - benchmarks are observational only
+# BLOCKS RELEASES: No - performance issues don't block releases
+# EXPECTED RUNTIME: ~2-5 minutes
+# DEPENDENCIES: Optional (psutil, tracemalloc)
+#
+# NOTE: This is optional tooling. Missing dependencies cause graceful exit,
+# not CI failures. Benchmarks are for monitoring, not validation.
+
+name: Performance Benchmarks
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual runs
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Never block anything
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install package
+      run: |
+        pip install .
+    
+    - name: Install optional dependencies
+      continue-on-error: true
+      run: |
+        pip install psutil || echo "psutil not available - memory profiling disabled"
+    
+    - name: Run benchmarks
+      continue-on-error: true
+      run: |
+        python tools/benchmarks.py || echo "Benchmarks failed - continuing"
+    
+    - name: Upload benchmark results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.run_number }}
+        path: benchmark_*.txt
+        retention-days: 7
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Performance Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: Observational (non-blocking)" >> $GITHUB_STEP_SUMMARY
+        echo "**Run ID**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Note" >> $GITHUB_STEP_SUMMARY
+        echo "Performance benchmarks are optional tooling for monitoring." >> $GITHUB_STEP_SUMMARY
+        echo "Failures here do not indicate problems with the library." >> $GITHUB_STEP_SUMMARY
