@@ -635,11 +635,12 @@ class AiSettings(BaseSettings):
         settings_dict = {}
         if 'openai' in config:
             openai_section = config['openai']
+            max_tokens_raw = openai_section.get('max_tokens')
             settings_dict = {
                 'api_key': openai_section.get('api_key'),
                 'model': openai_section.get('model', 'test-model-1'),
                 'temperature': float(openai_section.get('temperature', 0.7)),
-                'max_tokens': int(openai_section.get('max_tokens')) if openai_section.get('max_tokens') else None,
+                'max_tokens': int(max_tokens_raw) if max_tokens_raw and max_tokens_raw.strip() else None,
                 'base_url': openai_section.get('base_url'),
                 'timeout': int(openai_section.get('timeout', 30))
             }
