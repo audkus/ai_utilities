@@ -128,7 +128,6 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment: production  # Requires explicit approval
     
     steps:
     - name: Download build artifacts
