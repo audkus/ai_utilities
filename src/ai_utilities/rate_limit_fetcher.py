@@ -48,7 +48,7 @@ class RateLimitFetcher:
     providing rate limit information.
     """
     
-    def __init__(self, api_key: str, cache_dir: Optional[str] = None, cache_days: int = 30):
+    def __init__(self, api_key: str, cache_dir: Optional[str] = None, cache_days: int = 30) -> None:
         """
         Initialize the rate limit fetcher.
         

@@ -1,10 +1,10 @@
-# 🔄 CI/CD Workflows
+# CI/CD Workflows
 
 This directory contains GitHub Actions workflows for automated testing, releases, and maintenance.
 
-## 📋 Workflow Overview
+## Workflow Overview
 
-### 🚀 `ci.yml` - Main CI Pipeline
+### `ci.yml` - Main CI Pipeline
 **Triggers**: Push to main/develop, Pull Requests  
 **Purpose**: Comprehensive testing and validation
 
@@ -21,7 +21,7 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - **compatibility-test**: Cross-platform testing (Linux, Windows, macOS)
 - **notify**: Success/failure reporting
 
-### 📦 `release.yml` - Release Pipeline
+### `release.yml` - Release Pipeline
 **Triggers**: Git tags (v*)  
 **Purpose**: Automated PyPI releases
 
@@ -34,7 +34,7 @@ This directory contains GitHub Actions workflows for automated testing, releases
 **Requirements:**
 - `PYPI_API_TOKEN` secret for PyPI upload
 
-### 🔧 `dependency-update.yml` - Dependency Management
+### `dependency-update.yml` - Dependency Management
 **Triggers**: Weekly (Monday 9 AM UTC), Manual dispatch  
 **Purpose**: Keep dependencies up to date
 
@@ -46,7 +46,7 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - Testing before PR creation
 - Clean PR with detailed description
 
-### ✅ `minimal-install.yml` - Minimal Install Verification
+### `minimal-install.yml` - Minimal Install Verification
 **Triggers**: Push to main/develop, Pull Requests  
 **Purpose**: Verify minimal install works without providers
 
@@ -54,41 +54,46 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - **minimal-install**: Core functionality testing
 - **install-options**: Test all installation variants
 
-### 🏥 `provider-health.yml` - Provider Health Monitoring
+### `provider-health.yml` - Provider Health Monitoring
 **Triggers**: Scheduled (daily), Manual dispatch  
 **Purpose**: Monitor external provider availability
 
 **Jobs:**
-- **health-check**: Test provider connectivity and response times
+- **provider-health-check**: Test provider APIs and generate reports
 
-## 🎯 Key Features
+**Features:**
+- Non-blocking observational monitoring
+- Artifact-based reporting
+- Graceful handling of missing credentials
 
-### 🔍 Comprehensive Testing
+## Key Features
+
+### Comprehensive Testing
 - **Multi-version**: Python 3.9, 3.10, 3.11
 - **Cross-platform**: Linux, Windows, macOS
 - **Type safety**: Full mypy validation
 - **Security**: Vulnerability scanning
 - **Performance**: Speed benchmarks
 
-### 📊 Quality Gates
+### Quality Gates
 - All tests must pass
 - Type checking must pass
 - Security scan must pass
 - Performance benchmarks must meet thresholds
 
-### 🚀 Automated Releases
+### Automated Releases
 - Tag-based releases
 - PyPI publishing
 - GitHub releases
 - Dependency updates
 
-### 📈 Monitoring
+### Monitoring
 - Provider health checks
 - Performance tracking
 - Security vulnerability monitoring
 - Dependency freshness
 
-## 🔧 Setup Requirements
+## Setup Requirements
 
 ### Required Secrets
 - `PYPI_API_TOKEN`: For publishing to PyPI
@@ -96,7 +101,7 @@ This directory contains GitHub Actions workflows for automated testing, releases
 ### Optional Secrets
 - `CODECOV_TOKEN`: For coverage reporting (if using Codecov)
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -112,7 +117,7 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - Use `workflow_dispatch` to manually trigger workflows for debugging
 - Review dependency update PRs carefully before merging
 
-## 📝 Best Practices
+## Best Practices
 
 1. **Local Testing**: Run `pytest` and `mypy` locally before pushing
 2. **Incremental Changes**: Small PRs are easier to debug
@@ -120,14 +125,14 @@ This directory contains GitHub Actions workflows for automated testing, releases
 4. **Performance**: Monitor performance benchmarks for regressions
 5. **Security**: Address security vulnerabilities quickly
 
-## 🔄 Workflow Status
+## Workflow Status
 
-Current status: ✅ All workflows implemented and tested
+Current status: All workflows implemented and tested
 
-- ✅ Main CI pipeline
-- ✅ Release automation
-- ✅ Dependency management
-- ✅ Minimal install verification
-- ✅ Provider health monitoring
+- Main CI pipeline
+- Release automation
+- Dependency management
+- Minimal install verification
+- Provider health monitoring
 
-Ready for production use! 🚀
+Ready for production use!

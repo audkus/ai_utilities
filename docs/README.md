@@ -27,6 +27,27 @@ All other objects are considered internal and may change between versions.
 
 ## 📚 Available Documentation
 
+### 🏗️ **[Reliability & Maintenance Guide](reliability_guide.md)**
+Production deployment, monitoring, and maintenance best practices
+- High availability setup with circuit breakers
+- Performance monitoring and metrics collection
+- Cache management and optimization
+- Security considerations and audit logging
+
+### 🔒 **[Security Guide](security_guide.md)**
+Security best practices and guidelines for production deployments
+- API key management and secure configuration
+- Input validation and sanitization
+- Security monitoring and audit logging
+- Incident response and emergency procedures
+
+### 🔄 **[Migration Guide](../MIGRATION.md)**
+Step-by-step migration to AI Utilities v1.0
+- Breaking changes and compatibility notes
+- Import updates and configuration changes
+- Testing checklist and common issues
+- Performance improvements in v1.0
+
 ### 🎵 [Audio Processing Guide](audio_processing.md)
 - Complete audio processing capabilities
 - Audio transcription with OpenAI Whisper

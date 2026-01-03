@@ -3,14 +3,14 @@
 import time
 from unittest.mock import patch
 
-from src.ai_utilities import AiClient
-from src.ai_utilities.progress_indicator import ProgressIndicator
+from ai_utilities import AiClient
+from ai_utilities.progress_indicator import ProgressIndicator
 from tests.fake_provider import FakeProvider
 
 
 def test_progress_indicator_enabled_by_default():
     """Test that progress indicator is enabled by default."""
-    from src.ai_utilities import AiSettings
+    from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
     client = AiClient(settings, auto_setup=False)
     assert client.show_progress is True
@@ -18,7 +18,7 @@ def test_progress_indicator_enabled_by_default():
 
 def test_progress_indicator_can_be_disabled():
     """Test that progress indicator can be disabled."""
-    from src.ai_utilities import AiSettings
+    from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
     client = AiClient(settings, show_progress=False, auto_setup=False)
     assert client.show_progress is False
