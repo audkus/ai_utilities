@@ -62,7 +62,7 @@ class TestProviderCapabilities:
                 return ["url"]
         
         provider = TestProvider()
-        caps = provider.capabilities()
+        caps = provider.get_capabilities()
         
         assert isinstance(caps, AiCapabilities)
         assert caps.text is True
@@ -88,7 +88,7 @@ class TestAiClientCapabilities:
         # Create mock provider with custom capabilities
         mock_provider = Mock()
         custom_caps = AiCapabilities(vision=True, audio=True)
-        mock_provider.capabilities.return_value = custom_caps
+        mock_provider.get_capabilities.return_value = custom_caps
         
         # Create client with mock provider
         settings = AiSettings(provider="openai", api_key="fake-key")
@@ -97,7 +97,7 @@ class TestAiClientCapabilities:
         
         # Should delegate to provider
         caps = client.capabilities()
-        assert caps is custom_caps
+        assert caps == custom_caps
         assert caps.vision is True
         assert caps.audio is True
     

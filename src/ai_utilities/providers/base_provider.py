@@ -123,7 +123,7 @@ class BaseProvider(ABC):
         """
         pass
     
-    def capabilities(self) -> AiCapabilities:
+    def get_capabilities(self) -> AiCapabilities:
         """Return the capabilities supported by this provider configuration.
         
         Returns:

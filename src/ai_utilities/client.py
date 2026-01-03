@@ -1139,7 +1139,23 @@ class AiClient:
         Returns:
             AiCapabilities object indicating what features are supported.
         """
-        return self.provider.capabilities()
+        # Check if provider has the new get_capabilities method
+        if hasattr(self.provider, 'get_capabilities'):
+            return self.provider.get_capabilities()
+        else:
+            # Fallback for providers with capabilities property
+            # Convert ProviderCapabilities to AiCapabilities
+            from ..capabilities import AiCapabilities
+            
+            provider_caps = self.provider.capabilities
+            return AiCapabilities(
+                text=provider_caps.supports_text,
+                vision=provider_caps.supports_images,  # Map images to vision
+                audio=False,  # Not supported by ProviderCapabilities
+                files=provider_caps.supports_files_upload,
+                embeddings=False,  # Not supported by ProviderCapabilities
+                tools=provider_caps.supports_tools
+            )
     
     def get_usage_stats(self):
         """Get current usage statistics if tracking is enabled.
