@@ -81,17 +81,25 @@ jobs:
     
     - name: Install with extras
       run: |
+        set -e  # Exit on any error
+        
         if [ "${{ matrix.option }}" = "null" ]; then
           echo "Testing minimal install..."
-          pip install . --no-cache-dir --timeout=300
+          pip install . --no-cache-dir --timeout=300 --progress-bar off
         elif [ "${{ matrix.option }}" = "complete" ]; then
           echo "Testing complete install..."
-          pip install .[complete] --no-cache-dir --timeout=300
+          pip install .[complete] --no-cache-dir --timeout=300 --progress-bar off
+        elif [ "${{ matrix.option }}" = "dev" ]; then
+          echo "Testing install with [dev] (includes dev tools)..."
+          echo "This may take longer due to mypy, ruff, and other dev dependencies..."
+          pip install .[dev] --no-cache-dir --timeout=300 --progress-bar off --no-build-isolation
         else
           echo "Testing install with [${{ matrix.option }}]..."
-          pip install .[${{ matrix.option }}] --no-cache-dir --timeout=300
+          pip install .[${{ matrix.option }}] --no-cache-dir --timeout=300 --progress-bar off
         fi
-      timeout-minutes: 10
+        
+        echo "Installation completed successfully!"
+      timeout-minutes: 20
     
     - name: Verify import works
       run: |
