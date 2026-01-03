@@ -160,8 +160,30 @@ jobs:
         import time
         import os
         from ai_utilities import AiSettings, AiClient
+        from ai_utilities.providers.base_provider import BaseProvider
         
-        # Set fake API key to avoid errors in performance test
+        # Create a minimal mock provider for performance testing
+        class MockProvider(BaseProvider):
+            def ask(self, prompt, **kwargs):
+                return 'Mock response'
+            
+            def ask_many(self, prompts, **kwargs):
+                return ['Mock response'] * len(prompts)
+            
+            def upload_file(self, path, **kwargs):
+                class MockFile:
+                    def __init__(self):
+                        self.file_id = 'mock-id'
+                        self.filename = 'mock.txt'
+                return MockFile()
+            
+            def download_file(self, file_id):
+                return b'Mock content'
+            
+            def generate_image(self, prompt, **kwargs):
+                return ['mock-url']
+        
+        # Set fake API key to avoid errors
         os.environ['AI_API_KEY'] = 'fake-key-for-performance-testing'
         
         # Test import speed
@@ -170,10 +192,10 @@ jobs:
         import_time = time.time() - start
         print(f'OK: Import time: {import_time:.3f}s')
         
-        # Test object creation speed (with fake API key)
+        # Test object creation speed (with mock provider)
         start = time.time()
-        settings = AiSettings(provider='openai_compatible', base_url='http://localhost:11434/v1', api_key='dummy-key')
-        client = AiClient(settings=settings)
+        settings = AiSettings(provider='openai')  # Provider name doesn't matter for mock
+        client = AiClient(settings=settings, provider=MockProvider())
         creation_time = time.time() - start
         print(f'OK: Object creation time: {creation_time:.3f}s')
         
