@@ -86,21 +86,21 @@ class MetricsCollector:
         self.create_gauge("memory_usage_bytes", "Memory usage in bytes")
         self.create_counter("rate_limit_hits_total", "Total rate limit hits")
     
-    def create_counter(self, name: str, description: str, labels: Dict[str, str] = None) -> None:
+    def create_counter(self, name: str, description: str, labels: Optional[Dict[str, str]] = None) -> None:
         """Create a counter metric."""
         with self.lock:
             if labels:
                 key = self._make_key(name, labels)
                 self.labels[key] = labels
     
-    def create_gauge(self, name: str, description: str, labels: Dict[str, str] = None) -> None:
+    def create_gauge(self, name: str, description: str, labels: Optional[Dict[str, str]] = None) -> None:
         """Create a gauge metric."""
         with self.lock:
             if labels:
                 key = self._make_key(name, labels)
                 self.labels[key] = labels
     
-    def create_histogram(self, name: str, description: str, buckets: List[float] = None, labels: Dict[str, str] = None) -> None:
+    def create_histogram(self, name: str, description: str, buckets: Optional[List[float]] = None, labels: Optional[Dict[str, str]] = None) -> None:
         """Create a histogram metric."""
         if buckets is None:
             buckets = [0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0, float('inf')]
@@ -111,19 +111,19 @@ class MetricsCollector:
             if labels:
                 self.labels[key] = labels
     
-    def increment_counter(self, name: str, value: float = 1.0, labels: Dict[str, str] = None) -> None:
+    def increment_counter(self, name: str, value: float = 1.0, labels: Optional[Dict[str, str]] = None) -> None:
         """Increment a counter metric."""
         key = self._make_key(name, labels or {})
         with self.lock:
             self.counters[key] += value
     
-    def set_gauge(self, name: str, value: float, labels: Dict[str, str] = None) -> None:
+    def set_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
         """Set a gauge metric value."""
         key = self._make_key(name, labels or {})
         with self.lock:
             self.gauges[key] = value
     
-    def observe_histogram(self, name: str, value: float, labels: Dict[str, str] = None) -> None:
+    def observe_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
         """Observe a value for a histogram metric."""
         key = self._make_key(name, labels or {})
         with self.lock:
@@ -134,7 +134,7 @@ class MetricsCollector:
                 if value <= bucket.upper_bound:
                     bucket.count += 1
     
-    def record_timer(self, name: str, duration: float, labels: Dict[str, str] = None) -> None:
+    def record_timer(self, name: str, duration: float, labels: Optional[Dict[str, str]] = None) -> None:
         """Record a timer metric."""
         key = self._make_key(name, labels or {})
         with self.lock:
@@ -258,7 +258,7 @@ class OpenTelemetryExporter:
     
     def _convert_metric(self, metric: MetricValue) -> Dict[str, Any]:
         """Convert MetricValue to OpenTelemetry format."""
-        base_metric = {
+        base_metric: Dict[str, Any] = {
             "name": metric.name,
             "description": metric.description,
             "unit": metric.unit
@@ -389,7 +389,7 @@ metrics = MetricsRegistry()
 
 
 # Decorator for automatic metrics collection
-def monitor_requests(metric_name: str = None):
+def monitor_requests(metric_name: Optional[str] = None):
     """Decorator to automatically monitor function calls."""
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -422,7 +422,7 @@ def monitor_requests(metric_name: str = None):
 class Timer:
     """Context manager for timing operations."""
     
-    def __init__(self, metric_name: str, labels: Dict[str, str] = None):
+    def __init__(self, metric_name: str, labels: Optional[Dict[str, str]] = None):
         self.metric_name = metric_name
         self.labels = labels or {}
         self.start_time = None
