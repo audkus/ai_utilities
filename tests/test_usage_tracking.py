@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from src.ai_utilities import (
+from ai_utilities import (
     AiClient,
     UsageScope,
     UsageTracker,

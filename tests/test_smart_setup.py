@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.ai_utilities import AiClient, AiSettings
+from ai_utilities import AiClient, AiSettings
 from tests.fake_provider import FakeProvider
 
 
@@ -106,7 +106,7 @@ class TestSmartSetup:
         # Remove API key from environment
         monkeypatch.delenv("AI_API_KEY", raising=False)
         
-        with patch('src.ai_utilities.client.AiSettings.interactive_setup') as mock_interactive:
+        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive:
             mock_settings = MagicMock()
             mock_settings.api_key = "new-key"
             mock_interactive.return_value = mock_settings
@@ -120,7 +120,7 @@ class TestSmartSetup:
         """Test smart_setup when API key exists."""
         monkeypatch.setenv("AI_API_KEY", "test-key")
         
-        with patch('src.ai_utilities.client.AiSettings._should_check_for_updates', return_value=False):
+        with patch('ai_utilities.AiSettings._should_check_for_updates', return_value=False):
             settings = AiSettings.smart_setup()
             
             assert settings.api_key == "test-key"
@@ -130,20 +130,21 @@ class TestSmartSetup:
         fake_provider = FakeProvider()
         
         # Test smart_setup=True
-        with patch('src.ai_utilities.client.AiSettings.smart_setup') as mock_smart:
-            mock_settings = AiSettings()
+        with patch('ai_utilities.AiSettings.smart_setup') as mock_smart:
+            mock_settings = MagicMock()
+            mock_settings.api_key = "smart-setup-key"
             mock_smart.return_value = mock_settings
             
             client = AiClient(provider=fake_provider, smart_setup=True)
             
             mock_smart.assert_called_once()
-            assert client.settings == mock_settings
+            assert client.settings.api_key == "smart-setup-key"
 
     def test_ai_client_check_for_updates(self, monkeypatch):
         """Test AiClient.check_for_updates method."""
         monkeypatch.setenv("AI_API_KEY", "test-key")
         
-        with patch('src.ai_utilities.client.AiSettings.check_for_updates') as mock_check:
+        with patch('ai_utilities.AiSettings.check_for_updates') as mock_check:
             mock_check.return_value = {
                 'has_updates': True,
                 'new_models': ['test-model-1o'],
@@ -157,13 +158,13 @@ class TestSmartSetup:
             assert result['has_updates'] is True
 
     def test_ai_client_check_for_updates_force(self, monkeypatch):
-        """Test AiClient.check_for_updates with force_check=True."""
+        """Test AiClient.check_for_updates with force=True."""
         monkeypatch.setenv("AI_API_KEY", "test-key")
         
-        with patch('src.ai_utilities.client.AiSettings.check_for_updates') as mock_check:
+        with patch('ai_utilities.AiSettings.check_for_updates') as mock_check:
             mock_check.return_value = {
-                'has_updates': True,
-                'new_models': ['test-model-1o'],
+                'has_updates': False,
+                'new_models': [],
                 'cached': False
             }
             
@@ -171,7 +172,7 @@ class TestSmartSetup:
             result = client.check_for_updates(force_check=True)
             
             mock_check.assert_called_once_with("test-key", check_interval_days=0)
-            assert result['has_updates'] is True
+            assert result['has_updates'] is False
 
     def test_ai_client_check_for_updates_no_api_key(self):
         """Test AiClient.check_for_updates when no API key is configured."""
@@ -188,7 +189,7 @@ class TestSmartSetup:
         fake_provider = FakeProvider()
         client = AiClient(provider=fake_provider, auto_setup=False)
         
-        with patch('src.ai_utilities.client.AiSettings.interactive_setup') as mock_interactive:
+        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive:
             mock_settings = AiSettings(api_key="new-key", model="test-model-1o")
             mock_interactive.return_value = mock_settings
             

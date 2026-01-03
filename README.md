@@ -2,7 +2,7 @@
 
 A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
 
-## 🎯 Why This Library Exists
+## Why This Library Exists
 
 - **Unified Interface** - Single API for multiple AI providers (OpenAI, Anthropic, local models)
 - **Smart Caching** - Automatic response caching with namespace isolation and TTL support
@@ -51,7 +51,7 @@ pip install ai-utilities[openai]
 export OPENAI_API_KEY="your-openai-key"
 ```
 
-### 🌟 Recommended Usage
+### Recommended Usage
 
 ```python
 from ai_utilities import AiClient
@@ -78,17 +78,81 @@ print(f"Tokens used: {result.usage.total_tokens}")
 - ✓ **Error handling** - Clear, actionable error messages
 
 **Where to look next:**
-- **🌟 Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
-- **📚 Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
-- **🎵 Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
+- **Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
+- **Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
+- **Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
 - Configuration reference → [Configuration](#configuration)
-- **🚨 Error Handling Guide** → [`docs/error_handling.md`](docs/error_handling.md)
+- **Error Handling Guide** → [`docs/error_handling.md`](docs/error_handling.md)
 - **Smart Caching Guide** → [`docs/caching.md`](docs/caching.md)
 - **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
 - **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
 - **Test Dashboard** → [`docs/test_dashboard.md`](docs/test_dashboard.md)
 - API reference → Use `help(AiClient)` in Python
 - Changelog → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
+
+---
+
+## Why use ai_utilities?
+
+This library is designed as a thin, opinionated utility layer for AI interactions. It is not a replacement for raw APIs, but rather provides consistent interfaces and common patterns for experimentation, testing, and long-term maintainability.
+
+### Without ai_utilities
+
+```python
+# Direct API usage - provider-specific and repetitive
+import openai
+
+client = openai.OpenAI(api_key="your-key")
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Explain AI"}],
+    temperature=0.7,
+    max_tokens=1000
+)
+
+# Manual error handling, no caching, no rate limiting
+# Different API for each provider
+# No structured JSON extraction
+# No usage tracking
+```
+
+### With ai_utilities
+
+```python
+# Consistent interface across providers
+from ai_utilities import AiClient
+
+client = AiClient()  # Automatic configuration
+response = client.ask("Explain AI")
+
+# Built-in caching, rate limiting, error handling
+# Same API for OpenAI, Anthropic, Ollama, etc.
+# Structured JSON extraction included
+# Usage tracking and monitoring
+```
+
+### Design Goals
+
+ai_utilities is intended to provide:
+
+- **Provider abstraction** - Switch between cloud and local models without code changes
+- **Configuration management** - Environment-based settings with Pydantic validation
+- **Test isolation** - Mock providers and deterministic testing patterns
+- **Caching and rate limiting** - Built-in cost control and performance optimization
+- **Error handling consistency** - Unified exception model across providers
+- **JSON robustness** - Reliable structured output extraction with error recovery
+- **Extensibility** - Designed for future multimodal and analytics features
+
+### Design Intent
+
+This library optimizes for development velocity and long-term maintainability rather than maximum feature access. It provides consistent patterns for common AI interaction tasks while allowing advanced users to access provider-specific capabilities through submodules when needed.
+
+The approach is designed to support experimentation, testing, and production applications that benefit from:
+- Unified interfaces across multiple providers
+- Built-in testing utilities and mock providers
+- Consistent error handling and logging
+- Automatic caching and rate limiting
+- Type safety and configuration validation
 
 ---
 
@@ -127,7 +191,7 @@ pip install ai-utilities[all]
 
 ---
 
-## 📋 API Stability (v1.x)
+## API Stability (v1.x)
 
 The following are considered stable public APIs and will follow semantic versioning:
 
@@ -146,7 +210,7 @@ The following are considered stable public APIs and will follow semantic version
 
 ---
 
-## 🎵 Audio Processing
+## Audio Processing
 
 AI Utilities now includes comprehensive audio processing capabilities:
 
@@ -196,7 +260,7 @@ transcription, new_audio = processor.transcribe_and_generate(
 )
 ```
 
-**📚 Complete Audio Guide → [`docs/audio_processing.md`](docs/audio_processing.md)**
+**Complete Audio Guide → [`docs/audio_processing.md`](docs/audio_processing.md)**
 
 ---
 
@@ -529,27 +593,23 @@ python scripts/dashboard.py --full-suite --debug-hangs
 python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output-timeout-seconds 120
 ```
 
-**🚀 Enterprise Features:**
+**Enterprise Features:**
 - ✓ **Chunked Execution**: Individual file isolation prevents cascading failures
 - ✓ **Resilient Timeouts**: Robust hang detection with stack dump capabilities
 - ✓ **Complete Visibility**: Shows exactly which tests are excluded and why
 - ✓ **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
-- ✓ **Self-Reference Prevention**: Dashboard tests excluded to avoid circular execution
-- ✓ **Real-time Progress**: Live test execution with per-file granularity
-- ✓ **Provider Coverage**: Analysis across 9 AI providers
-- ✓ **Production Readiness**: Clear assessment and failure diagnostics
 
-**📊 Test Visibility Example:**
+**Test Visibility Example:**
 ```
-📊 Test Discovery Summary:
-   📋 Total tests available: 524
-   🔧 Integration tests: 46 (excluded by default)
-   🎛️  Dashboard tests: 30 (excluded to prevent self-reference)
-   ✓ Tests to execute: 448
-   📉 Excluded tests: 76
+Test Discovery Summary:
+   Total tests available: 524
+   Integration tests: 46 (excluded by default)
+   Dashboard tests: 30 (excluded to prevent self-reference)
+   Tests to execute: 448
+   Excluded tests: 76
 ```
 
-**🔧 Debugging Features:**
+**Debugging Features:**
 - `--debug-hangs`: Enable SIGQUIT stack dumps and verbose pytest output
 - `--suite-timeout-seconds`: Hard timeout for entire test suite
 - `--no-output-timeout-seconds`: Timeout if no output received
@@ -572,23 +632,23 @@ ruff format .             # Format code
 mypy src/                 # Type checking
 ```
 
-### 🏗️ Test Architecture
+### Test Architecture
 
 The project uses a clean, resilient test architecture designed for enterprise reliability:
 
-**📋 Test Categories:**
+**Test Categories:**
 - **Unit Tests** (447 tests): Core functionality, provider implementations, utilities
 - **Integration Tests** (46 tests): Real API calls, requires `AI_API_KEY` 
 - **Dashboard Tests** (30 tests): Self-validation of the dashboard runner
 - **Total**: 523 tests with clear separation and purpose
 
-**🔒 Test Isolation:**
+**Test Isolation:**
 - Dashboard excludes its own tests to prevent self-reference issues
 - Integration tests excluded by default, opt-in via `--integration`
 - Chunked execution prevents cascading failures from hanging files
 - Environment variable isolation prevents test interference
 
-**🚀 Resilience Features:**
+**Resilience Features:**
 - Individual file timeouts prevent suite-wide hangs
 - Stack dump capabilities for debugging hanging tests
 - Partial progress reporting shows accurate completion status
@@ -605,17 +665,69 @@ ai_utilities/
 └── pyproject.toml        # Package config
 ```
 
----
-
 ## Documentation & Links
 
 - **Full Documentation** → [`docs/`](docs/)
+- **Support & Maintenance** → [`SUPPORT.md`](SUPPORT.md)
+- **Reliability Guide** → [`docs/reliability_guide.md`](docs/reliability_guide.md)
+- **Security Guide** → [`docs/security_guide.md`](docs/security_guide.md)
+- **Migration Guide** → [`MIGRATION.md`](MIGRATION.md)
 - **Usage Examples** → [`examples/`](examples/)
 - **Provider Setup** → [`docs/all-providers-guide.md`](docs/all-providers-guide.md)
 - **Testing Guide** → [`docs/testing-setup.md`](docs/testing-setup.md)
+- **Troubleshooting** → [`docs/provider_troubleshooting.md`](docs/provider_troubleshooting.md)
 - **GitHub Releases** → [Releases](https://github.com/audkus/ai_utilities/releases)
 - **Issues & Discussions** → [GitHub](https://github.com/audkus/ai_utilities)
 - **Contributing** → [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+## Continuous Integration & Testing
+
+### CI Pipeline Tiers
+
+**Required Tier (Blocks Pull Requests)**
+- Unit tests across Python 3.9-3.12
+- Type checking with mypy
+- Code linting with flake8
+- Minimal installation verification
+
+**Optional Tier (Informational Only)**
+- Integration tests (requires API keys)
+- Security scanning with safety and bandit
+- Cross-platform compatibility tests
+- Documentation validation
+- Performance benchmarks
+
+### What CI Guarantees
+
+For v1.x releases, CI guarantees:
+- All unit tests pass
+- Type checking passes
+- Code follows style guidelines
+- Package installs correctly
+- No breaking changes to public API
+
+### What Is Informational
+
+The following are monitored but do not block releases:
+- External provider availability (provider health checks)
+- Performance benchmarks (for regression detection)
+- Security scan results (for awareness)
+- Integration test results (depends on API keys)
+
+### Running Tests Locally
+
+```bash
+# Required tests (what CI checks)
+pytest tests/ -m "not integration and not dashboard"
+
+# All tests including integration
+pytest tests/ -m "not dashboard"
+
+# Performance benchmarks (optional)
+python tools/benchmarks.py
+```
 
 ---
 
