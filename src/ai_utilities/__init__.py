@@ -42,7 +42,8 @@ Example Usage:
 """
 
 from .async_client import AsyncAiClient
-from .client import AiClient, AiSettings, create_client
+from .client import AiClient, create_client
+from .config_models import AiSettings
 from .file_models import UploadedFile
 from .json_parsing import JsonParseError, parse_json_from_text
 from .models import AskResult
