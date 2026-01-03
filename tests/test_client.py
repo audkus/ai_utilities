@@ -1,6 +1,6 @@
 """Tests for the AI client."""
 
-from src.ai_utilities import AiClient, AiSettings
+from ai_utilities import AiClient, AiSettings
 from tests.fake_provider import FakeProvider
 
 
@@ -79,7 +79,7 @@ def test_parameter_override():
 
 def test_create_client_convenience():
     """Test the create_client convenience function."""
-    from src.ai_utilities import create_client
+    from ai_utilities import create_client
     
     client = create_client(api_key="test-key", model="test-model-2")
     assert client.settings.api_key == "test-key"

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.ai_utilities import AiClient, AiSettings
+from ai_utilities import AiClient, AiSettings
 from tests.fake_provider import FakeProvider
 
 
