@@ -86,3 +86,37 @@ After release:
 - Manual testing harness should be run before final release
 - No breaking changes introduced in this release
 - All existing tests must continue to pass
+
+## PyPI Trusted Publishing Setup
+
+### Prerequisites (one-time setup)
+Before automatic publishing will work, the PyPI Trusted Publisher must be configured manually in the PyPI UI:
+
+1. Go to https://pypi.org/project/ai-utilities/settings/publishing/
+2. Add a new trusted publisher with:
+   - **Owner**: `audkus` (GitHub organization/username)
+   - **Repository**: `ai_utilities`
+   - **Workflow**: `.github/workflows/publish.yml`
+   - **Environment**: (leave blank for default)
+
+### Pre-release Validation Checklist
+Before tagging a release:
+
+- [ ] Version bumped in `pyproject.toml` (e.g., `1.0.0b1`)
+- [ ] Version updated in `src/ai_utilities/__init__.py`
+- [ ] CHANGELOG.md updated with release notes
+- [ ] All tests passing: `python -m pytest`
+- [ ] Build artifacts created: `python -m build`
+- [ ] PyPI Trusted Publisher configured (one-time setup)
+
+### Publishing Process
+```bash
+# Create and push tag - this triggers automatic publishing
+git tag -a v1.0.0b1 -m "Release v1.0.0b1"
+git push origin v1.0.0b1
+
+# Monitor: https://github.com/audkus/ai_utilities/actions/workflows/publish.yml
+# Check: https://pypi.org/project/ai-utilities/
+```
+
+**Important**: Publishing is fully automatic after tag push - no manual PyPI upload needed.
