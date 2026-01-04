@@ -369,14 +369,6 @@ def main():
     print("Make sure you have sample documents like 'sample_report.pdf' in the examples directory.")
     print()
     
-    # Check API key
-    import os
-    if not os.getenv("AI_API_KEY"):
-        print("❌ AI_API_KEY environment variable not set!")
-        print("Please set your OpenAI API key:")
-        print("export AI_API_KEY='your-openai-key'")
-        return
-    
     try:
         # Run examples
         print("Choose an example to run:")

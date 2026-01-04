@@ -294,14 +294,6 @@ def main():
     print("to create comprehensive content packages.")
     print()
     
-    # Check API key
-    import os
-    if not os.getenv("AI_API_KEY"):
-        print("❌ AI_API_KEY environment variable not set!")
-        print("Please set your OpenAI API key:")
-        print("export AI_API_KEY='your-openai-key'")
-        return
-    
     try:
         # Run workflow examples
         print("Choose a workflow to run:")
