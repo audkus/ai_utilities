@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
+import requests
 
 # Add scripts to path for imports
 scripts_dir = os.path.join(os.path.dirname(__file__), '..', 'scripts')
@@ -105,8 +106,8 @@ class TestFastChatSetupHelper:
         
         helper = FastChatSetupHelper()
         
-        # Mock failed response
-        mock_get.side_effect = Exception("Connection failed")
+        # Mock failed response with the correct exception type
+        mock_get.side_effect = requests.exceptions.RequestException("Connection failed")
         
         running, info, url = helper.check_fastchat_running()
         
@@ -166,8 +167,8 @@ class TestFastChatSetupHelper:
         helper = FastChatSetupHelper()
         base_url = "http://127.0.0.1:8000"
         
-        # Mock failed API response
-        mock_get.side_effect = Exception("API error")
+        # Mock failed API response with the correct exception type
+        mock_get.side_effect = requests.exceptions.RequestException("API error")
         
         success, info = helper.test_fastchat_api(base_url)
         
@@ -237,8 +238,8 @@ class TestFastChatSetupHelper:
         helper = FastChatSetupHelper()
         base_url = "http://127.0.0.1:8000"
         
-        # Mock connection error
-        mock_get.side_effect = Exception("Connection failed")
+        # Mock connection error with the correct exception type that the script catches
+        mock_get.side_effect = requests.exceptions.ConnectionError("Connection failed")
         
         issues = helper.troubleshoot_connection(base_url)
         
@@ -246,27 +247,16 @@ class TestFastChatSetupHelper:
         assert any("Cannot connect to server" in issue for issue in issues)
         assert any("Make sure FastChat API server is running" in issue for issue in issues)
     
-    @patch('builtins.input')
-    @patch('builtins.__import__')
-    @patch('requests.get')
-    def test_run_diagnostic_success(self, mock_get, mock_import, mock_input):
+    def test_run_diagnostic_success(self):
         """Test successful diagnostic run."""
         from fastchat_setup import FastChatSetupHelper
         
         helper = FastChatSetupHelper()
         
-        # Mock FastChat installation
-        mock_fastchat = Mock()
-        mock_fastchat.__version__ = '1.0.0'
-        mock_import.return_value = mock_fastchat
-        
-        # Mock running server
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "data": [{"id": "vicuna-7b-v1.5"}]
-        }
-        mock_get.return_value = mock_response
+        # Mock the helper methods to return expected values
+        helper.check_fastchat_installation = Mock(return_value=(True, "FastChat v1.0.0 installed"))
+        helper.check_fastchat_running = Mock(return_value=(True, "FastChat running at http://127.0.0.1:8000", "http://127.0.0.1:8000"))
+        helper.test_fastchat_api = Mock(return_value=(True, "API working"))
         
         # Capture stdout
         from io import StringIO
