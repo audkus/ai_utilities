@@ -1,11 +1,11 @@
-# Release Pipeline - Production Deployment
+# Release Pipeline - Validation and GitHub Release
 #
-# PURPOSE: Automated PyPI releases triggered by git tags
-# TRIGGER: Git tags matching pattern v* (e.g., v1.0.0)
-# BLOCKS RELEASES: Yes - failures prevent PyPI publication
+# PURPOSE: Validate releases and create GitHub releases
+# TRIGGER: Git tags matching pattern v* (e.g., v1.0.0, v1.0.0b1)
+# BLOCKS RELEASES: Yes - failures prevent GitHub release creation
 # EXPECTED RUNTIME: ~10-15 minutes
 #
-# SAFETY: This is the ONLY path to PyPI. Manual uploads are not supported.
+# NOTE: PyPI publishing is handled separately by publish.yml workflow
 
 name: Release
 
@@ -124,42 +124,9 @@ jobs:
         path: dist/
         retention-days: 30
 
-  publish:
-    name: Publish to PyPI
-    needs: build
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: release-packages-${{ github.run_number }}
-        path: dist/
-    
-    - name: Verify tag format
-      run: |
-        TAG="${{ github.ref_name }}"
-        # Support both stable versions (v1.0.0) and pre-releases (v1.0.0b1, v1.0.0rc1, v1.0.0a1)
-        if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9]*)?$ ]]; then
-          echo "Invalid tag format: $TAG"
-          echo "Expected format: v1.0.0 or v1.0.0b1 (pre-release)"
-          exit 1
-        fi
-        echo "Tag format validated: $TAG"
-    
-    - name: Upload to PyPI
-      if: startsWith(github.ref, 'refs/tags/v')
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        echo "Publishing to PyPI..."
-        twine upload dist/*
-        echo "Published to PyPI successfully"
-
   create-release:
     name: Create GitHub Release
-    needs: [validate-version, publish]
+    needs: [validate-version, test]
     runs-on: ubuntu-latest
     
     steps:
@@ -186,38 +153,37 @@ jobs:
         - All tests passing
         - Type checks passing
         - Package validation passed
-        - Published to PyPI
+        - PyPI publishing handled by separate workflow
         "
 
   notify:
     name: Release Results
-    needs: [validate-version, test, build, publish, create-release]
+    needs: [validate-version, test, build, create-release]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
     - name: Notify success
-      if: ${{ needs.validate-version.result == 'success' && needs.test.result == 'success' && needs.build.result == 'success' && needs.publish.result == 'success' && needs.create-release.result == 'success' }}
+      if: ${{ needs.validate-version.result == 'success' && needs.test.result == 'success' && needs.build.result == 'success' && needs.create-release.result == 'success' }}
       run: |
         echo "SUCCESS: Release ${{ github.ref_name }} completed successfully!"
         echo ""
         echo "Version consistency validated"
         echo "All tests passed"
         echo "Package built and validated"
-        echo "Published to PyPI"
         echo "GitHub release created"
+        echo "PyPI publishing handled by separate workflow"
         echo ""
         echo "Installation: pip install ai-utilities==${{ github.ref_name }}"
     
     - name: Notify failure
-      if: ${{ needs.validate-version.result == 'failure' || needs.test.result == 'failure' || needs.build.result == 'failure' || needs.publish.result == 'failure' || needs.create-release.result == 'failure' }}
+      if: ${{ needs.validate-version.result == 'failure' || needs.test.result == 'failure' || needs.build.result == 'failure' || needs.create-release.result == 'failure' }}
       run: |
         echo "FAILED: Release ${{ github.ref_name }} failed!"
         echo ""
         echo "Version Check: ${{ needs.validate-version.result }}"
         echo "Tests: ${{ needs.test.result }}"
         echo "Build: ${{ needs.build.result }}"
-        echo "Publish: ${{ needs.publish.result }}"
         echo "Release: ${{ needs.create-release.result }}"
         echo ""
         echo "Check the workflow logs for details"
