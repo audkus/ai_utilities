@@ -17,7 +17,7 @@ def analyze_document():
     # 2. Upload your document
     print("Uploading document...")
     uploaded_file = client.upload_file(
-        "my_document.pdf",  # Path to your document
+        "sample_document.pdf",  # Sample document included with examples
         purpose="assistants"
     )
     print(f"✅ Document uploaded: {uploaded_file.file_id}")
