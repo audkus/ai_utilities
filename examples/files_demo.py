@@ -304,14 +304,6 @@ def main():
     print("🚀 Files API Demo")
     print("=" * 50)
     
-    # Check if API key is available
-    import os
-    if not os.getenv("AI_API_KEY"):
-        print("❌ AI_API_KEY environment variable not set!")
-        print("Please set your OpenAI API key:")
-        print("export AI_API_KEY='your-openai-key'")
-        return
-    
     try:
         # Run demonstrations
         demo_basic_operations()

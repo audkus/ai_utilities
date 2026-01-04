@@ -35,11 +35,11 @@ htmlcov/
 *.bak
 *.tmp
 
-# Audio files at repo root (allow under examples/assets/)
+# Audio files (allow under examples/)
 *.wav
 *.mp3
-!examples/assets/*.wav
-!examples/assets/*.mp3
+!examples/*.wav
+!examples/*.mp3
 
 # C extensions
 *.so
