@@ -1,5 +1,8 @@
 # AI Utilities
 
+[![CI](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/ai-utilities.svg)](https://badge.fury.io/py/ai-utilities)
+
 A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
 
 ## Why This Library Exists
