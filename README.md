@@ -570,6 +570,21 @@ trend_analysis = client.ask(
 
 ## Development
 
+### Releases & Publishing
+
+Releases are published automatically to PyPI when version tags are pushed:
+
+- **Trigger**: Push a tag matching `v*` (e.g., `v1.0.0`, `v1.0.0b1`)
+- **Authentication**: Uses PyPI Trusted Publishing (OIDC) - no secrets stored in GitHub
+- **Supports**: Both stable releases and pre-releases (beta, alpha, release candidate)
+
+Example release workflow:
+```bash
+git tag -a v1.0.0b1 -m "Release v1.0.0b1"
+git push origin v1.0.0b1
+# GitHub Actions will automatically publish to PyPI
+```
+
 ### Running Tests
 
 #### 🧪 Enhanced Test Dashboard (Recommended)
