@@ -337,9 +337,9 @@ class TestFastChatSetupHelper:
         mock_diagnostic.return_value = True
         
         with patch('sys.argv', ['fastchat_setup.py']):
-            main()
-        
-        mock_diagnostic.assert_called_once()
+            with patch('sys.exit') as mock_exit:
+                main()
+                mock_exit.assert_called_once_with(0)
     
     @patch('fastchat_setup.FastChatSetupHelper.check_fastchat_running')
     def test_main_function_check(self, mock_check):
@@ -349,9 +349,9 @@ class TestFastChatSetupHelper:
         mock_check.return_value = (True, "FastChat running", "http://127.0.0.1:8000")
         
         with patch('sys.argv', ['fastchat_setup.py', '--check']):
-            main()
-        
-        mock_check.assert_called_once()
+            with patch('sys.exit') as mock_exit:
+                main()
+                mock_exit.assert_called_once_with(0)
 
 
 if __name__ == "__main__":
