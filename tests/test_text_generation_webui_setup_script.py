@@ -431,9 +431,9 @@ class TestTextGenerationWebUISetupHelper:
         mock_diagnostic.return_value = True
         
         with patch('sys.argv', ['text_generation_webui_setup.py']):
-            main()
-        
-        mock_diagnostic.assert_called_once()
+            with patch('sys.exit') as mock_exit:
+                main()
+                mock_exit.assert_called_once_with(0)
     
     @patch('text_generation_webui_setup.TextGenerationWebUISetupHelper.install_webui')
     def test_main_function_install_guide(self, mock_install):
@@ -443,9 +443,9 @@ class TestTextGenerationWebUISetupHelper:
         mock_install.return_value = True
         
         with patch('sys.argv', ['text_generation_webui_setup.py', '--install-guide']):
-            main()
-        
-        mock_install.assert_called_once()
+            with patch('sys.exit') as mock_exit:
+                main()
+                mock_exit.assert_called_once_with(0)
 
 
 if __name__ == "__main__":

@@ -731,6 +731,28 @@ python tools/benchmarks.py
 
 ---
 
+## Manual Verification (Pre-Release)
+
+For pre-release verification, AI Utilities includes a comprehensive manual testing harness:
+
+### Quick Start
+```bash
+# Run Tier 1 tests (all providers, no network required)
+./manual_tests/run_manual_tests.sh
+
+# Run Tier 1 + Tier 2 tests (OpenAI with real API calls)
+export AI_API_KEY="your-openai-key"
+./manual_tests/run_manual_tests.sh --tier2
+```
+
+### Test Tiers
+- **Tier 1:** Validates all provider configurations without network access
+- **Tier 2:** End-to-end testing with real API calls (OpenAI only by default)
+
+For detailed instructions and release criteria, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+
+---
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

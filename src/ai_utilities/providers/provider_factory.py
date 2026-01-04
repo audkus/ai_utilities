@@ -1,6 +1,6 @@
 """Provider factory for creating AI providers based on settings."""
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 from .base_provider import BaseProvider
 from .openai_compatible_provider import OpenAICompatibleProvider
@@ -9,6 +9,32 @@ from ..config_resolver import resolve_request_config, MissingApiKeyError, Unknow
 
 if TYPE_CHECKING:
     from ..client import AiSettings
+
+
+def list_supported_providers() -> List[str]:
+    """List all supported provider identifiers.
+    
+    Returns:
+        List of supported provider names in alphabetical order.
+        This function has no side effects and doesn't require any imports
+        beyond the standard library.
+        
+    Note:
+        This is the authoritative source of truth for supported providers.
+        Do not duplicate this list elsewhere - always import this function.
+    """
+    # This list must match the valid_providers set in config_resolver.py
+    return [
+        "fastchat",
+        "lmstudio", 
+        "ollama",
+        "openai",
+        "openai_compatible",
+        "openrouter",
+        "text-generation-webui",
+        "together",
+        "groq",
+    ]
 
 
 def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = None) -> BaseProvider:

@@ -7,6 +7,10 @@ ai_usage.json
 # Duplicate venv (keeping .venv/)
 venv/
 
+# Manual test outputs
+.manual_venvs/
+reports/
+
 # Build artifacts
 /ai_statistics.json
 /build/
