@@ -24,7 +24,7 @@ def analyze_document_sync():
     try:
         # Upload a PDF, Word doc, or any text file
         uploaded_file = client.upload_file(
-            "financial_report.pdf",  # Your document path
+            "sample_report.pdf",  # Sample report included with examples
             purpose="assistants"
         )
         print(f"✅ Document uploaded: {uploaded_file.file_id}")
@@ -366,7 +366,7 @@ def main():
     print("🚀 Document AI Demo")
     print("=" * 60)
     print("This demo shows how to upload documents and use them in AI conversations.")
-    print("Make sure you have documents like 'financial_report.pdf' in the current directory.")
+    print("Make sure you have sample documents like 'sample_report.pdf' in the examples directory.")
     print()
     
     # Check API key
