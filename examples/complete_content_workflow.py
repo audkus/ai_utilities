@@ -27,7 +27,7 @@ def create_content_from_document():
     try:
         # Step 1: Upload and analyze document
         print("1. Uploading document for analysis...")
-        uploaded_file = client.upload_file("product_specification.pdf", purpose="assistants")
+        uploaded_file = client.upload_file("sample_report.pdf", purpose="assistants")
         print(f"✅ Document uploaded: {uploaded_file.file_id}")
         
         # Step 2: Extract key concepts for image generation

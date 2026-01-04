@@ -16,6 +16,9 @@ recursive-include docs *.rst
 # Include examples (but not generated artifacts)
 recursive-include examples *.py
 recursive-include examples *.md
+recursive-include examples *.pdf
+recursive-include examples *.wav
+recursive-include examples *.mp3
 recursive-include examples/assets *.wav *.mp3
 
 # Include test files (for sdist, not wheel)
