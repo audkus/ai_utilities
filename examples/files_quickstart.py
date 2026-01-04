@@ -13,14 +13,14 @@ def basic_example():
     client = AiClient()
     
     # Upload a file
-    file = client.upload_file("document.pdf", purpose="assistants")
+    file = client.upload_file("sample_document.pdf", purpose="assistants")
     print(f"Uploaded: {file.file_id}")
     
     # Download as bytes
     content = client.download_file(file.file_id)
     
     # Download to file
-    path = client.download_file(file.file_id, to_path="downloaded.pdf")
+    path = client.download_file(file.file_id, to_path="downloaded_document.pdf")
 
 # Async file operations
 async def async_example():
@@ -39,7 +39,7 @@ def error_handling_example():
     client = AiClient()
     
     try:
-        file = client.upload_file("report.pdf")
+        file = client.upload_file("sample_report.pdf")
     except FileTransferError as e:
         print(f"Upload failed: {e}")
     except ProviderCapabilityError as e:
