@@ -277,14 +277,6 @@ def main():
     print("Make sure you have an OpenAI API key with DALL-E access.")
     print()
     
-    # Check API key
-    import os
-    if not os.getenv("AI_API_KEY"):
-        print("❌ AI_API_KEY environment variable not set!")
-        print("Please set your OpenAI API key:")
-        print("export AI_API_KEY='your-openai-key'")
-        return
-    
     try:
         # Run examples
         basic_image_generation()
