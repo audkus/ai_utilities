@@ -5,6 +5,40 @@ All notable changes to AI Utilities will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0b1] - 2026-01-04
+
+### 🎯 Beta Pre-Release
+
+First beta release of AI Utilities with comprehensive provider support and manual testing harness.
+
+#### Provider Support
+- **Multi-Provider Architecture** - Support for 9 AI providers: OpenAI, Groq, Together, Anthropic, OpenRouter, Ollama, LM Studio, Text-Generation-WebUI, FastChat
+- **OpenAI-Compatible API** - Unified interface for OpenAI-compatible providers
+- **Provider Factory Pattern** - Centralized provider creation and configuration
+- **Graceful Dependency Handling** - Optional provider dependencies with clear error messages
+
+#### Files API Integration
+- **File Upload Support** - Upload documents, images, and audio files
+- **File Download Support** - Download generated files and results
+- **Content Management** - List, retrieve, and manage uploaded files
+- **Multi-Format Support** - PDF, images, audio, and text files
+
+#### Testing & Quality
+- **Manual Testing Harness** - Comprehensive pre-release verification system
+- **Tier 1 Tests** - Non-network validation across all providers
+- **Tier 2 Tests** - End-to-end testing with real API calls
+- **Provider Monitoring** - Health checks and bug prevention tests
+- **Test Isolation** - Clean test environments with proper mocking
+
+#### Configuration & Setup
+- **Smart API Key Resolution** - Automatic detection from environment and config files
+- **Pydantic Settings** - Type-safe configuration management
+- **Environment Overrides** - Flexible configuration options
+- **Setup Helpers** - Interactive configuration for local providers
+
+#### Breaking Changes
+- None
+
 ## [1.0.0] - 2025-01-03
 
 ### 🚀 Major Release - Production Ready
