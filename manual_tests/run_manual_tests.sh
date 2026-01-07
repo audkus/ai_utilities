@@ -15,6 +15,7 @@ REPORT_FILE="$REPORTS_DIR/manual_report_$TIMESTAMP.md"
 
 # Default settings
 RUN_TIER2=false
+RUN_FULL=false
 TIER2_PROVIDER="openai"
 TIMEOUT=30
 
@@ -23,6 +24,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --tier2)
             RUN_TIER2=true
+            shift
+            ;;
+        --full)
+            RUN_FULL=true
             shift
             ;;
         --provider)
@@ -34,8 +39,9 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "Usage: $0 [--tier2] [--provider <name>] [--timeout <seconds>]"
+            echo "Usage: $0 [--tier2] [--full] [--provider <name>] [--timeout <seconds>]"
             echo "  --tier2     Run Tier 2 tests (requires AI_API_KEY)"
+            echo "  --full      Install with OpenAI extras for full provider testing"
             echo "  --provider  Override Tier 2 provider (default: openai)"
             echo "  --timeout   Set timeout in seconds (default: 30)"
             exit 0
@@ -58,9 +64,14 @@ echo "Setting up isolated environment in $VENV_DIR..."
 python3 -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
-# Install package in minimal mode
-echo "Installing ai-utilities in minimal mode..."
-pip install "$PROJECT_ROOT" > /dev/null 2>&1
+# Install package (with extras if Tier 2 or Full is enabled)
+if [ "$RUN_TIER2" = true ] || [ "$RUN_FULL" = true ]; then
+    echo "Installing ai-utilities with OpenAI extras..."
+    pip install "$PROJECT_ROOT[openai]" > /dev/null 2>&1
+else
+    echo "Installing ai-utilities in minimal mode..."
+    pip install "$PROJECT_ROOT" > /dev/null 2>&1
+fi
 
 # Initialize report
 cat > "$REPORT_FILE" << EOF
@@ -69,11 +80,12 @@ cat > "$REPORT_FILE" << EOF
 **Timestamp:** $(date)
 **Python:** $(python --version)
 **Tier 2:** $([ "$RUN_TIER2" = true ] && echo "Enabled ($TIER2_PROVIDER)" || echo "Disabled")
+**Full Install:** $([ "$RUN_FULL" = true ] && echo "Enabled" || echo "Disabled")
 **Timeout:** ${TIMEOUT}s
 
 ## Environment Setup
 - Virtual Environment: $VENV_DIR
-- Package: ai-utilities (minimal install)
+- Package: ai-utilities $([ "$RUN_TIER2" = true ] || [ "$RUN_FULL" = true ] && echo "(with OpenAI extras)" || echo "(minimal install)")
 
 EOF
 
@@ -316,12 +328,26 @@ if [ "$RUN_TIER2" = true ]; then
     echo ""
     echo "=== TIER 2 TESTS ($TIER2_PROVIDER, Real Calls) ==="
     
-    cat >> "$REPORT_FILE" << EOF
+    # Check for API key
+    if [ -z "${AI_API_KEY:-}" ]; then
+        echo "⚠️  WARNING: AI_API_KEY not set - Tier 2 tests will be skipped"
+        echo "   To run Tier 2 tests, set: export AI_API_KEY=your-key-here"
+        echo ""
+        cat >> "$REPORT_FILE" << EOF
+## Tier 2 Results ($TIER2_PROVIDER, Real Calls)
+
+⚠️ **SKIPPED**: AI_API_KEY not set
+To run Tier 2 tests: \`export AI_API_KEY=your-key-here\`
+
+EOF
+    else
+        echo "✅ API key found - running Tier 2 tests"
+        cat >> "$REPORT_FILE" << EOF
 ## Tier 2 Results ($TIER2_PROVIDER, Real Calls)
 
 EOF
-    
-    run_tier2_test "$TIER2_PROVIDER"
+        run_tier2_test "$TIER2_PROVIDER"
+    fi
 fi
 
 # Summary
