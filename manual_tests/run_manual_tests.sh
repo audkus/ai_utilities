@@ -86,8 +86,34 @@ cat > "$REPORT_FILE" << EOF
 ## Environment Setup
 - Virtual Environment: $VENV_DIR
 - Package: ai-utilities $([ "$RUN_TIER2" = true ] || [ "$RUN_FULL" = true ] && echo "(with OpenAI extras)" || echo "(minimal install)")
+- Environment File: $([ -f "$PROJECT_ROOT/.env" ] && echo ".env loaded" || echo "no .env found")
 
 EOF
+
+# Load environment variables from .env file if it exists
+load_env_file() {
+    local env_file="$PROJECT_ROOT/.env"
+    if [ -f "$env_file" ]; then
+        echo "Loading environment variables from .env file..."
+        # Load .env file, ignoring comments and empty lines
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            # Skip comments and empty lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line// }" ]] && continue
+            
+            # Export key=value pairs
+            if [[ "$line" =~ ^[A-Z_][A-Z0-9_]*= ]]; then
+                export "$line"
+            fi
+        done < "$env_file"
+        echo "Environment variables loaded successfully"
+    else
+        echo "No .env file found - using default environment"
+    fi
+}
+
+# Load environment before running tests
+load_env_file
 
 # Function to run tier 1 test for a provider
 run_tier1_test() {
