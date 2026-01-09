@@ -3,7 +3,7 @@
 ## 🌟 Start Here: Getting Started
 
 **File**: `getting_started.py`  
-**This is the recommended starting point for all new users.**
+**Basic usage examples for new users.**
 
 Shows the simplest workflow:
 - Install and import
@@ -73,7 +73,7 @@ Most examples require:
 # Basic install
 pip install ai-utilities
 
-# With providers (recommended for examples)
+# With providers (includes all dependencies for examples)
 pip install ai-utilities[openai]
 
 # Set your API key

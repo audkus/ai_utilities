@@ -54,7 +54,7 @@ pip install ai-utilities[openai]
 export OPENAI_API_KEY="your-openai-key"
 ```
 
-### Recommended Usage
+### Usage Examples
 
 ```python
 from ai_utilities import AiClient
@@ -81,7 +81,7 @@ print(f"Tokens used: {result.usage.total_tokens}")
 - ✅ **Error handling** - Clear, actionable error messages
 
 **Where to look next:**
-- **Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
+- **Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - Basic usage examples
 - **Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
 - **Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
 - Configuration reference → [Configuration](#configuration)
@@ -392,11 +392,11 @@ response2 = client.ask("What is machine learning?")
 
 ### Cache Backends
 
-| Backend | Persistence | Speed | Use Case |
-|---------|-------------|-------|----------|
-| **null** | None | Fastest | Testing, fresh responses |
-| **memory** | Process lifetime | Fast | Development, short-lived apps |
-| **sqlite** | Persistent | Medium | Production, long-running apps |
+| Backend | Persistence | Performance | Use Case |
+|---------|-------------|------------|----------|
+| **null** | None | High performance | Testing, fresh responses |
+| **memory** | Process lifetime | High performance | Development, short-lived apps |
+| **sqlite** | Persistent | Medium performance | Production, long-running apps |
 
 ### SQLite Cache with Namespaces
 
