@@ -10,9 +10,9 @@
 #
 # MATRIX RATIONALE:
 # - Python 3.9: Minimum supported version (oldest dependencies)
+# - Python 3.10: Middle version (comprehensive coverage)
 # - Python 3.11: Middle version (most common in production)
 # - Python 3.12: Latest version (future compatibility)
-# - Removed 3.10 to reduce CI runtime while maintaining coverage
 
 name: CI
 
@@ -30,7 +30,7 @@ jobs:
     strategy:
       matrix:
         # Use minimal matrix for PRs (oldest + newest), full matrix for main
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
@@ -83,7 +83,7 @@ jobs:
     strategy:
       matrix:
         # Use minimal matrix for PRs (oldest + newest), full matrix for main
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     continue-on-error: true  # Never block releases
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     continue-on-error: true  # Never block releases
     
     steps:
@@ -193,12 +193,12 @@ jobs:
         "
 
   compatibility-test:
-    name: Cross-Platform Test (Optional)
+    name: Cross-Platform Compatibility (Optional)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     continue-on-error: true  # Never block releases
     
     steps:
