@@ -55,7 +55,6 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
         return provider
     
     try:
-        # Resolve configuration using the new resolver
         config = resolve_request_config(settings)
 
         # Create provider based on resolved provider

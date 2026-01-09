@@ -133,7 +133,6 @@ class AiClient:
         """
         if settings is None:
             if smart_setup:
-                # Use smart setup (checks for missing API key + new models)
                 settings = AiSettings.smart_setup()
             elif auto_setup:
                 # Use basic interactive setup (only if API key missing)
@@ -306,7 +305,6 @@ class AiClient:
         """Manually trigger reconfiguration of settings."""
         print("=== Reconfiguring AI Settings ===")
         self.settings = AiSettings.interactive_setup(force_reconfigure=True)
-        # Update provider with new settings
         from .providers.openai_provider import OpenAIProvider
         self.provider = OpenAIProvider(self.settings)
     
@@ -394,7 +392,6 @@ class AiClient:
         progress = ProgressIndicator(show=self.show_progress)
         
         with progress:
-            # Use new provider interface with caching for single prompts
             if isinstance(prompt, list):
                 # Phase 1: Don't cache list prompts
                 response = self.provider.ask_many(prompt, return_format=return_format, **request_params)
@@ -734,7 +731,6 @@ class AiClient:
                         self.usage_tracker.record_usage(estimated_tokens)
                     return cached_result
             
-            # First attempt
             try:
                 response_text = self.provider.ask_text(prompt, **request_params)
                 parsed_result = parse_json_from_text(response_text)
@@ -748,7 +744,6 @@ class AiClient:
                 if max_repairs <= 0:
                     raise e
                 
-                # Repair attempts
                 last_response = response_text
                 last_error = str(e)
                 
@@ -768,7 +763,6 @@ class AiClient:
                         last_error = str(repair_error)
                         continue
                 
-                # All repair attempts failed - don't cache failures
                 raise JsonParseError(
                     f"Failed to parse JSON after {max_repairs + 1} attempts. Last error: {last_error}",
                     last_response,

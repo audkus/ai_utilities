@@ -105,7 +105,6 @@ class OpenAICompatibleProvider(BaseProvider):
             message: Warning message to display
         """
         if warning_key not in self._shown_warnings:
-            # Add a newline to separate from progress indicator
             print(f"\n{message}")
             logger.warning(message)
             self._shown_warnings.add(warning_key)

@@ -269,16 +269,90 @@ transcription, new_audio = processor.transcribe_and_generate(
 
 ## Configuration
 
+### Quick Setup
+
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Choose your setup option:**
+
+   **Option 1: Single Provider (Simple)**
+   ```bash
+   # Uncomment ONE provider in .env
+   AI_API_KEY=sk-your-openai-key-here
+   AI_PROVIDER=openai
+   AI_BASE_URL=https://api.openai.com/v1
+   ```
+
+   **Option 2: Multi-Provider (Advanced)**
+   ```bash
+   # Use individual keys for explicit provider selection
+   OPENAI_API_KEY=your-openai-key-here
+   GROQ_API_KEY=your-groq-key-here
+   TOGETHER_API_KEY=your-together-key-here
+   OPENROUTER_API_KEY=your-openrouter-key-here
+   ```
+
+   **Option 3: Local Providers Only**
+   ```bash
+   # No API keys needed - just uncomment base URLs
+   TEXT_GENERATION_WEBUI_BASE_URL=http://localhost:5000/v1
+   FASTCHAT_BASE_URL=http://localhost:8000/v1
+   ```
+
 ### Environment Variables
 
-| Variable | AiSettings Field | Type | Default | Description |
-|----------|------------------|------|---------|-------------|
-| `AI_API_KEY` | `api_key` | str | None | OpenAI API key |
-| `AI_PROVIDER` | `provider` | str | "openai" | Provider name |
-| `AI_MODEL` | `model` | str | "test-model-1" | Default model to use |
-| `AI_TEMPERATURE` | `temperature` | float | 0.7 | Response randomness (0.0-2.0) |
-| `AI_BASE_URL` | `base_url` | str | None | Custom API endpoint |
-| `AI_TIMEOUT` | `timeout` | int | 30 | Request timeout (seconds) |
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| **Primary Provider** | | | |
+| `AI_API_KEY` | str | None | Primary API key (works with any provider) |
+| `AI_PROVIDER` | str | "openai" | Primary provider name |
+| `AI_BASE_URL` | str | None | Primary provider base URL |
+| **Multi-Provider Keys** | | | |
+| `OPENAI_API_KEY` | str | None | OpenAI-specific key |
+| `GROQ_API_KEY` | str | None | Groq-specific key |
+| `TOGETHER_API_KEY` | str | None | Together AI-specific key |
+| `OPENROUTER_API_KEY` | str | None | OpenRouter-specific key |
+| **Local Providers** | | | |
+| `TEXT_GENERATION_WEBUI_BASE_URL` | str | None | Text Generation WebUI URL |
+| `FASTCHAT_BASE_URL` | str | None | FastChat URL |
+| **General Settings** | | | |
+| `AI_MODEL` | str | "test-model-1" | Default model to use |
+| `AI_TEMPERATURE` | float | 0.7 | Response randomness (0.0-2.0) |
+| `AI_TIMEOUT` | int | 30 | Request timeout (seconds) |
+
+### Supported Providers
+
+| Provider | Primary Setup | Multi-Provider | Base URL |
+|----------|---------------|----------------|----------|
+| OpenAI | `AI_PROVIDER=openai` | `provider="openai"` | `https://api.openai.com/v1` |
+| Groq | `AI_PROVIDER=groq` | `provider="groq"` | `https://api.groq.com/openai/v1` |
+| Together AI | `AI_PROVIDER=together` | `provider="together"` | `https://api.together.xyz/v1` |
+| OpenRouter | `AI_PROVIDER=openrouter` | `provider="openrouter"` | `https://openrouter.ai/api/v1` |
+| Ollama | N/A | `provider="ollama"` | `http://localhost:11434/v1` |
+| LM Studio | N/A | `provider="lmstudio"` | `http://localhost:1234/v1` |
+| Text Generation WebUI | N/A | `provider="text-generation-webui"` | `http://localhost:5000/v1` |
+| FastChat | N/A | `provider="fastchat"` | `http://localhost:8000/v1` |
+
+### Usage Examples
+
+```python
+from ai_utilities import AiClient
+
+# Primary provider (uses AI_API_KEY setup)
+client = AiClient()
+response = client.ask("Hello!")
+
+# Multi-provider (explicit selection)
+openai_client = AiClient(provider="openai")
+groq_client = AiClient(provider="groq") 
+together_client = AiClient(provider="together")
+
+# Local providers
+local_client = AiClient(provider="lmstudio", base_url="http://localhost:1234/v1")
+```
 
 ### Configuration Precedence
 
