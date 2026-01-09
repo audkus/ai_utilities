@@ -25,7 +25,7 @@ pytest -q
 ```
 - **Status**: ✅ Clean test suite
 - **Results**: 557+ passed, 0 unexpected failures
-- **Expected Failures**: 4 (missing API keys - proper behavior)
+- **Integration Tests**: ⏭️ Skipped by design (require API keys)
 - **Coverage**: Comprehensive coverage of all core functionality
 
 ### Code Quality
