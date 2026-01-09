@@ -2,9 +2,11 @@
 
 ## Supported Python Versions
 
-- **Python 3.9+** - Minimum supported version
-- **Python 3.10, 3.11, 3.12** - Fully tested
-- **Python 3.13+** - Expected to work but not yet tested
+- **Python 3.9** - Minimum supported version, fully tested in CI
+- **Python 3.10** - Fully tested in CI (comprehensive coverage)
+- **Python 3.11** - Fully tested in CI (most common in production)
+- **Python 3.12** - Fully tested in CI (latest stable)
+- **Python 3.13+** - Expected to work but not yet tested in CI
 
 ## What "Stable API" Means
 
