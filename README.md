@@ -157,6 +157,40 @@ The approach is designed to support experimentation, testing, and production app
 - Automatic caching and rate limiting
 - Type safety and configuration validation
 
+### When to Use ai_utilities
+
+✅ **Multi-provider projects** - Switch between OpenAI, Groq, Together, etc. without code changes  
+✅ **Production applications** - Need caching, rate limiting, and error handling  
+✅ **Team collaboration** - Standardized patterns and consistent interfaces  
+✅ **Cost-sensitive applications** - Built-in usage tracking and caching  
+✅ **Testing environments** - Mock providers and deterministic testing  
+✅ **Rapid prototyping** - Quick setup with sensible defaults  
+
+### When NOT to Use ai_utilities
+
+❌ **Maximum feature access** - Need provider-specific features (fine-tuning, tools, etc.)  
+❌ **Simple one-off scripts** - Overhead not justified for single API calls  
+❌ **Ultra-low latency requirements** - Direct SDK has minimal overhead  
+❌ **Provider-specific optimizations** - Need deep integration with one provider  
+❌ **Memory-constrained environments** - Additional layer adds memory footprint  
+❌ **Learning provider APIs** - Want to learn raw OpenAI/Groq/etc. APIs directly  
+
+### Direct SDK Alternative
+
+If ai_utilities doesn't fit your needs, consider using provider SDKs directly:
+
+```python
+# Direct OpenAI SDK - maximum feature access
+import openai
+client = openai.OpenAI()
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello"}],
+    tools=[{"type": "function", "function": {...}}],  # Provider-specific features
+    stream=True  # Streaming responses
+)
+```
+
 ---
 
 ## Install
