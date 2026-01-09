@@ -211,7 +211,6 @@ ERROR_CODE_MAPPING: Dict[str, type] = {
     ErrorCode.CONFIG_MISSING_REQUIRED_FIELD.value: ConfigurationError,
     ErrorCode.CONFIG_VALIDATION_FAILED.value: ConfigurationError,
     
-    # Legacy configuration errors (mapped to new system)
     ErrorCode.CONFIG_API_KEY_MISSING.value: ConfigurationError,
     ErrorCode.CONFIG_MODEL_NAME_MISSING.value: ConfigurationError,
     ErrorCode.CONFIG_INITIALIZATION_FAILED.value: ConfigurationError,
