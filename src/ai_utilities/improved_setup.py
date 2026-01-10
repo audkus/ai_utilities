@@ -156,7 +156,7 @@ class AIProviderRegistry:
         for provider_id in provider_ids:
             provider = self.get_provider(provider_id)
             if provider:
-                help_text += f'pip install "ai-utilities[{provider_id}"]"\n'
+                help_text += f'pip install "ai-utilities[{provider_id}]"\n'
         
         help_text += "\nProviders will be available immediately after installation.\n"
         return help_text
