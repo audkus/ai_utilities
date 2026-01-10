@@ -7,25 +7,27 @@ A Python library for AI model interaction with **Enhanced Setup System**, Pydant
 
 ## Why This Library Exists
 
-- **🚀 Enhanced Setup System** - Interactive, guided configuration with smart detection and multi-provider support
+- **Enhanced Setup System** - Interactive, guided configuration with smart detection and multi-provider support
 - **Unified Interface** - Single API for multiple AI providers (OpenAI, Anthropic, local models)
 - **Smart Caching** - Automatic response caching with namespace isolation and TTL support
 - **Rate Limiting** - Built-in rate limit management prevents API throttling and cost overruns
 - **Type Safety** - Full Pydantic integration with comprehensive mypy support
 - **Enterprise Ready** - Production-tested with comprehensive error handling and monitoring
+- **Professional Language** - Clean, professional output suitable for enterprise environments
 
 ## 🆚 Compared to Using Provider SDK Directly
 
 | Feature | Direct SDK | AI Utilities |
 |---------|------------|--------------|
-| **🚀 Setup Experience** | X Manual configuration | Interactive guided setup |
-| **Multi-provider** | X Separate SDKs needed | Single interface |
-| **Caching** | X Manual implementation | Built-in, automatic |
-| **Rate Limits** | X Manual tracking | Automatic management |
+| **Setup Experience** | Manual configuration | Interactive guided setup |
+| **Multi-provider** | Separate SDKs needed | Single interface |
+| **Caching** | Manual implementation | Built-in, automatic |
+| **Rate Limits** | Manual tracking | Automatic management |
 | **Type Safety** | Basic types | Full Pydantic models |
 | **Error Handling** | Provider-specific | Unified exceptions |
 | **Configuration** | Environment variables | Pydantic settings + .env generation |
-| **Testing** | X Manual mocking | Test utilities included |
+| **Testing** | Manual mocking | Test utilities included |
+| **Professional Output** | Variable | Clean, professional text |
 
 **Use AI Utilities when you need:**
 - Production applications with multiple AI providers
@@ -48,7 +50,7 @@ A Python library for AI model interaction with **Enhanced Setup System**, Pydant
 
 ## Quickstart
 
-### 🚀 Option 1: Enhanced Setup (Recommended)
+### Option 1: Enhanced Setup (Recommended)
 
 ```bash
 # Install with provider support
@@ -69,7 +71,7 @@ result = client.ask(
 print(result.text)
 ```
 
-### ⚡ Option 2: Manual Setup
+### Option 2: Manual Setup
 
 ```bash
 # Install with provider support
@@ -99,13 +101,80 @@ print(result.text)
 print(f"Tokens used: {result.usage.total_tokens}")
 ```
 
-**Key Benefits:**
-- ✅ **Automatic caching** - Same question = instant response, no API cost
-- ✅ **Rate limiting** - Never get throttled or surprised by costs
-- ✅ **Type safety** - Full IDE support with autocomplete
-- ✅ **Error handling** - Clear, actionable error messages
+## IDE Testing & Development
 
-**Where to look next:**
+### PyCharm Setup (Recommended)
+
+For the best development experience with PyCharm:
+
+1. **Project Setup**:
+   ```bash
+   # Clone the repository
+   git clone https://github.com/audkus/ai_utilities.git
+   cd ai_utilities
+   
+   # Create virtual environment
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   
+   # Install in development mode
+   pip install -e ".[dev,test]"
+   ```
+
+2. **PyCharm Configuration**:
+   - Open the project in PyCharm
+   - Set Python interpreter to `.venv/bin/python`
+   - Enable "pytest" as the default test runner
+   - Configure test pattern: `tests/`
+
+3. **Running Tests in PyCharm**:
+   - Right-click on `tests/` directory → "Run 'pytest in tests'"
+   - Or use the Test Runner tab for individual test files
+   - For debugging: Right-click test → "Debug 'test_name'"
+
+4. **Manual Testing Scripts**:
+   ```bash
+   # Debug tiered setup system
+   python manual_tests/debug_standard_setup.py
+   
+   # Test provider installation help
+   python manual_tests/minimal_test.py
+   ```
+
+### Other IDEs (VS Code, etc.)
+
+```bash
+# Install development dependencies
+pip install -e ".[dev,test]"
+
+# Run tests directly
+python -m pytest tests/
+
+# Run with coverage
+python -m pytest --cov=ai_utilities tests/
+
+# Debug specific test
+python -m pytest tests/test_specific.py -v -s
+```
+
+### Development Workflow
+
+1. **Make Changes**: Edit source code in `src/ai_utilities/`
+2. **Run Tests**: Use your IDE's test runner or command line
+3. **Manual Verification**: Use scripts in `manual_tests/`
+4. **Check Style**: `ruff check src/` and `mypy src/`
+5. **Documentation**: Update README and docstrings as needed
+
+## Key Benefits
+
+- **Automatic caching** - Same question = instant response, no API cost
+- **Rate limiting** - Never get throttled or surprised by costs
+- **Type safety** - Full IDE support with autocomplete
+- **Error handling** - Clear, actionable error messages
+- **Professional output** - Clean, enterprise-ready text output
+
+## Where to Look Next
+
 - **Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - Basic usage examples
 - **Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
 - **Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
@@ -328,7 +397,7 @@ transcription, new_audio = processor.transcribe_and_generate(
 
 ## Configuration
 
-### 🚀 Enhanced Setup System (Recommended)
+### Enhanced Setup System (Recommended)
 
 The **Enhanced Setup System** provides an interactive, guided configuration experience with **tiered setup levels** that makes setting up AI Utilities effortless:
 
@@ -340,45 +409,55 @@ run_interactive_setup()
 # Option 2: Direct tiered setup
 from ai_utilities.improved_setup import run_tiered_setup
 run_tiered_setup()
-
-# Option 3: Automatic detection (triggers if no configuration found)
-from ai_utilities import AiClient
-client = AiClient()  # Triggers setup if no configuration found
 ```
 
-#### 🎯 Tiered Setup Levels:
+**Key Features:**
+- **Tiered Setup Levels**: Basic, Standard, and Expert configurations
+- **Smart Detection**: Automatically finds and uses existing settings
+- **Multi-Provider Support**: Configure multiple API keys in one session
+- **Professional Output**: Clean, enterprise-ready text interface
+- **Boolean Input Handling**: Case-insensitive with whitespace tolerance
+- **Secure Configuration**: Automatic .env file generation with proper permissions
 
-**🔵 Basic Setup (Recommended for new users)**
-- Essential parameters only (6 settings)
-- Quick 5-minute configuration
-- Perfect for simple applications
+#### Setup Levels:
 
-**🟡 Standard Setup (Recommended for most users)**
-- Includes caching and usage tracking (10 settings)
-- Optimized for production use
-- 10-minute configuration
+**Basic Setup** (6 essential parameters):
+- Model selection
+- Temperature control  
+- Max tokens (response length)
+- Request timeout
+- Base URL (advanced)
+- Provider selection
 
-**🔴 Expert Setup (Advanced users)**
-- Full configuration control (18+ settings)
-- Knowledge indexing and advanced caching
-- Complete customization
+**Standard Setup** (10 parameters, includes caching):
+- All Basic parameters
+- Update check frequency
+- Response caching (enabled/disabled)
+- Cache backend (sqlite/memory/redis)
+- Cache TTL (time-to-live)
+- Usage tracking scope
 
-#### ✨ Key Features:
+**Expert Setup** (18 parameters, full control):
+- All Standard parameters
+- Knowledge indexing
+- Advanced caching options
+- Custom rate limiting
+- Monitoring and analytics
+- Performance optimization
 
-- **🎯 Smart Detection** - Automatically loads existing settings and prompts to use/edit/create
-- **📋 Tiered Setup** - Choose Basic/Standard/Expert based on your needs
-- **📋 Clean Provider Menu** - Simple, uncluttered selection without marketing language
-- **🔢 Multi-Provider Selection** - Choose multiple providers: `1, 3, 5` or `7` for all
-- **␣ Flexible Input** - Accepts spaces: `1, 3, 5` works the same as `1,3,5`
-- **📝 Detailed Parameter Explanations** - Clear guidance with examples for each setting
-- **∞ Unlimited Options** - Max tokens and timeout can be set to unlimited
-- **🔗 Provider-Specific Defaults** - Base URLs automatically set per provider
-- **📅 Date/Time Stamps** - Generated .env files include creation timestamp
-- **🔒 Secure Configuration** - Hidden API key input, secure file permissions (600)
-- **🎯 Targeted Help** - Installation guidance only for missing providers
-- **⏰ Configurable Updates** - Set update check frequency (7/30/90 days or disabled)
+#### Key Features:
 
-#### 🎮 Interactive Setup Experience:
+- **Multi-Provider Selection** - Choose multiple providers: `1, 3, 5` or `7` for all
+- **Flexible Input** - Accepts spaces: `1, 3, 5` works the same as `1,3,5`
+- **Detailed Parameter Explanations** - Clear guidance with examples for each setting
+- **Unlimited Options** - Max tokens and timeout can be set to unlimited
+- **Provider-Specific Defaults** - Base URLs automatically set per provider
+- **Date/Time Stamps** - Generated .env files include creation timestamp
+- **Secure Configuration** - Hidden API key input, secure file permissions (600)
+- **Targeted Help** - Installation guidance only for missing providers
+- **Configurable Updates** - Set update check frequency (7/30/90 days or disabled)
+
+#### Interactive Setup Experience:
 
 ```
 === AI Utilities Setup ===
