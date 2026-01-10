@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 from io import StringIO
 
-sys.path.insert(0, 'src')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities.improved_setup import ImprovedSetupSystem, SetupLevel, AIProvider, ConfigurationParameter
 
