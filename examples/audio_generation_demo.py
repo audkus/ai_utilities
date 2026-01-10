@@ -21,9 +21,9 @@ def main():
     print("🎤 AI Utilities Audio Generation Demo")
     print("=" * 50)
     
-    # Initialize client with enhanced setup system
-    print("🔧 Initializing AI client with enhanced setup...")
-    client = AiClient()
+    # Initialize client with existing configuration (no interactive setup)
+    print("🔧 Initializing AI client with existing configuration...")
+    client = AiClient(auto_setup=False)  # Don't trigger interactive setup for demos
     
     # Initialize the audio processor with the configured client
     processor = AudioProcessor(client=client)
