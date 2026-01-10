@@ -55,37 +55,43 @@ class CompleteIntegrationTest:
             '30'  # Update check days
         ]
         
-        with patch('builtins.input', side_effect=mock_inputs):
-            with patch('builtins.print'):  # Suppress print output for cleaner test
-                with patch.object(self.setup, '_configure_multi_provider_env_vars') as mock_env:
-                    mock_env.return_value = {"OPENAI_API_KEY": "test-key"}
-                    
-                    result = self.setup.interactive_tiered_setup()
-                    
-                    # Verify result structure
-                    assert result["setup_level"] == "basic"
-                    assert "providers" in result
-                    assert "config" in result
-                    assert "env_vars" in result
-                    
-                    # Verify basic configuration
-                    config = result["config"]
-                    assert config["model"] == "gpt-4"
-                    assert config["temperature"] == 0.7
-                    assert config["max_tokens"] == 1000
-                    assert config["timeout"] == 60
-                    assert config["update_check_days"] == 30
-                    
-                    # Verify .env file was created
-                    env_file = Path(self.temp_dir) / ".env"
-                    assert env_file.exists()
-                    
-                    content = env_file.read_text()
-                    assert "AI_MODEL=gpt-4" in content
-                    assert "AI_UPDATE_CHECK_DAYS=30" in content
-                    assert "# Setup Level: Basic" in content
-        
-        print("✅ Complete Basic Setup Flow: PASSED")
+        try:
+            with patch('builtins.input', side_effect=mock_inputs):
+                with patch('builtins.print'):  # Suppress print output for cleaner test
+                    with patch.object(self.setup, '_configure_multi_provider_env_vars') as mock_env:
+                        mock_env.return_value = {"OPENAI_API_KEY": "test-key"}
+                        
+                        result = self.setup.interactive_tiered_setup()
+                        
+                        # Verify result structure
+                        assert result["setup_level"] == "basic"
+                        assert "providers" in result
+                        assert "config" in result
+                        assert "env_vars" in result
+                        
+                        # Verify basic configuration
+                        config = result["config"]
+                        assert config["model"] == "gpt-4"
+                        assert config["temperature"] == 0.7
+                        assert config["max_tokens"] == 1000
+                        assert config["timeout"] == 60
+                        assert config["update_check_days"] == 30
+                        
+                        # Verify .env file was created
+                        env_file = Path(self.temp_dir) / ".env"
+                        assert env_file.exists()
+                        
+                        content = env_file.read_text()
+                        assert "AI_MODEL=gpt-4" in content
+                        assert "AI_UPDATE_CHECK_DAYS=30" in content
+                        assert "# Setup Level: Basic" in content
+            
+            print("✅ Complete Basic Setup Flow: PASSED")
+        except Exception as e:
+            print(f"❌ test_complete_basic_setup_flow failed: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     def test_complete_standard_setup_flow(self):
         """Test complete standard setup flow with caching parameters"""
@@ -106,33 +112,49 @@ class CompleteIntegrationTest:
             'per_process'  # Usage scope
         ]
         
-        with patch('builtins.input', side_effect=mock_inputs):
-            with patch('builtins.print'):
-                with patch.object(self.setup, '_configure_multi_provider_env_vars') as mock_env:
-                    mock_env.return_value = {"OPENAI_API_KEY": "test-key"}
-                    
-                    result = self.setup.interactive_tiered_setup()
-                    
-                    # Verify result structure
-                    assert result["setup_level"] == "standard"
-                    
-                    # Verify standard configuration includes caching
-                    config = result["config"]
-                    assert config["model"] == "gpt-3.5-turbo"
-                    assert config["update_check_days"] == 7
-                    assert config["cache_enabled"] == True
-                    assert config["cache_backend"] == "sqlite"
-                    assert config["cache_ttl_s"] == 1800
-                    assert config["usage_scope"] == "per_process"
-                    
-                    # Verify .env file includes standard settings
-                    env_file = Path(self.temp_dir) / ".env"
-                    content = env_file.read_text()
-                    assert "AI_CACHE_ENABLED=true" in content
-                    assert "AI_CACHE_BACKEND=sqlite" in content
-                    assert "# Setup Level: Standard" in content
-        
-        print("✅ Complete Standard Setup Flow: PASSED")
+        try:
+            with patch('builtins.input', side_effect=mock_inputs):
+                with patch('builtins.print'):  # Suppress print output for cleaner test
+                    with patch.object(self.setup, '_configure_multi_provider_env_vars') as mock_env:
+                        mock_env.return_value = {"OPENAI_API_KEY": "test-key"}
+                        
+                        result = self.setup.interactive_tiered_setup()
+                        
+                        # Verify result structure
+                        assert result["setup_level"] == "standard"
+                        
+                        # Verify standard configuration includes caching
+                        config = result["config"]
+                        assert config["model"] == "gpt-3.5-turbo"
+                        assert config["temperature"] == 0.8
+                        assert config["max_tokens"] == 2000
+                        assert config["timeout"] == 45
+                        assert config["update_check_days"] == 7
+                        assert config["cache_enabled"] == True
+                        assert config["cache_backend"] == "sqlite"
+                        assert config["cache_ttl_s"] == 1800
+                        assert config["usage_scope"] == "per_process"
+                        
+                        # Verify .env file was created with standard setup level
+                        env_file = Path(self.temp_dir) / ".env"
+                        assert env_file.exists()
+                        
+                        content = env_file.read_text()
+                        print(f"DEBUG: .env file content:\n{content}")
+                        print(f"DEBUG: Config keys: {list(config.keys())}")
+                        print(f"DEBUG: cache_enabled value: {config.get('cache_enabled', 'NOT FOUND')}")
+                        
+                        assert "AI_MODEL=gpt-3.5-turbo" in content
+                        assert "AI_UPDATE_CHECK_DAYS=7" in content
+                        assert "AI_CACHE_ENABLED=true" in content
+                        assert "# Setup Level: Standard" in content
+            
+            print("✅ Complete Standard Setup Flow: PASSED")
+        except Exception as e:
+            print(f"❌ test_complete_standard_setup_flow failed: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     def test_existing_settings_detection_and_loading(self):
         """Test detection and loading of existing settings"""

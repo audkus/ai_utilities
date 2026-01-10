@@ -261,6 +261,42 @@ class ConfigurationParameterRegistry:
                 value_type=int,
                 examples=["7", "30", "90", ""],
                 how_to_choose="7 days for active development, 30 days for regular use, 90 days for stable environments. Leave empty to disable automatic checks and check manually."
+            ),
+            "cache_enabled": ConfigurationParameter(
+                name="Enable Response Caching",
+                env_var="AI_CACHE_ENABLED",
+                description="Cache responses to avoid repeated API calls and costs",
+                default_value=False,
+                value_type=bool,
+                examples=["true", "false"],
+                how_to_choose="Enable for production to reduce costs and improve response times"
+            ),
+            "cache_backend": ConfigurationParameter(
+                name="Cache Backend",
+                env_var="AI_CACHE_BACKEND",
+                description="Backend to use for response caching",
+                default_value="sqlite",
+                value_type=str,
+                examples=["sqlite", "memory", "redis"],
+                how_to_choose="SQLite for persistent caching, memory for temporary, redis for distributed"
+            ),
+            "cache_ttl_s": ConfigurationParameter(
+                name="Cache TTL (seconds)",
+                env_var="AI_CACHE_TTL_S",
+                description="Time to live for cached responses in seconds",
+                default_value=3600,
+                value_type=int,
+                examples=["300", "1800", "3600", "7200"],
+                how_to_choose="Shorter TTL for fresh data, longer TTL for cost savings"
+            ),
+            "usage_scope": ConfigurationParameter(
+                name="Usage Tracking Scope",
+                env_var="AI_USAGE_SCOPE",
+                description="Scope for usage tracking and analytics",
+                default_value="per_client",
+                value_type=str,
+                examples=["per_client", "per_process", "global"],
+                how_to_choose="per_client for multi-user apps, per_process for single user, global for shared"
             )
         }
     
@@ -271,24 +307,6 @@ class ConfigurationParameterRegistry:
     def list_parameters(self) -> List[ConfigurationParameter]:
         """Get all available parameters"""
         return list(self.parameters.values())
-    
-    def _get_parameters_by_level(self, level: SetupLevel) -> List[str]:
-        """Get parameter names based on setup level"""
-        if level == SetupLevel.BASIC:
-            return ["model", "temperature", "max_tokens", "timeout", "base_url", "update_check_days"]
-        elif level == SetupLevel.STANDARD:
-            basic_params = self._get_parameters_by_level(SetupLevel.BASIC)
-            standard_params = ["cache_enabled", "cache_backend", "cache_ttl_s", "usage_scope"]
-            return basic_params + standard_params
-        elif level == SetupLevel.EXPERT:
-            standard_params = self._get_parameters_by_level(SetupLevel.STANDARD)
-            expert_params = [
-                "text_generation_webui_base_url", "fastchat_base_url",
-                "usage_client_id", "cache_namespace", "cache_sqlite_path", 
-                "cache_sqlite_wal", "extra_headers", "request_timeout_s"
-            ]
-            return standard_params + expert_params
-        return []
     
     def _choose_setup_level_interactive(self) -> SetupLevel:
         """Let user choose setup level interactively"""
@@ -539,28 +557,31 @@ class ImprovedSetupSystem:
             f.write("\n# Default Configuration\n")
             f.write(f"AI_PROVIDER={config.get('provider', providers[0].provider_id)}\n")
             
-            # Common parameters
-            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url", "text_generation_webui_base_url", "fastchat_base_url", "update_check_days"]:
-                if param_name in config and config[param_name] is not None:
+            # Common parameters - write all parameters from config
+            for param_name, param_value in config.items():
+                if param_name in ["setup_level", "provider"]:  # Skip these as they're handled separately
+                    continue
+                if param_value is not None:
                     param = self.param_registry.get_parameter(param_name)
-                    env_var = param.env_var
-                    # Handle empty string for max_tokens (unlimited)
-                    if param_name == "max_tokens" and config[param_name] == "":
-                        f.write(f"# {env_var} is empty for unlimited response length\n")
-                    # Handle empty string for update_check_days (disabled)
-                    elif param_name == "update_check_days" and config[param_name] == "":
-                        f.write(f"# {env_var} is empty - automatic update checks disabled\n")
-                    # Handle base_url - write provider default if user left empty
-                    elif param_name == "base_url" and config[param_name] == "":
-                        # Get the selected provider's default base URL
-                        selected_provider = providers[0] if providers else None
-                        if selected_provider:
-                            f.write(f"{env_var}={selected_provider.base_url_default}\n")
-                            f.write(f"# {env_var} set to {selected_provider.name} default\n")
+                    if param:  # Only write if parameter exists in registry
+                        env_var = param.env_var
+                        # Handle empty string for max_tokens (unlimited)
+                        if param_name == "max_tokens" and param_value == "":
+                            f.write(f"# {env_var} is empty for unlimited response length\n")
+                        # Handle empty string for update_check_days (disabled)
+                        elif param_name == "update_check_days" and param_value == "":
+                            f.write(f"# {env_var} is empty - automatic update checks disabled\n")
+                        # Handle base_url - write provider default if user left empty
+                        elif param_name == "base_url" and param_value == "":
+                            # Get the selected provider's default base URL
+                            selected_provider = providers[0]  # Use first provider as default
+                            if hasattr(selected_provider, 'base_url_default') and selected_provider.base_url_default:
+                                f.write(f"{env_var}={selected_provider.base_url_default}\n")
+                                f.write(f"# {env_var} set to {selected_provider.name} default\n")
+                            else:
+                                f.write(f"# {env_var} left empty - no provider selected\n")
                         else:
-                            f.write(f"# {env_var} left empty - no provider selected\n")
-                    else:
-                        f.write(f"{env_var}={config[param_name]}\n")
+                            f.write(f"{env_var}={param_value}\n")
         
         # Set secure permissions
         env_file.chmod(0o600)
@@ -722,6 +743,9 @@ class ImprovedSetupSystem:
         
         # Step 3: Configure parameters based on level
         config = self._configure_parameters_by_level(providers, setup_level)
+        
+        # Add setup_level to config for .env file generation
+        config["setup_level"] = setup_level.value
         
         # Step 4: Configure API keys
         env_vars = self._configure_multi_provider_env_vars(providers)
