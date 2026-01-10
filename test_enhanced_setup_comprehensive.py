@@ -138,7 +138,7 @@ class TestConfigurationParameterRegistry(unittest.TestCase):
     
     def test_parameter_count(self):
         """Test correct number of parameters are registered"""
-        self.assertEqual(len(self.registry.parameters), 7)  # Added 2 new URL parameters
+        self.assertEqual(len(self.registry.parameters), 8)  # Added update_check_days parameter
     
     def test_get_parameter(self):
         """Test retrieving parameters by name"""
