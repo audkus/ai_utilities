@@ -12,7 +12,7 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities.improved_setup import (
     ImprovedSetupSystem, 
@@ -138,7 +138,7 @@ class TestConfigurationParameterRegistry(unittest.TestCase):
     
     def test_parameter_count(self):
         """Test correct number of parameters are registered"""
-        self.assertEqual(len(self.registry.parameters), 8)  # Added update_check_days parameter
+        self.assertEqual(len(self.registry.parameters), 12)  # All parameters including cache and new ones
     
     def test_get_parameter(self):
         """Test retrieving parameters by name"""
