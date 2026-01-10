@@ -7,6 +7,7 @@ Addressing user feedback about:
 - Multi-provider selection
 - Environment variable handling
 - Accurate parameter explanations
+- Tiered setup system with setup level selection
 """
 
 import os
@@ -14,8 +15,15 @@ import platform
 import getpass
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, Union
 from dataclasses import dataclass
+from enum import Enum
+
+class SetupLevel(Enum):
+    """Setup level enumeration"""
+    BASIC = "basic"
+    STANDARD = "standard"
+    EXPERT = "expert"
 
 @dataclass
 class AIProvider:
@@ -244,6 +252,15 @@ class ConfigurationParameterRegistry:
                 value_type=str,
                 examples=["", "http://localhost:8000", "http://192.168.1.100:8000"],
                 how_to_choose="Leave empty for standard FastChat setup. Use only when FastChat runs on different port or remote machine."
+            ),
+            "update_check_days": ConfigurationParameter(
+                name="Update Check Frequency",
+                env_var="AI_UPDATE_CHECK_DAYS",
+                description="Days between automatic checks for new AI models. More frequent checks provide faster updates but use more API calls. Leave empty to disable automatic checks.",
+                default_value=30,
+                value_type=int,
+                examples=["7", "30", "90", ""],
+                how_to_choose="7 days for active development, 30 days for regular use, 90 days for stable environments. Leave empty to disable automatic checks and check manually."
             )
         }
     
@@ -254,14 +271,114 @@ class ConfigurationParameterRegistry:
     def list_parameters(self) -> List[ConfigurationParameter]:
         """Get all available parameters"""
         return list(self.parameters.values())
+    
+    def _get_parameters_by_level(self, level: SetupLevel) -> List[str]:
+        """Get parameter names based on setup level"""
+        if level == SetupLevel.BASIC:
+            return ["model", "temperature", "max_tokens", "timeout", "base_url", "update_check_days"]
+        elif level == SetupLevel.STANDARD:
+            basic_params = self._get_parameters_by_level(SetupLevel.BASIC)
+            standard_params = ["cache_enabled", "cache_backend", "cache_ttl_s", "usage_scope"]
+            return basic_params + standard_params
+        elif level == SetupLevel.EXPERT:
+            standard_params = self._get_parameters_by_level(SetupLevel.STANDARD)
+            expert_params = [
+                "text_generation_webui_base_url", "fastchat_base_url",
+                "usage_client_id", "cache_namespace", "cache_sqlite_path", 
+                "cache_sqlite_wal", "extra_headers", "request_timeout_s"
+            ]
+            return standard_params + expert_params
+        return []
+    
+    def _choose_setup_level_interactive(self) -> SetupLevel:
+        """Let user choose setup level interactively"""
+        print("\n=== AI Utilities Setup ===\n")
+        print("Choose your setup level:\n")
+        print("1. Basic Setup (Recommended for new users)")
+        print("   • Essential parameters only")
+        print("   • Quick 5-minute configuration")
+        print("   • Perfect for simple applications\n")
+        print("2. Standard Setup (Recommended for most users)")
+        print("   • Includes caching and usage tracking")
+        print("   • Optimized for production use")
+        print("   • 10-minute configuration\n")
+        print("3. Expert Setup (Advanced users)")
+        print("   • Full configuration control")
+        print("   • Knowledge indexing and advanced caching")
+        print("   • Complete customization\n")
+        
+        while True:
+            try:
+                choice = input("Enter choice [1-3] (default: 1): ").strip() or "1"
+                if choice == "1":
+                    return SetupLevel.BASIC
+                elif choice == "2":
+                    return SetupLevel.STANDARD
+                elif choice == "3":
+                    return SetupLevel.EXPERT
+                else:
+                    print("Please enter 1, 2, or 3")
+            except (EOFError, KeyboardInterrupt):
+                print("\nSetup cancelled.")
+                sys.exit(1)
 
 class ImprovedSetupSystem:
-    """Improved setup system addressing user feedback"""
+    """Improved setup system addressing user feedback with tiered setup levels"""
     
     def __init__(self):
         self.os_info = self._detect_os()
         self.provider_registry = AIProviderRegistry()
         self.param_registry = ConfigurationParameterRegistry()
+    
+    def _get_parameters_by_level(self, level: SetupLevel) -> List[str]:
+        """Get parameter names based on setup level"""
+        if level == SetupLevel.BASIC:
+            return ["model", "temperature", "max_tokens", "timeout", "base_url", "update_check_days"]
+        elif level == SetupLevel.STANDARD:
+            basic_params = self._get_parameters_by_level(SetupLevel.BASIC)
+            standard_params = ["cache_enabled", "cache_backend", "cache_ttl_s", "usage_scope"]
+            return basic_params + standard_params
+        elif level == SetupLevel.EXPERT:
+            standard_params = self._get_parameters_by_level(SetupLevel.STANDARD)
+            expert_params = [
+                "text_generation_webui_base_url", "fastchat_base_url",
+                "usage_client_id", "cache_namespace", "cache_sqlite_path", 
+                "cache_sqlite_wal", "extra_headers", "request_timeout_s"
+            ]
+            return standard_params + expert_params
+        return []
+    
+    def _choose_setup_level_interactive(self) -> SetupLevel:
+        """Let user choose setup level interactively"""
+        print("\n=== AI Utilities Setup ===\n")
+        print("Choose your setup level:\n")
+        print("1. Basic Setup (Recommended for new users)")
+        print("   • Essential parameters only")
+        print("   • Quick 5-minute configuration")
+        print("   • Perfect for simple applications\n")
+        print("2. Standard Setup (Recommended for most users)")
+        print("   • Includes caching and usage tracking")
+        print("   • Optimized for production use")
+        print("   • 10-minute configuration\n")
+        print("3. Expert Setup (Advanced users)")
+        print("   • Full configuration control")
+        print("   • Knowledge indexing and advanced caching")
+        print("   • Complete customization\n")
+        
+        while True:
+            try:
+                choice = input("Enter choice [1-3] (default: 1): ").strip() or "1"
+                if choice == "1":
+                    return SetupLevel.BASIC
+                elif choice == "2":
+                    return SetupLevel.STANDARD
+                elif choice == "3":
+                    return SetupLevel.EXPERT
+                else:
+                    print("Please enter 1, 2, or 3")
+            except (EOFError, KeyboardInterrupt):
+                print("\nSetup cancelled.")
+                sys.exit(1)
     
     def should_trigger_setup(self) -> bool:
         """Check if setup should be triggered based on environment configuration"""
@@ -408,8 +525,10 @@ class ImprovedSetupSystem:
         
         with open(env_file, 'w') as f:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            setup_level = config.get('setup_level', 'unknown')
             f.write("# AI Utilities Configuration\n")
             f.write(f"# Generated by Enhanced Setup System on {timestamp}\n")
+            f.write(f"# Setup Level: {setup_level.title()}\n")
             f.write(f"# Configured providers: {', '.join([p.name for p in providers])}\n\n")
             
             # API keys for all providers
@@ -421,13 +540,16 @@ class ImprovedSetupSystem:
             f.write(f"AI_PROVIDER={config.get('provider', providers[0].provider_id)}\n")
             
             # Common parameters
-            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url", "text_generation_webui_base_url", "fastchat_base_url"]:
+            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url", "text_generation_webui_base_url", "fastchat_base_url", "update_check_days"]:
                 if param_name in config and config[param_name] is not None:
                     param = self.param_registry.get_parameter(param_name)
                     env_var = param.env_var
                     # Handle empty string for max_tokens (unlimited)
                     if param_name == "max_tokens" and config[param_name] == "":
                         f.write(f"# {env_var} is empty for unlimited response length\n")
+                    # Handle empty string for update_check_days (disabled)
+                    elif param_name == "update_check_days" and config[param_name] == "":
+                        f.write(f"# {env_var} is empty - automatic update checks disabled\n")
                     # Handle base_url - write provider default if user left empty
                     elif param_name == "base_url" and config[param_name] == "":
                         # Get the selected provider's default base URL
@@ -446,6 +568,92 @@ class ImprovedSetupSystem:
         print(f"✅ Multi-provider configuration saved to {env_file}")
         print(f"🔒 File permissions set to read/write for owner only")
     
+    def interactive_tiered_setup(self) -> Dict[str, Any]:
+        """Run the complete tiered interactive setup"""
+        print("🚀 AI Utilities Enhanced Setup System")
+        print("=" * 50)
+        
+        # Step 1: Choose setup level
+        setup_level = self._choose_setup_level_interactive()
+        
+        # Step 2: Choose providers
+        providers = self._choose_providers_interactive()
+        
+        # Step 3: Configure parameters based on level
+        config = self._configure_parameters_by_level(providers, setup_level)
+        
+        # Step 4: Configure API keys
+        env_vars = self._configure_multi_provider_env_vars(providers)
+        
+        # Step 5: Generate .env file
+        self._generate_multi_provider_env_file(providers, env_vars, config)
+        
+        return {
+            "setup_level": setup_level.value,
+            "providers": [p.provider_id for p in providers],
+            "config": config,
+            "env_vars": env_vars
+        }
+    
+    def _configure_parameters_by_level(self, providers: List[AIProvider], level: SetupLevel) -> Dict[str, Any]:
+        """Configure parameters based on setup level"""
+        config = {}
+        
+        # Get parameters for this level
+        param_names = self._get_parameters_by_level(level)
+        
+        print(f"\n=== {level.value.title()} Configuration ===")
+        
+        for param_name in param_names:
+            param = self.param_registry.get_parameter(param_name)
+            if param:
+                print(f"\n{param.get_user_prompt()}")
+                
+                while True:
+                    try:
+                        user_input = input().strip()
+                        
+                        # Handle empty input (use default)
+                        if not user_input:
+                            config[param_name] = param.default_value
+                            break
+                        
+                        # Type conversion
+                        if param.value_type == int:
+                            try:
+                                config[param_name] = int(user_input)
+                                break
+                            except ValueError:
+                                print(f"Please enter a valid integer")
+                        elif param.value_type == float:
+                            try:
+                                config[param_name] = float(user_input)
+                                break
+                            except ValueError:
+                                print(f"Please enter a valid number")
+                        elif param.value_type == bool:
+                            if user_input.lower() in ['true', 'yes', 'y', '1']:
+                                config[param_name] = True
+                                break
+                            elif user_input.lower() in ['false', 'no', 'n', '0']:
+                                config[param_name] = False
+                                break
+                            else:
+                                print("Please enter true/yes/y/1 or false/no/n/0")
+                        else:
+                            config[param_name] = user_input
+                            break
+                            
+                    except (EOFError, KeyboardInterrupt):
+                        print("\nSetup cancelled.")
+                        sys.exit(1)
+        
+        # Set default provider
+        if providers:
+            config["provider"] = providers[0].provider_id
+        
+        return config
+
     def demonstrate_improvements(self):
         """Demonstrate the improvements made"""
         print("🚀 Improved Setup System - Addressing User Feedback")
