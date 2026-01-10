@@ -330,17 +330,43 @@ transcription, new_audio = processor.transcribe_and_generate(
 
 ### 🚀 Enhanced Setup System (Recommended)
 
-The **Enhanced Setup System** provides an interactive, guided configuration experience that makes setting up AI Utilities effortless:
+The **Enhanced Setup System** provides an interactive, guided configuration experience with **tiered setup levels** that makes setting up AI Utilities effortless:
 
 ```bash
-# Run the interactive setup (automatically detects if configuration is needed)
+# Option 1: Simple interactive setup with existing settings detection
+from ai_utilities.improved_setup import run_interactive_setup
+run_interactive_setup()
+
+# Option 2: Direct tiered setup
+from ai_utilities.improved_setup import run_tiered_setup
+run_tiered_setup()
+
+# Option 3: Automatic detection (triggers if no configuration found)
 from ai_utilities import AiClient
 client = AiClient()  # Triggers setup if no configuration found
 ```
 
+#### 🎯 Tiered Setup Levels:
+
+**🔵 Basic Setup (Recommended for new users)**
+- Essential parameters only (6 settings)
+- Quick 5-minute configuration
+- Perfect for simple applications
+
+**🟡 Standard Setup (Recommended for most users)**
+- Includes caching and usage tracking (10 settings)
+- Optimized for production use
+- 10-minute configuration
+
+**🔴 Expert Setup (Advanced users)**
+- Full configuration control (18+ settings)
+- Knowledge indexing and advanced caching
+- Complete customization
+
 #### ✨ Key Features:
 
-- **🎯 Smart Detection** - Automatically triggers setup when no API keys or .env file found
+- **🎯 Smart Detection** - Automatically loads existing settings and prompts to use/edit/create
+- **📋 Tiered Setup** - Choose Basic/Standard/Expert based on your needs
 - **📋 Clean Provider Menu** - Simple, uncluttered selection without marketing language
 - **🔢 Multi-Provider Selection** - Choose multiple providers: `1, 3, 5` or `7` for all
 - **␣ Flexible Input** - Accepts spaces: `1, 3, 5` works the same as `1,3,5`
@@ -350,60 +376,125 @@ client = AiClient()  # Triggers setup if no configuration found
 - **📅 Date/Time Stamps** - Generated .env files include creation timestamp
 - **🔒 Secure Configuration** - Hidden API key input, secure file permissions (600)
 - **🎯 Targeted Help** - Installation guidance only for missing providers
+- **⏰ Configurable Updates** - Set update check frequency (7/30/90 days or disabled)
 
 #### 🎮 Interactive Setup Experience:
 
 ```
-Available AI Providers (Select one or multiple):
-============================================================
+=== AI Utilities Setup ===
 
-1. OpenAI
-2. Groq
-3. Together AI
-4. Anthropic Claude
-5. OpenRouter
-6. Ollama
-7. All Providers (Configure multiple API keys)
-============================================================
-Enter multiple numbers separated by commas (e.g., 1, 3, 5)
+Choose your setup level:
+
+1. Basic Setup (Recommended for new users)
+   • Essential parameters only
+   • Quick 5-minute configuration
+   • Perfect for simple applications
+
+2. Standard Setup (Recommended for most users)
+   • Includes caching and usage tracking
+   • Optimized for production use
+   • 10-minute configuration
+
+3. Expert Setup (Advanced users)
+   • Full configuration control
+   • Knowledge indexing and advanced caching
+   • Complete customization
+
+Enter choice [1-3] (default: 1):
+```
+
+#### 📋 Existing Settings Detection:
+
+```
+🚀 AI Utilities Enhanced Setup System
+📁 Found existing configuration:
+   Provider: openai
+   Model: gpt-4
+   Update Check: 30 days
+
+Use existing settings? (Y/n, or 'e' to edit):
 ```
 
 #### ⚙️ Parameter Configuration:
 
-After selecting providers, you'll see detailed explanations for each parameter:
+After selecting providers and setup level, you'll see detailed explanations for each parameter:
 
+**Basic Setup Parameters:**
 ```
-Max Tokens (Response Length)
-   Maximum number of tokens returned (approximately words/4). Leave empty for unlimited response length. Controls response length and cost. A token is roughly 4 characters or 3/4 of a word.
-Environment Variable: AI_MAX_TOKENS
-Default: 700
-Examples: 150, 300, 700, 1500, 3000, ""
-How to choose: Short answers (150-300 tokens), standard responses (500-1000 tokens), detailed content (1500+ tokens). Leave empty for unlimited. Higher values cost more and take longer to generate.
-Enter value (or press Enter for default 700):
+Model (Default: gpt-4)
+   AI model to use for requests
+Environment Variable: AI_MODEL
+Default: gpt-4
+Examples: gpt-4, gpt-3.5-turbo, claude-3-sonnet
+How to choose: gpt-4 for quality, gpt-3.5-turbo for speed, claude-3 for different capabilities
+
+Update Check Frequency
+   Days between automatic checks for new AI models. More frequent checks provide faster updates but use more API calls.
+Environment Variable: AI_UPDATE_CHECK_DAYS
+Default: 30
+Examples: 7, 30, 90, ""
+How to choose: 7 days for active development, 30 days for regular use, 90 days for stable environments. Leave empty to disable automatic checks.
+```
+
+**Standard Setup adds:**
+```
+Enable Response Caching
+   Cache responses to avoid repeated API calls and costs
+Environment Variable: AI_CACHE_ENABLED
+Default: false
+Examples: true, false
+How to choose: Enable for production to reduce costs and improve response times
 ```
 
 #### 📄 Generated .env File:
 
-The setup creates a complete, self-contained .env file:
+The setup creates a complete, self-contained .env file with setup level annotation:
 
+**Basic Setup Example:**
 ```env
 # AI Utilities Configuration
-# Generated by Enhanced Setup System on 2026-01-10 08:01:54
-# Configured providers: OpenAI, Groq
+# Generated by Enhanced Setup System on 2026-01-10 08:45:00
+# Setup Level: Basic
+# Configured providers: OpenAI
 
 # API Keys
 OPENAI_API_KEY=sk-proj-actual-api-key-here
-GROQ_API_KEY=gqr_actual-api-key-here
-AI_API_KEY=sk-proj-actual-api-key-here
 
-# Default Configuration
+# Basic Configuration
 AI_PROVIDER=openai
 AI_MODEL=gpt-4
 AI_TEMPERATURE=0.7
 AI_MAX_TOKENS=1000
 AI_TIMEOUT=60
+AI_UPDATE_CHECK_DAYS=30
 AI_BASE_URL=https://api.openai.com/v1
-# AI_BASE_URL set to OpenAI default
+```
+
+**Standard Setup Example:**
+```env
+# AI Utilities Configuration
+# Generated by Enhanced Setup System on 2026-01-10 08:45:00
+# Setup Level: Standard
+# Configured providers: OpenAI, Groq
+
+# API Keys
+OPENAI_API_KEY=sk-proj-actual-api-key-here
+GROQ_API_KEY=gqr-actual-api-key-here
+
+# Basic Configuration
+AI_PROVIDER=openai
+AI_MODEL=gpt-4
+AI_TEMPERATURE=0.7
+AI_MAX_TOKENS=1000
+AI_TIMEOUT=60
+AI_UPDATE_CHECK_DAYS=30
+AI_BASE_URL=https://api.openai.com/v1
+
+# Performance Settings
+AI_CACHE_ENABLED=true
+AI_CACHE_BACKEND=sqlite
+AI_CACHE_TTL_S=3600
+AI_USAGE_SCOPE=per_client
 ```
 
 #### 🛠️ Manual Setup Alternative
