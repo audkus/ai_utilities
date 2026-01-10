@@ -568,32 +568,87 @@ class ImprovedSetupSystem:
         print(f"✅ Multi-provider configuration saved to {env_file}")
         print(f"🔒 File permissions set to read/write for owner only")
     
-    def interactive_tiered_setup(self) -> Dict[str, Any]:
-        """Run the complete tiered interactive setup"""
+    def load_existing_settings(self) -> Optional[Dict[str, Any]]:
+        """Load existing settings from .env file if it exists"""
+        env_file = Path.cwd() / ".env"
+        
+        if not env_file.exists():
+            return None
+        
+        try:
+            from ai_utilities.config_models import AiSettings
+            settings = AiSettings.from_dotenv(".env")
+            
+            # Convert settings to dictionary - only use existing attributes
+            existing_settings = {
+                "provider": settings.provider,
+                "model": settings.model,
+                "temperature": settings.temperature,
+                "max_tokens": settings.max_tokens,
+                "timeout": settings.timeout,
+                "base_url": settings.base_url,
+                "update_check_days": settings.update_check_days,
+                "cache_enabled": settings.cache_enabled,
+                "cache_backend": settings.cache_backend,
+                "cache_ttl_s": settings.cache_ttl_s,
+                "usage_scope": settings.usage_scope,
+                "usage_client_id": settings.usage_client_id,
+                "cache_namespace": settings.cache_namespace,
+                "cache_sqlite_path": settings.cache_sqlite_path,
+                "cache_sqlite_wal": settings.cache_sqlite_wal,
+                "extra_headers": settings.extra_headers,
+                "request_timeout_s": settings.request_timeout_s,
+                "api_key": settings.api_key,
+                "openai_api_key": settings.openai_api_key,
+                "groq_api_key": settings.groq_api_key,
+                "together_api_key": settings.together_api_key,
+                "openrouter_api_key": settings.openrouter_api_key,
+                "fastchat_api_key": settings.fastchat_api_key,
+                "ollama_api_key": settings.ollama_api_key,
+                "lmstudio_api_key": settings.lmstudio_api_key
+            }
+            
+            # Filter out None values
+            return {k: v for k, v in existing_settings.items() if v is not None}
+            
+        except Exception as e:
+            print(f"Warning: Could not load existing settings: {e}")
+            return None
+    
+    def interactive_setup_with_existing(self) -> Dict[str, Any]:
+        """Run interactive setup with option to use existing settings"""
         print("🚀 AI Utilities Enhanced Setup System")
         print("=" * 50)
         
-        # Step 1: Choose setup level
-        setup_level = self._choose_setup_level_interactive()
+        # Check for existing settings
+        existing = self.load_existing_settings()
+        if existing:
+            print("📁 Found existing configuration:")
+            print(f"   Provider: {existing.get('provider', 'Unknown')}")
+            print(f"   Model: {existing.get('model', 'Unknown')}")
+            print(f"   Update Check: {existing.get('update_check_days', 'Unknown')} days")
+            print()
+            
+            while True:
+                try:
+                    choice = input("Use existing settings? (Y/n, or 'e' to edit): ").strip().lower()
+                    if choice in ['', 'y', 'yes']:
+                        print("✅ Using existing settings")
+                        return {"existing_settings": existing, "action": "use_existing"}
+                    elif choice in ['e', 'edit']:
+                        print("🔧 Editing existing configuration...")
+                        break
+                    elif choice in ['n', 'no']:
+                        print("🆕 Creating new configuration...")
+                        break
+                    else:
+                        print("Please enter Y/n/e")
+                except (EOFError, KeyboardInterrupt):
+                    print("\nSetup cancelled.")
+                    sys.exit(1)
         
-        # Step 2: Choose providers
-        providers = self._choose_providers_interactive()
-        
-        # Step 3: Configure parameters based on level
-        config = self._configure_parameters_by_level(providers, setup_level)
-        
-        # Step 4: Configure API keys
-        env_vars = self._configure_multi_provider_env_vars(providers)
-        
-        # Step 5: Generate .env file
-        self._generate_multi_provider_env_file(providers, env_vars, config)
-        
-        return {
-            "setup_level": setup_level.value,
-            "providers": [p.provider_id for p in providers],
-            "config": config,
-            "env_vars": env_vars
-        }
+        # Run new setup (or edit existing)
+        return self.interactive_tiered_setup()
     
     def _configure_parameters_by_level(self, providers: List[AIProvider], level: SetupLevel) -> Dict[str, Any]:
         """Configure parameters based on setup level"""
@@ -653,6 +708,43 @@ class ImprovedSetupSystem:
             config["provider"] = providers[0].provider_id
         
         return config
+    
+    def interactive_tiered_setup(self) -> Dict[str, Any]:
+        """Run the complete tiered interactive setup"""
+        print("🚀 AI Utilities Enhanced Setup System")
+        print("=" * 50)
+        
+        # Step 1: Choose setup level
+        setup_level = self._choose_setup_level_interactive()
+        
+        # Step 2: Choose providers
+        providers = self._choose_providers_interactive()
+        
+        # Step 3: Configure parameters based on level
+        config = self._configure_parameters_by_level(providers, setup_level)
+        
+        # Step 4: Configure API keys
+        env_vars = self._configure_multi_provider_env_vars(providers)
+        
+        # Step 5: Generate .env file
+        self._generate_multi_provider_env_file(providers, env_vars, config)
+        
+        return {
+            "setup_level": setup_level.value,
+            "providers": [p.provider_id for p in providers],
+            "config": config,
+            "env_vars": env_vars
+        }
+
+def run_interactive_setup():
+    """Simple function for users to access the interactive setup"""
+    setup = ImprovedSetupSystem()
+    return setup.interactive_setup_with_existing()
+
+def run_tiered_setup():
+    """Simple function for users to access the tiered setup without existing settings check"""
+    setup = ImprovedSetupSystem()
+    return setup.interactive_tiered_setup()
 
     def demonstrate_improvements(self):
         """Demonstrate the improvements made"""
