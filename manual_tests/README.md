@@ -34,6 +34,25 @@ python manual_tests/debug_standard_setup.py
 - ✅ AI_CACHE_ENABLED found in .env
 - ✅ All 11 config keys properly configured
 
+### minimal_test.py
+**Purpose**: Test provider installation help functionality
+
+**What it tests**:
+- Provider help text generation
+- Installation command formatting
+- Component presence verification
+- String matching accuracy
+
+**Usage**:
+```bash
+python manual_tests/minimal_test.py
+```
+
+**Expected Output**:
+- ✅ Generated help text contains all providers
+- ✅ Installation commands properly formatted
+- ✅ All key components found (pip, install, ai-utilities, openai, groq)
+
 ## Test Structure
 
 ### Tier 1 Tests (All Providers, No Network)
@@ -51,6 +70,9 @@ python manual_tests/debug_standard_setup.py
 ```bash
 # Debug tiered setup system
 python manual_tests/debug_standard_setup.py
+
+# Test provider installation help
+python manual_tests/minimal_test.py
 
 # Run Tier 1 tests (all providers, no network)
 ./run_manual_tests.sh
