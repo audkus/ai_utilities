@@ -9,6 +9,31 @@ These tests are designed for manual verification before releases and are NOT int
 - Automated testing
 - Import validation
 
+## Available Scripts
+
+### debug_standard_setup.py
+**Purpose**: Debug and verify the enhanced tiered setup system functionality
+
+**What it tests**:
+- Standard setup flow with mocked inputs
+- Boolean input handling (case insensitive, whitespace tolerant)
+- Cache parameter configuration
+- update_check_days parameter functionality
+- .env file generation with proper permissions
+- All Standard Setup tier features
+
+**Usage**:
+```bash
+python manual_tests/debug_standard_setup.py
+```
+
+**Expected Output**:
+- ✅ Setup completed successfully
+- ✅ cache_enabled: True
+- ✅ cache_backend: sqlite
+- ✅ AI_CACHE_ENABLED found in .env
+- ✅ All 11 config keys properly configured
+
 ## Test Structure
 
 ### Tier 1 Tests (All Providers, No Network)
@@ -24,6 +49,9 @@ These tests are designed for manual verification before releases and are NOT int
 ## Usage
 
 ```bash
+# Debug tiered setup system
+python manual_tests/debug_standard_setup.py
+
 # Run Tier 1 tests (all providers, no network)
 ./run_manual_tests.sh
 
