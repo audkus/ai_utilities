@@ -33,15 +33,15 @@ class AIProvider:
     def get_user_friendly_info(self) -> str:
         """Return formatted provider information for users"""
         return f"""
-🤖 {self.name}
+{self.name}
    {self.description}
    
-📍 API Key Environment: {self.api_key_env}
-🔗 Get API Key: {self.setup_url}
-💰 Cost Model: {self.cost_model}
-🚀 Model Categories: {', '.join(self.model_categories)}
+API Key Environment: {self.api_key_env}
+Get API Key: {self.setup_url}
+Cost Model: {self.cost_model}
+Model Categories: {', '.join(self.model_categories)}
 
-⚙️  Installation: pip install "ai-utilities[{self.provider_id}]"
+Installation: pip install "ai-utilities[{self.provider_id}]"
         """
 
 class AIProviderRegistry:
@@ -127,7 +127,21 @@ class AIProviderRegistry:
     
     def get_provider_menu(self) -> str:
         """Generate a formatted menu of providers with multi-select option"""
-        menu = "\n🤖 Available AI Providers (Select one or multiple):"
+        if not self.providers:
+            return """
+No AI providers are registered. Please install provider support:
+
+pip install "ai-utilities[openai]"
+pip install "ai-utilities[groq]"
+pip install "ai-utilities[anthropic]"
+pip install "ai-utilities[openrouter]"
+pip install "ai-utilities[together]"
+pip install "ai-utilities[ollama]"
+
+Providers will be available immediately after installation.
+"""
+        
+        menu = "\nAvailable AI Providers (Select one or multiple):"
         menu += "\n" + "=" * 60 + "\n"
         
         for i, (provider_id, provider) in enumerate(self.providers.items(), 1):
@@ -135,7 +149,7 @@ class AIProviderRegistry:
         
         menu += f"\n{len(self.providers) + 1}. All Providers (Configure multiple API keys)"
         menu += "\n" + "=" * 60
-        menu += "\n💡 Enter multiple numbers separated by commas (e.g., 1, 3, 5)"
+        menu += "\nEnter multiple numbers separated by commas (e.g., 1, 3, 5)"
         return menu
 
 @dataclass
@@ -152,13 +166,13 @@ class ConfigurationParameter:
     def get_user_prompt(self) -> str:
         """Get user-friendly prompt for this parameter"""
         return f"""
-⚙️  {self.name}
+{self.name}
    {self.description}
    
-📝 Environment Variable: {self.env_var}
-🎯 Default: {self.default_value}
-📋 Examples: {', '.join(self.examples)}
-💡 How to choose: {self.how_to_choose}
+Environment Variable: {self.env_var}
+Default: {self.default_value}
+Examples: {', '.join(self.examples)}
+How to choose: {self.how_to_choose}
 
 Enter value (or press Enter for default {self.default_value}): """
 
@@ -284,42 +298,42 @@ class ImprovedSetupSystem:
                         provider = list(self.provider_registry.providers.values())[index]
                         selected_providers.append(provider)
                     else:
-                        print(f"❌ Invalid number: {index + 1}")
+                        print(f"Invalid number: {index + 1}")
                         raise ValueError
                 
                 if selected_providers:
-                    print(f"\n✅ Selected providers: {', '.join([p.name for p in selected_providers])}")
+                    print(f"\nSelected providers: {', '.join([p.name for p in selected_providers])}")
                     return selected_providers
                 else:
-                    print("❌ No valid providers selected.")
+                    print("No valid providers selected.")
                     
             except ValueError:
-                print("❌ Please enter valid numbers separated by commas (e.g., 1, 3, 5)")
+                print("Please enter valid numbers separated by commas (e.g., 1, 3, 5)")
             except Exception as e:
-                print(f"❌ Error: {e}")
+                print(f"Error: {e}")
     
     def _configure_multi_provider_env_vars(self, providers: List[AIProvider]) -> Dict[str, str]:
         """Configure environment variables for multiple providers"""
-        print(f"\n🔑 Configure API Keys for {len(providers)} Provider(s)")
+        print(f"\nConfigure API Keys for {len(providers)} Provider(s)")
         print("=" * 50)
         
         env_vars = {}
         
         for provider in providers:
-            print(f"\n🤖 {provider.name}")
-            print(f"📍 Environment variable: {provider.api_key_env}")
-            print(f"🔗 Get API key: {provider.setup_url}")
+            print(f"\n{provider.name}")
+            print(f"Environment variable: {provider.api_key_env}")
+            print(f"Get API key: {provider.setup_url}")
             
             if provider.provider_id == "ollama":
-                print("ℹ️  Ollama uses local installation, no API key needed")
+                print("Ollama uses local installation, no API key needed")
                 env_vars[provider.api_key_env] = "dummy-key"
             else:
                 api_key = getpass.getpass(f"Enter {provider.name} API key (hidden): ").strip()
                 if api_key:
                     env_vars[provider.api_key_env] = api_key
-                    print(f"✅ {provider.name} API key configured")
+                    print(f"{provider.name} API key configured")
                 else:
-                    print(f"⚠️  {provider.name} API key skipped")
+                    print(f"{provider.name} API key skipped")
         
         return env_vars
     
