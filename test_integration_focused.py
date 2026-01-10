@@ -226,7 +226,20 @@ class FocusedIntegrationTest:
         assert missing_provider is None, "Missing provider should return None"
         
         # Test loading non-existent settings
+        from pathlib import Path
+        env_file = Path.cwd() / ".env"
+        
+        # Clean up any existing .env file for this test
+        if env_file.exists():
+            env_file.unlink()
+            print(f"DEBUG: Cleaned up existing .env file")
+        
+        print(f"DEBUG: .env file exists: {env_file.exists()}")
+        
         settings = self.setup.load_existing_settings()
+        print(f"DEBUG: load_existing_settings returned: {settings}")
+        print(f"DEBUG: Type: {type(settings)}")
+        
         assert settings is None, "Non-existent settings should return None"
         
         print("✅ Error Handling: PASSED")
