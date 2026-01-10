@@ -45,6 +45,14 @@ print(result.text)
 - `image_generation_demo.py` - Advanced image workflows
 - `complete_content_workflow.py` - Full production pipeline
 
+### Level 5: Development & Debugging
+- `demo_integration.py` - Enhanced setup system integration demo
+- `demo_sqlite_cache.py` - SQLite cache with namespace support demo
+- `complete_flow_demo.py` - Complete setup flow demonstration
+- `setup_examples.py` - Various setup configuration examples
+- `interactive_setup_example.py` - Interactive setup demonstration
+- `smart_setup_example.py` - Smart setup features demo
+
 ## 🎯 Quick Reference
 
 | Need | Example | Description |
@@ -57,6 +65,10 @@ print(result.text)
 | **Documents** | `simple_document_ai.py` | Process PDFs/Docs |
 | **Configuration** | `environment_isolation_example.py` | Environment setup |
 | **Monitoring** | `usage_tracking_example.py` | Track token usage |
+| **Setup Integration** | `demo_integration.py` | Enhanced setup system demo |
+| **Cache Demo** | `demo_sqlite_cache.py` | SQLite cache namespaces |
+| **Setup Flow** | `complete_flow_demo.py` | Complete setup demonstration |
+| **Interactive Setup** | `interactive_setup_example.py` | Interactive setup demo |
 
 ## 💡 Tips
 
