@@ -1,0 +1,393 @@
+#!/usr/bin/env python3
+"""
+Improved Enhanced Setup System
+Addressing user feedback about:
+- Dynamic pricing information
+- Outdated model names
+- Multi-provider selection
+- Environment variable handling
+- Accurate parameter explanations
+"""
+
+import os
+import platform
+import getpass
+import json
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+
+@dataclass
+class AIProvider:
+    """AI Provider configuration with future-proof descriptions"""
+    name: str
+    provider_id: str
+    description: str
+    api_key_env: str
+    base_url_default: str
+    model_categories: List[str]  # Instead of specific models
+    setup_url: str
+    cost_model: str  # Instead of specific pricing
+    requires_extra_install: bool = True
+    
+    def get_user_friendly_info(self) -> str:
+        """Return formatted provider information for users"""
+        return f"""
+🤖 {self.name}
+   {self.description}
+   
+📍 API Key Environment: {self.api_key_env}
+🔗 Get API Key: {self.setup_url}
+💰 Cost Model: {self.cost_model}
+🚀 Model Categories: {', '.join(self.model_categories)}
+
+⚙️  Installation: pip install "ai-utilities[{self.provider_id}]"
+        """
+
+class AIProviderRegistry:
+    """Registry of supported AI providers with future-proof information"""
+    
+    def __init__(self):
+        self.providers = {
+            "openai": AIProvider(
+                name="OpenAI",
+                provider_id="openai",
+                description="Most popular AI provider with advanced GPT models, excellent for general tasks, coding, and creative writing.",
+                api_key_env="OPENAI_API_KEY",
+                base_url_default="https://api.openai.com/v1",
+                model_categories=["GPT models", "Chat models", "Code models"],
+                setup_url="https://platform.openai.com/api-keys",
+                cost_model="Usage-based pricing (per token)",
+                requires_extra_install=True
+            ),
+            "groq": AIProvider(
+                name="Groq",
+                provider_id="groq",
+                description="Ultra-fast inference speeds, perfect for real-time applications and high-throughput use cases.",
+                api_key_env="GROQ_API_KEY",
+                base_url_default="https://api.groq.com/openai/v1",
+                model_categories=["Open-source models", "Fast inference models"],
+                setup_url="https://console.groq.com/keys",
+                cost_model="Free tier available, then usage-based",
+                requires_extra_install=False
+            ),
+            "together": AIProvider(
+                name="Together AI",
+                provider_id="together",
+                description="Wide variety of open-source models, cost-effective for specialized tasks and experimentation.",
+                api_key_env="TOGETHER_API_KEY",
+                base_url_default="https://api.together.xyz/v1",
+                model_categories=["Open-source models", "Specialized models"],
+                setup_url="https://api.together.xyz/settings/api-keys",
+                cost_model="Usage-based pricing (varies by model)",
+                requires_extra_install=False
+            ),
+            "anthropic": AIProvider(
+                name="Anthropic Claude",
+                provider_id="anthropic",
+                description="Advanced reasoning and safety features, excellent for complex analytical tasks.",
+                api_key_env="ANTHROPIC_API_KEY",
+                base_url_default="https://api.anthropic.com",
+                model_categories=["Claude models", "Reasoning models"],
+                setup_url="https://console.anthropic.com/",
+                cost_model="Usage-based pricing (premium tier)",
+                requires_extra_install=False
+            ),
+            "openrouter": AIProvider(
+                name="OpenRouter",
+                provider_id="openrouter",
+                description="Access to multiple models through a single API, great for comparing model performance.",
+                api_key_env="OPENROUTER_API_KEY",
+                base_url_default="https://openrouter.ai/api/v1",
+                model_categories=["Multiple provider models", "Comparison models"],
+                setup_url="https://openrouter.ai/keys",
+                cost_model="Usage-based pricing (varies by model)",
+                requires_extra_install=False
+            ),
+            "ollama": AIProvider(
+                name="Ollama (Local)",
+                provider_id="ollama",
+                description="Run models locally on your own machine, complete privacy, no API costs.",
+                api_key_env="dummy-key",
+                base_url_default="http://localhost:11434/v1",
+                model_categories=["Local open-source models", "Private models"],
+                setup_url="https://ollama.com/download",
+                cost_model="Free (runs on your hardware)",
+                requires_extra_install=False
+            )
+        }
+    
+    def get_provider(self, provider_id: str) -> Optional[AIProvider]:
+        """Get provider by ID"""
+        return self.providers.get(provider_id)
+    
+    def list_providers(self) -> List[AIProvider]:
+        """Get all available providers"""
+        return list(self.providers.values())
+    
+    def get_provider_menu(self) -> str:
+        """Generate a formatted menu of providers with multi-select option"""
+        menu = "\n🤖 Available AI Providers (Select one or multiple):"
+        menu += "\n" + "=" * 60 + "\n"
+        
+        for i, (provider_id, provider) in enumerate(self.providers.items(), 1):
+            menu += f"\n{i}. {provider.name} ({provider_id})"
+            menu += f"\n   {provider.description[:80]}{'...' if len(provider.description) > 80 else ''}"
+            menu += f"\n   💰 {provider.cost_model}"
+        
+        menu += f"\n{len(self.providers) + 1}. All Providers (Configure multiple API keys)"
+        menu += "\n" + "=" * 60
+        menu += "\n💡 Enter multiple numbers separated by commas (e.g., 1,3,5)"
+        return menu
+
+@dataclass
+class ConfigurationParameter:
+    """Configuration parameter with improved, accurate explanations"""
+    name: str
+    env_var: str
+    description: str
+    default_value: any
+    value_type: type
+    examples: List[str]
+    how_to_choose: str
+    
+    def get_user_prompt(self) -> str:
+        """Get user-friendly prompt for this parameter"""
+        return f"""
+⚙️  {self.name}
+   {self.description}
+   
+📝 Environment Variable: {self.env_var}
+🎯 Default: {self.default_value}
+📋 Examples: {', '.join(self.examples)}
+💡 How to choose: {self.how_to_choose}
+
+Enter value (or press Enter for default {self.default_value}): """
+
+class ConfigurationParameterRegistry:
+    """Registry of configuration parameters with accurate explanations"""
+    
+    def __init__(self):
+        self.parameters = {
+            "model": ConfigurationParameter(
+                name="AI Model",
+                env_var="AI_MODEL",
+                description="The specific AI model to use for generating responses. Different models have different capabilities, speeds, and costs.",
+                default_value="gpt-3.5-turbo",
+                value_type=str,
+                examples=["gpt-4", "gpt-3.5-turbo", "claude-3-5-sonnet", "llama3.2:latest"],
+                how_to_choose="Choose based on your needs: Advanced models for complex tasks, standard models for speed/cost efficiency, local models for privacy."
+            ),
+            "temperature": ConfigurationParameter(
+                name="Temperature (Creativity)",
+                env_var="AI_TEMPERATURE",
+                description="Controls randomness in responses. Lower values = more focused/deterministic, Higher values = more creative/random.",
+                default_value=0.7,
+                value_type=float,
+                examples=["0.0", "0.5", "0.7", "1.0", "1.5"],
+                how_to_choose="Use 0.0-0.3 for factual responses, 0.7-1.0 for creative tasks, 1.0+ for highly creative output. Most users use 0.7."
+            ),
+            "max_tokens": ConfigurationParameter(
+                name="Max Tokens (Response Length)",
+                env_var="AI_MAX_TOKENS",
+                description="Maximum number of tokens (approximately words/4) the AI can generate in a response. Controls response length and cost. A token is roughly 4 characters or 3/4 of a word.",
+                default_value=700,  # Updated based on your feedback
+                value_type=int,
+                examples=["150", "300", "700", "1500", "3000"],
+                how_to_choose="Short answers (150-300 tokens), standard responses (500-1000 tokens), detailed content (1500+ tokens). Higher values cost more and take longer to generate."
+            ),
+            "timeout": ConfigurationParameter(
+                name="Request Timeout",
+                env_var="AI_TIMEOUT",
+                description="Maximum time in seconds to wait for a response before giving up. Prevents hanging on slow or failed requests.",
+                default_value=60,
+                value_type=int,
+                examples=["30", "60", "120", "300"],
+                how_to_choose="30 seconds for fast models/quick tasks, 60 seconds standard, 120+ seconds for complex models or slow networks."
+            ),
+            "base_url": ConfigurationParameter(
+                name="API Base URL",
+                env_var="AI_BASE_URL",
+                description="Custom API endpoint URL. Only needed for custom deployments, proxies, or alternative endpoints.",
+                default_value=None,
+                value_type=str,
+                examples=["https://api.openai.com/v1", "https://api.groq.com/openai/v1", "http://localhost:11434/v1"],
+                how_to_choose="Use default unless using custom deployment, proxy, or local server. Most users never need to change this."
+            )
+        }
+    
+    def get_parameter(self, param_name: str) -> Optional[ConfigurationParameter]:
+        """Get parameter by name"""
+        return self.parameters.get(param_name)
+    
+    def list_parameters(self) -> List[ConfigurationParameter]:
+        """Get all available parameters"""
+        return list(self.parameters.values())
+
+class ImprovedSetupSystem:
+    """Improved setup system addressing user feedback"""
+    
+    def __init__(self):
+        self.os_info = self._detect_os()
+        self.provider_registry = AIProviderRegistry()
+        self.param_registry = ConfigurationParameterRegistry()
+    
+    def _detect_os(self) -> Dict[str, str]:
+        """Detect operating system and return appropriate commands"""
+        system = platform.system()
+        
+        if system == "Windows":
+            return {
+                "name": "Windows",
+                "env_file": Path.home() / ".ai_utilities.env",
+                "commands": {
+                    "temporary_cmd": "set AI_API_KEY=your-key-here",
+                    "temporary_powershell": "$env:AI_API_KEY='your-key-here'",
+                    "permanent_powershell": "[Environment]::SetEnvironmentVariable('AI_API_KEY', 'your-key-here', 'User')",
+                    "permanent_cmd": 'setx AI_API_KEY "your-key-here"',
+                    "reload_powershell": "Restart PowerShell or run: . $PROFILE"
+                },
+                "shell_options": ["PowerShell", "Command Prompt"]
+            }
+        else:  # Linux/Mac
+            return {
+                "name": "Linux/Mac",
+                "env_file": Path.home() / ".ai_utilities.env",
+                "shell_file": Path.home() / (".zshrc" if "zsh" in os.getenv("SHELL", "") else ".bashrc"),
+                "commands": {
+                    "temporary": "export AI_API_KEY='your-key-here'",
+                    "permanent_zsh": "echo 'export AI_API_KEY=\"your-key-here\"' >> ~/.zshrc",
+                    "permanent_bash": "echo 'export AI_API_KEY=\"your-key-here\"' >> ~/.bashrc",
+                    "reload": "source ~/.zshrc  # or source ~/.bashrc"
+                },
+                "shell_options": ["zsh", "bash"]
+            }
+    
+    def _choose_providers_interactive(self) -> List[AIProvider]:
+        """Interactive multi-provider selection"""
+        print(self.provider_registry.get_provider_menu())
+        
+        while True:
+            try:
+                choice = input(f"\nChoose provider(s) (1-{len(self.provider_registry.providers)} or {len(self.provider_registry.providers) + 1} for all, multiple allowed): ").strip()
+                
+                # Handle "all" option
+                if choice == str(len(self.provider_registry.providers) + 1):
+                    return list(self.provider_registry.providers.values())
+                
+                # Handle multiple selections
+                selected_indices = [int(x.strip()) - 1 for x in choice.split(',')]
+                selected_providers = []
+                
+                for index in selected_indices:
+                    if 0 <= index < len(self.provider_registry.providers):
+                        provider = list(self.provider_registry.providers.values())[index]
+                        selected_providers.append(provider)
+                    else:
+                        print(f"❌ Invalid number: {index + 1}")
+                        raise ValueError
+                
+                if selected_providers:
+                    print(f"\n✅ Selected providers: {', '.join([p.name for p in selected_providers])}")
+                    return selected_providers
+                else:
+                    print("❌ No valid providers selected.")
+                    
+            except ValueError:
+                print("❌ Please enter valid numbers separated by commas.")
+    
+    def _configure_multi_provider_env_vars(self, providers: List[AIProvider]) -> Dict[str, str]:
+        """Configure environment variables for multiple providers"""
+        print(f"\n🔑 Configure API Keys for {len(providers)} Provider(s)")
+        print("=" * 50)
+        
+        env_vars = {}
+        
+        for provider in providers:
+            print(f"\n🤖 {provider.name}")
+            print(f"📍 Environment variable: {provider.api_key_env}")
+            print(f"🔗 Get API key: {provider.setup_url}")
+            
+            if provider.provider_id == "ollama":
+                print("ℹ️  Ollama uses local installation, no API key needed")
+                env_vars[provider.api_key_env] = "dummy-key"
+            else:
+                api_key = getpass.getpass(f"Enter {provider.name} API key (hidden): ").strip()
+                if api_key:
+                    env_vars[provider.api_key_env] = api_key
+                    print(f"✅ {provider.name} API key configured")
+                else:
+                    print(f"⚠️  {provider.name} API key skipped")
+        
+        return env_vars
+    
+    def _generate_multi_provider_env_file(self, providers: List[AIProvider], env_vars: Dict[str, str], config: Dict[str, any]):
+        """Generate .env file for multiple providers"""
+        env_file = Path.cwd() / ".env"
+        
+        with open(env_file, 'w') as f:
+            f.write("# AI Utilities Configuration\n")
+            f.write("# Multi-Provider Setup\n")
+            f.write(f"# Configured providers: {', '.join([p.name for p in providers])}\n\n")
+            
+            # API keys for all providers
+            f.write("# API Keys\n")
+            for env_var, value in env_vars.items():
+                f.write(f"{env_var}={value}\n")
+            
+            f.write("\n# Default Configuration\n")
+            f.write(f"AI_PROVIDER={config.get('provider', providers[0].provider_id)}\n")
+            
+            # Common parameters
+            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url"]:
+                if param_name in config and config[param_name] is not None:
+                    env_var = self.param_registry.get_parameter(param_name).env_var
+                    f.write(f"{env_var}={config[param_name]}\n")
+        
+        # Set secure permissions
+        env_file.chmod(0o600)
+        
+        print(f"✅ Multi-provider configuration saved to {env_file}")
+        print(f"🔒 File permissions set to read/write for owner only")
+    
+    def demonstrate_improvements(self):
+        """Demonstrate the improvements made"""
+        print("🚀 Improved Setup System - Addressing User Feedback")
+        print("=" * 65)
+        
+        print("\n✅ IMPROVEMENTS MADE:")
+        print("1. 💰 Removed specific pricing - now uses cost model descriptions")
+        print("2. 🤖 Replaced specific models with model categories")
+        print("3. 🎯 Added multi-provider selection support")
+        print("4. 🔧 Improved environment variable handling for multiple providers")
+        print("5. 📏 Fixed max_tokens default to 700 and improved explanation")
+        print("6. 📚 Clarified that tokens = ~1/4 word, not time-based")
+        
+        print("\n🤖 PROVIDER INFORMATION (Future-Proof):")
+        for provider in self.provider_registry.list_providers():
+            print(f"\n{provider.name}:")
+            print(f"   Cost Model: {provider.cost_model}")
+            print(f"   Categories: {', '.join(provider.model_categories)}")
+        
+        print("\n⚙️ PARAMETER EXPLANATIONS (Accurate):")
+        max_tokens = self.param_registry.get_parameter("max_tokens")
+        if max_tokens:
+            print(f"Max Tokens: {max_tokens.description}")
+            print(f"Default: {max_tokens.default_value}")
+            print(f"Examples: {', '.join(max_tokens.examples)}")
+
+def main():
+    """Demonstrate the improved system"""
+    setup = ImprovedSetupSystem()
+    setup.demonstrate_improvements()
+    
+    print("\n🎯 KEY IMPROVEMENTS SUMMARY:")
+    print("=" * 40)
+    print("✅ Future-proof provider information")
+    print("✅ Multi-provider selection capability")
+    print("✅ Accurate parameter explanations")
+    print("✅ Flexible environment variable handling")
+    print("✅ Clear token vs time distinction")
+
+if __name__ == "__main__":
+    main()
