@@ -127,20 +127,6 @@ class AIProviderRegistry:
     
     def get_provider_menu(self) -> str:
         """Generate a formatted menu of providers with multi-select option"""
-        if not self.providers:
-            return """
-No AI providers are registered. Please install provider support:
-
-pip install "ai-utilities[openai]"
-pip install "ai-utilities[groq]"
-pip install "ai-utilities[anthropic]"
-pip install "ai-utilities[openrouter]"
-pip install "ai-utilities[together]"
-pip install "ai-utilities[ollama]"
-
-Providers will be available immediately after installation.
-"""
-        
         menu = "\nAvailable AI Providers (Select one or multiple):"
         menu += "\n" + "=" * 60 + "\n"
         
@@ -151,6 +137,21 @@ Providers will be available immediately after installation.
         menu += "\n" + "=" * 60
         menu += "\nEnter multiple numbers separated by commas (e.g., 1, 3, 5)"
         return menu
+    
+    def get_provider_installation_help(self, provider_ids: List[str]) -> str:
+        """Get installation help for specific missing providers"""
+        if not provider_ids:
+            return ""
+        
+        help_text = "\nMissing provider support. Please install:\n\n"
+        
+        for provider_id in provider_ids:
+            provider = self.get_provider(provider_id)
+            if provider:
+                help_text += f'pip install "ai-utilities[{provider_id}"]"\n'
+        
+        help_text += "\nProviders will be available immediately after installation.\n"
+        return help_text
 
 @dataclass
 class ConfigurationParameter:
@@ -243,6 +244,50 @@ class ImprovedSetupSystem:
         self.os_info = self._detect_os()
         self.provider_registry = AIProviderRegistry()
         self.param_registry = ConfigurationParameterRegistry()
+    
+    def should_trigger_setup(self) -> bool:
+        """Check if setup should be triggered based on environment configuration"""
+        # Check for any AI-related environment variables
+        ai_env_vars = [
+            'AI_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY', 'ANTHROPIC_API_KEY',
+            'OPENROUTER_API_KEY', 'TOGETHER_API_KEY'
+        ]
+        
+        has_api_key = any(os.getenv(var) for var in ai_env_vars)
+        
+        # Check for .env file with AI configuration
+        env_file = Path.cwd() / ".env"
+        has_env_file = env_file.exists()
+        
+        # Trigger setup if no API keys and no .env file
+        return not has_api_key and not has_env_file
+    
+    def get_missing_providers(self, selected_provider_ids: List[str]) -> List[str]:
+        """Check which selected providers are not installed"""
+        missing_providers = []
+        
+        for provider_id in selected_provider_ids:
+            try:
+                # Try to import the provider module
+                if provider_id == "openai":
+                    import openai
+                elif provider_id == "anthropic":
+                    import anthropic
+                elif provider_id == "groq":
+                    from groq import Groq
+                elif provider_id == "openrouter":
+                    import openai  # OpenRouter uses OpenAI client
+                elif provider_id == "together":
+                    import together
+                elif provider_id == "ollama":
+                    # Ollama doesn't require a package, just local installation
+                    pass
+                else:
+                    missing_providers.append(provider_id)
+            except ImportError:
+                missing_providers.append(provider_id)
+        
+        return missing_providers
     
     def _detect_os(self) -> Dict[str, str]:
         """Detect operating system and return appropriate commands"""
