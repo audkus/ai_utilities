@@ -3,10 +3,11 @@
 [![CI](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/ai-utilities.svg)](https://badge.fury.io/py/ai-utilities)
 
-A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
+A Python library for AI model interaction with **Enhanced Setup System**, Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
 
 ## Why This Library Exists
 
+- **🚀 Enhanced Setup System** - Interactive, guided configuration with smart detection and multi-provider support
 - **Unified Interface** - Single API for multiple AI providers (OpenAI, Anthropic, local models)
 - **Smart Caching** - Automatic response caching with namespace isolation and TTL support
 - **Rate Limiting** - Built-in rate limit management prevents API throttling and cost overruns
@@ -17,12 +18,13 @@ A Python library for AI model interaction with Pydantic configuration, clean arc
 
 | Feature | Direct SDK | AI Utilities |
 |---------|------------|--------------|
+| **🚀 Setup Experience** | X Manual configuration | Interactive guided setup |
 | **Multi-provider** | X Separate SDKs needed | Single interface |
 | **Caching** | X Manual implementation | Built-in, automatic |
 | **Rate Limits** | X Manual tracking | Automatic management |
 | **Type Safety** | Basic types | Full Pydantic models |
 | **Error Handling** | Provider-specific | Unified exceptions |
-| **Configuration** | Environment variables | Pydantic settings |
+| **Configuration** | Environment variables | Pydantic settings + .env generation |
 | **Testing** | X Manual mocking | Test utilities included |
 
 **Use AI Utilities when you need:**
@@ -46,11 +48,34 @@ A Python library for AI model interaction with Pydantic configuration, clean arc
 
 ## Quickstart
 
+### 🚀 Option 1: Enhanced Setup (Recommended)
+
 ```bash
 # Install with provider support
 pip install ai-utilities[openai]
 
-# Set API key
+# Import and use - setup triggers automatically if needed
+from ai_utilities import AiClient
+
+# This will automatically start the interactive setup if no configuration exists
+client = AiClient()
+
+# Ask questions with intelligent caching
+result = client.ask(
+    "Explain quantum computing in simple terms",
+    cache_namespace="learning"
+)
+
+print(result.text)
+```
+
+### ⚡ Option 2: Manual Setup
+
+```bash
+# Install with provider support
+pip install ai-utilities[openai]
+
+# Set API key manually
 export OPENAI_API_KEY="your-openai-key"
 ```
 
@@ -303,7 +328,87 @@ transcription, new_audio = processor.transcribe_and_generate(
 
 ## Configuration
 
-### Quick Setup
+### 🚀 Enhanced Setup System (Recommended)
+
+The **Enhanced Setup System** provides an interactive, guided configuration experience that makes setting up AI Utilities effortless:
+
+```bash
+# Run the interactive setup (automatically detects if configuration is needed)
+from ai_utilities import AiClient
+client = AiClient()  # Triggers setup if no configuration found
+```
+
+#### ✨ Key Features:
+
+- **🎯 Smart Detection** - Automatically triggers setup when no API keys or .env file found
+- **📋 Clean Provider Menu** - Simple, uncluttered selection without marketing language
+- **🔢 Multi-Provider Selection** - Choose multiple providers: `1, 3, 5` or `7` for all
+- **␣ Flexible Input** - Accepts spaces: `1, 3, 5` works the same as `1,3,5`
+- **📝 Detailed Parameter Explanations** - Clear guidance with examples for each setting
+- **∞ Unlimited Options** - Max tokens and timeout can be set to unlimited
+- **🔗 Provider-Specific Defaults** - Base URLs automatically set per provider
+- **📅 Date/Time Stamps** - Generated .env files include creation timestamp
+- **🔒 Secure Configuration** - Hidden API key input, secure file permissions (600)
+- **🎯 Targeted Help** - Installation guidance only for missing providers
+
+#### 🎮 Interactive Setup Experience:
+
+```
+Available AI Providers (Select one or multiple):
+============================================================
+
+1. OpenAI
+2. Groq
+3. Together AI
+4. Anthropic Claude
+5. OpenRouter
+6. Ollama
+7. All Providers (Configure multiple API keys)
+============================================================
+Enter multiple numbers separated by commas (e.g., 1, 3, 5)
+```
+
+#### ⚙️ Parameter Configuration:
+
+After selecting providers, you'll see detailed explanations for each parameter:
+
+```
+Max Tokens (Response Length)
+   Maximum number of tokens returned (approximately words/4). Leave empty for unlimited response length. Controls response length and cost. A token is roughly 4 characters or 3/4 of a word.
+Environment Variable: AI_MAX_TOKENS
+Default: 700
+Examples: 150, 300, 700, 1500, 3000, ""
+How to choose: Short answers (150-300 tokens), standard responses (500-1000 tokens), detailed content (1500+ tokens). Leave empty for unlimited. Higher values cost more and take longer to generate.
+Enter value (or press Enter for default 700):
+```
+
+#### 📄 Generated .env File:
+
+The setup creates a complete, self-contained .env file:
+
+```env
+# AI Utilities Configuration
+# Generated by Enhanced Setup System on 2026-01-10 08:01:54
+# Configured providers: OpenAI, Groq
+
+# API Keys
+OPENAI_API_KEY=sk-proj-actual-api-key-here
+GROQ_API_KEY=gqr_actual-api-key-here
+AI_API_KEY=sk-proj-actual-api-key-here
+
+# Default Configuration
+AI_PROVIDER=openai
+AI_MODEL=gpt-4
+AI_TEMPERATURE=0.7
+AI_MAX_TOKENS=1000
+AI_TIMEOUT=60
+AI_BASE_URL=https://api.openai.com/v1
+# AI_BASE_URL set to OpenAI default
+```
+
+#### 🛠️ Manual Setup Alternative
+
+If you prefer manual configuration, you can use the traditional approach:
 
 1. **Copy the example environment file:**
    ```bash
@@ -749,9 +854,20 @@ The project uses a clean, resilient test architecture designed for enterprise re
 
 **Test Categories:**
 - **Unit Tests** (447 tests): Core functionality, provider implementations, utilities
+- **Enhanced Setup Tests** (20 tests): Interactive setup system, provider selection, configuration generation
 - **Integration Tests** (46 tests): Real API calls, requires `AI_API_KEY` 
 - **Dashboard Tests** (30 tests): Self-validation of the dashboard runner
-- **Total**: 523 tests with clear separation and purpose
+- **Total**: 543 tests with clear separation and purpose
+
+**Enhanced Setup System Coverage:**
+- Provider registry and data management
+- Multi-provider selection with space handling
+- Parameter configuration with unlimited options
+- .env file generation with provider defaults
+- Date/time stamp functionality
+- Secure file permissions (600)
+- Targeted installation help
+- User-friendly parameter explanations
 
 **Test Isolation:**
 - Dashboard excludes its own tests to prevent self-reference issues
