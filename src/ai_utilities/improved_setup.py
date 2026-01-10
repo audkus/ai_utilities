@@ -398,7 +398,7 @@ class ImprovedSetupSystem:
                 else:
                     print(f"{provider.name} API key skipped")
         
-return env_vars
+        return env_vars
     
     def _generate_multi_provider_env_file(self, providers: List[AIProvider], env_vars: Dict[str, str], config: Dict[str, any]):
         """Generate .env file for multiple providers"""
