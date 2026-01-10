@@ -212,16 +212,16 @@ class ConfigurationParameterRegistry:
             "timeout": ConfigurationParameter(
                 name="Request Timeout",
                 env_var="AI_TIMEOUT",
-                description="Maximum time in seconds to wait for a response before giving up. Prevents hanging on slow or failed requests.",
+                description="Maximum time in seconds to wait for a response before giving up. Prevents hanging on slow or failed requests. Leave empty for no timeout limit.",
                 default_value=60,
                 value_type=int,
-                examples=["30", "60", "120", "300"],
-                how_to_choose="30 seconds for fast models/quick tasks, 60 seconds standard, 120+ seconds for complex models or slow networks."
+                examples=["30", "60", "120", "300", "600", ""],
+                how_to_choose="30 seconds for fast models/quick tasks, 60 seconds for standard use, 120+ seconds for complex models or local setups, 600 seconds for very slow models. Leave empty for no timeout limit."
             ),
             "base_url": ConfigurationParameter(
-                name="API Base URL",
+                name="API Base URL (Advanced)",
                 env_var="AI_BASE_URL",
-                description="Custom API endpoint URL. Use when connecting to local models, custom deployments, or proxy servers. For most cloud providers, leave empty to use default endpoint.",
+                description="The base URL your AI requests are sent to. Leave unset to use the provider's default. Only set this if you route requests through a proxy/gateway or use a self-hosted OpenAI-compatible API. If you're not sure, don't change it.",
                 default_value=None,
                 value_type=str,
                 examples=["", "https://api.openai.com/v1", "http://localhost:11434/v1", "https://your-custom-endpoint.com/v1"],
