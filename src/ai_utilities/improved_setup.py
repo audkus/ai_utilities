@@ -425,6 +425,15 @@ class ImprovedSetupSystem:
                     # Handle empty string for max_tokens (unlimited)
                     if param_name == "max_tokens" and config[param_name] == "":
                         f.write(f"# {env_var} is empty for unlimited response length\n")
+                    # Handle base_url - write provider default if user left empty
+                    elif param_name == "base_url" and config[param_name] == "":
+                        # Get the selected provider's default base URL
+                        selected_provider = providers[0] if providers else None
+                        if selected_provider:
+                            f.write(f"{env_var}={selected_provider.base_url_default}\n")
+                            f.write(f"# {env_var} set to {selected_provider.name} default\n")
+                        else:
+                            f.write(f"# {env_var} left empty - no provider selected\n")
                     else:
                         f.write(f"{env_var}={config[param_name]}\n")
         
