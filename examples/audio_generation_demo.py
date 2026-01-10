@@ -3,7 +3,7 @@
 Audio Generation Demo
 
 This demo shows how to use the AI Utilities audio processing
-capabilities to generate speech from text.
+capabilities to generate speech from text using the enhanced setup system.
 """
 
 import sys
@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ai_utilities.audio import AudioProcessor, AudioFormat
+from ai_utilities.client import AiClient
 
 
 def main():
@@ -20,8 +21,12 @@ def main():
     print("🎤 AI Utilities Audio Generation Demo")
     print("=" * 50)
     
-    # Initialize the audio processor
-    processor = AudioProcessor()
+    # Initialize client with enhanced setup system
+    print("🔧 Initializing AI client with enhanced setup...")
+    client = AiClient()
+    
+    # Initialize the audio processor with the configured client
+    processor = AudioProcessor(client=client)
     
     # Demo texts to generate
     demo_texts = [
@@ -78,13 +83,19 @@ def main():
     print(f"\n🎉 Audio generation demo completed!")
     print(f"📁 Check the generated audio files in the current directory.")
 
+    # Run additional demos
+    demo_voice_variations(client)
+    demo_speed_variations(client)
+    demo_format_variations(client)
+    demo_long_text(client)
 
-def demo_voice_variations():
+
+def demo_voice_variations(client):
     """Demonstrate different voices with the same text."""
     print("\n🎭 Voice Variations Demo")
     print("=" * 30)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     # Get supported voices
     try:
@@ -122,12 +133,12 @@ def demo_voice_variations():
             print(f"   ❌ Failed: {e}")
 
 
-def demo_speed_variations():
+def demo_speed_variations(client):
     """Demonstrate different speech speeds."""
     print("\n⚡ Speed Variations Demo")
     print("=" * 30)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     test_text = "This demonstrates how speech speed affects audio generation. Speed ranges from very slow to very fast."
     speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
@@ -157,12 +168,12 @@ def demo_speed_variations():
             print(f"   ❌ Failed: {e}")
 
 
-def demo_format_variations():
+def demo_format_variations(client):
     """Demonstrate different audio formats."""
     print("\n📁 Format Variations Demo")
     print("=" * 30)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     test_text = "This demo shows different audio formats for speech synthesis."
     formats = [AudioFormat.MP3, AudioFormat.WAV, AudioFormat.FLAC, AudioFormat.OGG]
@@ -192,12 +203,12 @@ def demo_format_variations():
             print(f"   ❌ Failed: {e}")
 
 
-def demo_long_text():
+def demo_long_text(client):
     """Demonstrate generating longer text."""
     print("\n📖 Long Text Demo")
     print("=" * 20)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     long_text = """
     Artificial intelligence has revolutionized the way we interact with technology. 
@@ -237,12 +248,6 @@ def demo_long_text():
 
 if __name__ == "__main__":
     main()
-    
-    # Run additional demos
-    demo_voice_variations()
-    demo_speed_variations()
-    demo_format_variations()
-    demo_long_text()
     
     print("\n" + "=" * 50)
     print("🎤 Audio Generation Demo Complete!")

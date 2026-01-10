@@ -3,7 +3,7 @@
 Audio Transcription Demo
 
 This demo shows how to use the AI Utilities audio processing
-capabilities to transcribe audio files to text.
+capabilities to transcribe audio files to text using the enhanced setup system.
 """
 
 import sys
@@ -18,6 +18,7 @@ from ai_utilities.audio import (
     validate_audio_file,
     get_audio_info,
 )
+from ai_utilities.client import AiClient
 
 
 def main():
@@ -25,8 +26,12 @@ def main():
     print("🎤 AI Utilities Audio Transcription Demo")
     print("=" * 50)
     
-    # Initialize the audio processor
-    processor = AudioProcessor()
+    # Initialize client with enhanced setup system
+    print("🔧 Initializing AI client with enhanced setup...")
+    client = AiClient()
+    
+    # Initialize the audio processor with the configured client
+    processor = AudioProcessor(client=client)
     
     # Demo audio file path (you'll need to provide your own)
     audio_file_path = "demo_audio.wav"
@@ -37,97 +42,63 @@ def main():
     if not Path(audio_file_path).exists():
         print(f"❌ Demo file not found: {audio_file_path}")
         print("\nTo run this demo:")
-        print("1. Place an audio file named 'demo_audio.wav' in this directory")
-        print("2. Or modify the audio_file_path variable to point to your audio file")
-        print("\nSupported formats: WAV, MP3, FLAC, OGG, M4A, WEBM")
-        print("Maximum file size: 25MB")
+        print("1. Place an audio file named 'demo_audio.wav' in the current directory")
+        print("2. Or modify the audio_file_path variable to point to your file")
+        print("3. Supported formats: MP3, WAV, M4A, FLAC, OGG")
         return
     
+    # Validate the audio file
     try:
-        # Validate the audio file
-        print("\n🔍 Validating audio file...")
-        if not validate_audio_file(audio_file_path):
-            print("❌ Invalid audio file")
-            return
-        
-        # Get audio information
-        print("\n📊 Getting audio file information...")
         audio_info = get_audio_info(audio_file_path)
-        print(f"   Format: {audio_info['format']}")
-        print(f"   Size: {audio_info['file_size_mb']} MB")
-        print(f"   Duration: {audio_info['duration_seconds'] or 'Unknown'} seconds")
-        print(f"   Sample rate: {audio_info['sample_rate'] or 'Unknown'} Hz")
-        print(f"   Channels: {audio_info['channels'] or 'Unknown'}")
+        print(f"✅ Audio file found and validated:")
+        print(f"   📊 Size: {audio_info['size_mb']:.2f} MB")
+        print(f"   🎵 Duration: {audio_info['duration_seconds']:.1f} seconds")
+        print(f"   📋 Format: {audio_info['format']}")
         
-        # Validate for transcription
-        print("\n✅ Validating for transcription...")
-        validation = processor.validate_audio_for_transcription(audio_file_path)
-        print(f"   Valid for transcription: {validation['valid']}")
-        
-        if validation['warnings']:
-            print("   Warnings:")
-            for warning in validation['warnings']:
-                print(f"     ⚠️  {warning}")
-        
-        if validation['errors']:
-            print("   Errors:")
-            for error in validation['errors']:
-                print(f"     ❌ {error}")
-            return
-        
-        # Transcribe the audio
-        print("\n🎯 Transcribing audio...")
-        print("   This may take a few moments depending on file size...")
-        
-        result = processor.transcribe_audio(
-            audio_file_path,
-            language="en",  # Optional: specify language
-            temperature=0.0,  # Lower temperature for more accurate transcription
-            response_format="verbose_json"  # Include timestamps
-        )
-        
-        # Display results
-        print("\n📝 Transcription Results:")
-        print(f"   Model used: {result.model_used}")
-        print(f"   Processing time: {result.processing_time_seconds:.2f} seconds")
-        print(f"   Detected language: {result.language or 'Unknown'}")
-        print(f"   Word count: {result.word_count}")
-        print(f"   Character count: {result.character_count}")
-        
-        print("\n📄 Transcribed Text:")
-        print("-" * 40)
-        print(result.text)
-        print("-" * 40)
-        
-        # Show segments if available
-        if result.segments:
-            print(f"\n⏰ Timestamped Segments ({len(result.segments)}):")
-            for i, segment in enumerate(result.segments[:5]):  # Show first 5 segments
-                start_min, start_sec = divmod(int(segment.start_time), 60)
-                end_min, end_sec = divmod(int(segment.end_time), 60)
-                print(f"   [{i+1}] {start_min:02d}:{start_sec:02d} - {end_min:02d}:{end_sec:02d}")
-                print(f"       {segment.text}")
+        if audio_info['size_mb'] > 25:
+            print("⚠️  Warning: File is larger than 25MB, may take longer to process")
             
-            if len(result.segments) > 5:
-                print(f"   ... and {len(result.segments) - 5} more segments")
-        
-        print("\n✅ Transcription completed successfully!")
-        
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        print("\nTroubleshooting:")
-        print("1. Check your API key is set: export AI_API_KEY='your-key'")
-        print("2. Ensure the audio file is in a supported format")
-        print("3. Verify the file size is under 25MB")
-        print("4. Check your internet connection")
+        print(f"❌ Error validating audio file: {e}")
+        return
+    
+    # Transcribe the audio
+    print("\n🎯 Transcribing audio...")
+    print("   This may take a few moments depending on file size...")
+    
+    result = processor.transcribe_audio(
+        audio_file_path,
+        language="en",  # Optional: specify language
+        temperature=0.0,  # Lower temperature for more accurate transcription
+        response_format="verbose_json"  # Include timestamps
+    )
+    
+    # Display results
+    print("\n📝 Transcription Results:")
+    print(f"   Model used: {result.model_used}")
+    print(f"   Processing time: {result.processing_time_seconds:.2f} seconds")
+    print(f"   Detected language: {result.language or 'Unknown'}")
+    print(f"   Word count: {result.word_count}")
+    
+    if result.text:
+        print(f"\n📄 Transcribed Text:")
+        print(f"   {result.text}")
+    else:
+        print("\n⚠️  No transcription text returned")
+        if hasattr(result, 'error') and result.error:
+            print(f"   Error: {result.error}")
+    
+    # Show additional demos
+    demo_supported_voices(client)
+    demo_supported_models(client)
 
 
-def demo_supported_voices():
+def demo_supported_voices(client):
     """Demonstrate getting supported voices for audio generation."""
     print("\n🎤 Supported Voices Demo")
     print("=" * 30)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     try:
         voices = processor.get_supported_voices()
@@ -143,12 +114,12 @@ def demo_supported_voices():
         print(f"❌ Error getting voices: {e}")
 
 
-def demo_supported_models():
+def demo_supported_models(client):
     """Demonstrate getting supported models."""
     print("\n🤖 Supported Models Demo")
     print("=" * 30)
     
-    processor = AudioProcessor()
+    processor = AudioProcessor(client=client)
     
     try:
         models = processor.get_supported_models()
@@ -165,10 +136,6 @@ def demo_supported_models():
 
 if __name__ == "__main__":
     main()
-    
-    # Show additional demos
-    demo_supported_voices()
-    demo_supported_models()
     
     print("\n" + "=" * 50)
     print("🎤 Audio Transcription Demo Complete!")
