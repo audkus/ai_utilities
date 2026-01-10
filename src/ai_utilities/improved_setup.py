@@ -708,14 +708,16 @@ class ImprovedSetupSystem:
                             except ValueError:
                                 print(f"Please enter a valid number")
                         elif param.value_type == bool:
-                            if user_input.lower() in ['true', 'yes', 'y', '1']:
+                            # Clean input: strip whitespace and convert to lowercase
+                            cleaned_input = user_input.strip().lower()
+                            if cleaned_input in ['true', 'yes', 'y', '1']:
                                 config[param_name] = True
                                 break
-                            elif user_input.lower() in ['false', 'no', 'n', '0']:
+                            elif cleaned_input in ['false', 'no', 'n', '0']:
                                 config[param_name] = False
                                 break
                             else:
-                                print("Please enter true/yes/y/1 or false/no/n/0")
+                                print("Please enter true/yes/y/1 or false/no/n/0 (case insensitive)")
                         else:
                             config[param_name] = user_input
                             break
