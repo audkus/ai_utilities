@@ -132,12 +132,10 @@ class AIProviderRegistry:
         
         for i, (provider_id, provider) in enumerate(self.providers.items(), 1):
             menu += f"\n{i}. {provider.name}"
-            menu += f"\n   {provider.description[:80]}{'...' if len(provider.description) > 80 else ''}"
-            menu += f"\n   💰 {provider.cost_model}"
         
         menu += f"\n{len(self.providers) + 1}. All Providers (Configure multiple API keys)"
         menu += "\n" + "=" * 60
-        menu += "\n💡 Enter multiple numbers separated by commas (e.g., 1,3,5)"
+        menu += "\n💡 Enter multiple numbers separated by commas (e.g., 1, 3, 5)"
         return menu
 
 @dataclass
@@ -264,7 +262,7 @@ class ImprovedSetupSystem:
             }
     
     def _choose_providers_interactive(self) -> List[AIProvider]:
-        """Interactive multi-provider selection"""
+        """Interactive multi-provider selection with space handling"""
         print(self.provider_registry.get_provider_menu())
         
         while True:
@@ -275,8 +273,10 @@ class ImprovedSetupSystem:
                 if choice == str(len(self.provider_registry.providers) + 1):
                     return list(self.provider_registry.providers.values())
                 
-                # Handle multiple selections
-                selected_indices = [int(x.strip()) - 1 for x in choice.split(',')]
+                # Handle multiple selections with space handling
+                # Clean up input: remove spaces, handle multiple commas
+                cleaned_choice = choice.replace(' ', '').replace(',,', ',')
+                selected_indices = [int(x.strip()) - 1 for x in cleaned_choice.split(',') if x.strip()]
                 selected_providers = []
                 
                 for index in selected_indices:
@@ -294,7 +294,9 @@ class ImprovedSetupSystem:
                     print("❌ No valid providers selected.")
                     
             except ValueError:
-                print("❌ Please enter valid numbers separated by commas.")
+                print("❌ Please enter valid numbers separated by commas (e.g., 1, 3, 5)")
+            except Exception as e:
+                print(f"❌ Error: {e}")
     
     def _configure_multi_provider_env_vars(self, providers: List[AIProvider]) -> Dict[str, str]:
         """Configure environment variables for multiple providers"""
