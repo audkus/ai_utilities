@@ -203,11 +203,11 @@ class ConfigurationParameterRegistry:
             "max_tokens": ConfigurationParameter(
                 name="Max Tokens (Response Length)",
                 env_var="AI_MAX_TOKENS",
-                description="Maximum number of tokens (approximately words/4) the AI can generate in a response. Controls response length and cost. A token is roughly 4 characters or 3/4 of a word.",
+                description="Maximum number of tokens returned (approximately words/4). Leave empty for unlimited response length. Controls response length and cost. A token is roughly 4 characters or 3/4 of a word.",
                 default_value=700,  # Updated based on your feedback
                 value_type=int,
-                examples=["150", "300", "700", "1500", "3000"],
-                how_to_choose="Short answers (150-300 tokens), standard responses (500-1000 tokens), detailed content (1500+ tokens). Higher values cost more and take longer to generate."
+                examples=["150", "300", "700", "1500", "3000", ""],
+                how_to_choose="Short answers (150-300 tokens), standard responses (500-1000 tokens), detailed content (1500+ tokens). Leave empty for unlimited. Higher values cost more and take longer to generate."
             ),
             "timeout": ConfigurationParameter(
                 name="Request Timeout",
@@ -221,11 +221,29 @@ class ConfigurationParameterRegistry:
             "base_url": ConfigurationParameter(
                 name="API Base URL",
                 env_var="AI_BASE_URL",
-                description="Custom API endpoint URL. Only needed for custom deployments, proxies, or alternative endpoints.",
+                description="Custom API endpoint URL. Use when connecting to local models, custom deployments, or proxy servers. For most cloud providers, leave empty to use default endpoint.",
                 default_value=None,
                 value_type=str,
-                examples=["https://api.openai.com/v1", "https://api.groq.com/openai/v1", "http://localhost:11434/v1"],
-                how_to_choose="Use default unless using custom deployment, proxy, or local server. Most users never need to change this."
+                examples=["", "https://api.openai.com/v1", "http://localhost:11434/v1", "https://your-custom-endpoint.com/v1"],
+                how_to_choose="Leave empty for standard cloud providers (OpenAI, Groq, etc.). Use only for local models (Ollama), custom deployments, or when behind a proxy."
+            ),
+            "text_generation_webui_base_url": ConfigurationParameter(
+                name="Text Generation WebUI URL",
+                env_var="TEXT_GENERATION_WEBUI_BASE_URL",
+                description="URL for Text Generation WebUI (Oobabooga). Automatically set when using local WebUI. Leave empty unless using custom WebUI endpoint.",
+                default_value=None,
+                value_type=str,
+                examples=["", "http://localhost:7860", "http://192.168.1.100:7860"],
+                how_to_choose="Leave empty for standard WebUI setup. Use only when WebUI runs on different port or remote machine."
+            ),
+            "fastchat_base_url": ConfigurationParameter(
+                name="FastChat URL",
+                env_var="FASTCHAT_BASE_URL",
+                description="URL for FastChat server. Automatically set when using FastChat. Leave empty unless using custom FastChat endpoint.",
+                default_value=None,
+                value_type=str,
+                examples=["", "http://localhost:8000", "http://192.168.1.100:8000"],
+                how_to_choose="Leave empty for standard FastChat setup. Use only when FastChat runs on different port or remote machine."
             )
         }
     
@@ -400,10 +418,15 @@ class ImprovedSetupSystem:
             f.write(f"AI_PROVIDER={config.get('provider', providers[0].provider_id)}\n")
             
             # Common parameters
-            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url"]:
+            for param_name in ["model", "temperature", "max_tokens", "timeout", "base_url", "text_generation_webui_base_url", "fastchat_base_url"]:
                 if param_name in config and config[param_name] is not None:
-                    env_var = self.param_registry.get_parameter(param_name).env_var
-                    f.write(f"{env_var}={config[param_name]}\n")
+                    param = self.param_registry.get_parameter(param_name)
+                    env_var = param.env_var
+                    # Handle empty string for max_tokens (unlimited)
+                    if param_name == "max_tokens" and config[param_name] == "":
+                        f.write(f"# {env_var} is empty for unlimited response length\n")
+                    else:
+                        f.write(f"{env_var}={config[param_name]}\n")
         
         # Set secure permissions
         env_file.chmod(0o600)
