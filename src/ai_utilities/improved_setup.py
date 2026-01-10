@@ -52,7 +52,7 @@ class AIProviderRegistry:
             "openai": AIProvider(
                 name="OpenAI",
                 provider_id="openai",
-                description="Most popular AI provider with advanced GPT models, excellent for general tasks, coding, and creative writing.",
+                description="AI provider with GPT models, suitable for general tasks, coding, and creative writing.",
                 api_key_env="OPENAI_API_KEY",
                 base_url_default="https://api.openai.com/v1",
                 model_categories=["GPT models", "Chat models", "Code models"],
@@ -63,7 +63,7 @@ class AIProviderRegistry:
             "groq": AIProvider(
                 name="Groq",
                 provider_id="groq",
-                description="Ultra-fast inference speeds, perfect for real-time applications and high-throughput use cases.",
+                description="AI provider with fast inference speeds, suitable for real-time applications and high-throughput use cases.",
                 api_key_env="GROQ_API_KEY",
                 base_url_default="https://api.groq.com/openai/v1",
                 model_categories=["Open-source models", "Fast inference models"],
@@ -74,7 +74,7 @@ class AIProviderRegistry:
             "together": AIProvider(
                 name="Together AI",
                 provider_id="together",
-                description="Wide variety of open-source models, cost-effective for specialized tasks and experimentation.",
+                description="AI provider with open-source models, suitable for specialized tasks and experimentation.",
                 api_key_env="TOGETHER_API_KEY",
                 base_url_default="https://api.together.xyz/v1",
                 model_categories=["Open-source models", "Specialized models"],
@@ -85,7 +85,7 @@ class AIProviderRegistry:
             "anthropic": AIProvider(
                 name="Anthropic Claude",
                 provider_id="anthropic",
-                description="Advanced reasoning and safety features, excellent for complex analytical tasks.",
+                description="AI provider with reasoning and safety features, suitable for complex analytical tasks.",
                 api_key_env="ANTHROPIC_API_KEY",
                 base_url_default="https://api.anthropic.com",
                 model_categories=["Claude models", "Reasoning models"],
@@ -96,7 +96,7 @@ class AIProviderRegistry:
             "openrouter": AIProvider(
                 name="OpenRouter",
                 provider_id="openrouter",
-                description="Access to multiple models through a single API, great for comparing model performance.",
+                description="AI provider with access to multiple models through a single API, suitable for comparing model performance.",
                 api_key_env="OPENROUTER_API_KEY",
                 base_url_default="https://openrouter.ai/api/v1",
                 model_categories=["Multiple provider models", "Comparison models"],
@@ -105,9 +105,9 @@ class AIProviderRegistry:
                 requires_extra_install=False
             ),
             "ollama": AIProvider(
-                name="Ollama (Local)",
+                name="Ollama",
                 provider_id="ollama",
-                description="Run models locally on your own machine, complete privacy, no API costs.",
+                description="Local AI provider that runs models on your machine, providing privacy and no API costs.",
                 api_key_env="dummy-key",
                 base_url_default="http://localhost:11434/v1",
                 model_categories=["Local open-source models", "Private models"],
@@ -131,7 +131,7 @@ class AIProviderRegistry:
         menu += "\n" + "=" * 60 + "\n"
         
         for i, (provider_id, provider) in enumerate(self.providers.items(), 1):
-            menu += f"\n{i}. {provider.name} ({provider_id})"
+            menu += f"\n{i}. {provider.name}"
             menu += f"\n   {provider.description[:80]}{'...' if len(provider.description) > 80 else ''}"
             menu += f"\n   💰 {provider.cost_model}"
         
