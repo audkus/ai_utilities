@@ -35,7 +35,7 @@ class AIProvider:
 📍 API Key Environment: {self.api_key_env}
 🔗 Get API Key: {self.setup_url}
 💰 Pricing: {self.pricing_info}
-🚀 Popular Models: {', '.join(self.models[:3])}{'...' if len(self.models) > 3 else ''}
+Popular Models: {', '.join(self.models[:3])}{'...' if len(self.models) > 3 else ''}
 
 ⚙️  Installation: pip install "ai-utilities[{self.provider_id}]"
         """
@@ -152,8 +152,8 @@ class ConfigurationParameter:
    {self.description}
    
 📝 Environment Variable: {self.env_var}
-🎯 Default: {self.default_value}
-📋 Examples: {', '.join(self.examples)}
+Default: {self.default_value}
+Examples: {', '.join(self.examples)}
 💡 How to choose: {self.how_to_choose}
 
 Enter value (or press Enter for default {self.default_value}): """
@@ -259,7 +259,7 @@ class EnhancedSetupSystem:
     
     def run_enhanced_setup(self) -> Dict[str, any]:
         """Run the complete enhanced setup process"""
-        print("🚀 AI Utilities Enhanced Setup")
+        print("AI Utilities Enhanced Setup")
         print("=" * 60)
         print(f"🖥️  Detected OS: {self.os_info['name']}")
         print()
@@ -274,16 +274,16 @@ class EnhancedSetupSystem:
         elif method == "manual":
             return self._show_manual_instructions()
         else:
-            print("❌ Invalid choice. Please try again.")
+            print("Invalid choice. Please try again.")
             return self.run_enhanced_setup()
     
     def _choose_setup_method(self) -> str:
         """Let user choose setup method"""
-        print("🎯 How would you like to set up AI Utilities?")
+        print("How would you like to set up AI Utilities?")
         print()
-        print("1. 🤖 Interactive Setup - Answer questions, I'll configure everything")
-        print("2. 📋 Guided Setup - Step-by-step instructions with choices")
-        print("3. 📖 Manual Instructions - Show me all options and commands")
+        print("1. Quick Setup - Use sensible defaults")
+        print("2. Guided Setup - Step-by-step instructions with choices")
+        print("3. Expert Setup - Full control over all options and commands")
         print()
         
         choice = input("Choose option (1-3): ").strip()
@@ -295,7 +295,7 @@ class EnhancedSetupSystem:
         elif choice == "3":
             return "manual"
         else:
-            print("❌ Please enter 1, 2, or 3.")
+            print("Please enter 1, 2, or 3.")
             return self._choose_setup_method()
     
     def _run_interactive_setup(self) -> Dict[str, any]:
@@ -333,16 +333,16 @@ class EnhancedSetupSystem:
                 
                 if 0 <= provider_index < len(self.provider_registry.providers):
                     provider = list(self.provider_registry.providers.values())[provider_index]
-                    print(f"\n✅ Selected: {provider.name}")
+                    print(f"\nSelected: {provider.name}")
                     print(provider.get_user_friendly_info())
                     
                     confirm = input("\nConfirm this provider? (Y/n): ").strip().lower()
                     if confirm in ['', 'y', 'yes']:
                         return provider
                 else:
-                    print("❌ Invalid number. Please try again.")
+                    print("Invalid number. Please try again.")
             except ValueError:
-                print("❌ Please enter a number.")
+                print("Please enter a number.")
     
     def _setup_api_key_interactive(self, provider: AIProvider) -> str:
         """Interactive API key setup"""
@@ -350,32 +350,32 @@ class EnhancedSetupSystem:
         print("-" * 40)
         
         print(f"📍 You'll need an API key from: {provider.setup_url}")
-        print(f"🔍 It should be set as: {provider.api_key_env}")
+        print(f"It should be set as: {provider.api_key_env}")
         
         if input("Have you copied your API key? (Y/n): ").strip().lower() in ['', 'y', 'yes']:
             api_key = getpass.getpass("Paste your API key (hidden input): ").strip()
             
             if not api_key:
-                print("❌ No API key provided.")
+                print("No API key provided.")
                 return self._setup_api_key_interactive(provider)
             
             # Basic validation
             if len(api_key) < 10:
-                print("⚠️  This seems too short for an API key. Please check.")
+                print("This seems too short for an API key. Please check.")
                 if input("Continue anyway? (y/N): ").strip().lower() != 'y':
                     return self._setup_api_key_interactive(provider)
             
-            print(f"✅ API key configured for {provider.name}")
+            print(f"API key configured for {provider.name}")
             return api_key
         else:
-            print("⏸️  Skipping API key setup. You can configure it later.")
+            print("Skipping API key setup. You can configure it later.")
             return ""
     
     def _configure_parameters_interactive(self) -> Dict[str, any]:
         """Interactive parameter configuration"""
-        print(f"\n⚙️  Configure AI Parameters")
+        print("\nConfigure AI Parameters")
         print("-" * 30)
-        print("💡 You can press Enter to accept defaults for any parameter")
+        print("You can press Enter to accept defaults for any parameter")
         print()
         
         config = {}
@@ -395,13 +395,13 @@ class EnhancedSetupSystem:
                         value = user_input
                     
                     config[param.name] = value
-                    print(f"✅ Set {param.name} = {value}")
+                    print(f"Set {param.name} = {value}")
                 except ValueError:
-                    print(f"❌ Invalid {param.name}. Using default: {param.default_value}")
+                    print(f"Invalid {param.name}. Using default: {param.default_value}")
                     config[param.name] = param.default_value
             else:
                 config[param.name] = param.default_value
-                print(f"✅ Using default {param.name}: {param.default_value}")
+                print(f"Using default {param.name}: {param.default_value}")
             
             print()
         
@@ -409,16 +409,16 @@ class EnhancedSetupSystem:
     
     def _save_configuration(self, config: Dict[str, any]):
         """Save configuration to .env file"""
-        print("💾 Saving configuration...")
+        print("Saving configuration...")
         
         env_file = Path.cwd() / ".env"
         
         # Check if file exists
         if env_file.exists():
-            print(f"⚠️  {env_file} already exists.")
+            print(f"{env_file} already exists.")
             overwrite = input("Overwrite? (y/N): ").strip().lower()
             if overwrite != 'y':
-                print("❌ Configuration not saved.")
+                print("Configuration not saved.")
                 return
         
         # Write configuration
@@ -444,13 +444,13 @@ class EnhancedSetupSystem:
         # Set secure permissions
         env_file.chmod(0o600)
         
-        print(f"✅ Configuration saved to {env_file}")
+        print(f"Configuration saved to {env_file}")
         print(f"🔒 File permissions set to read/write for owner only")
-        print(f"🚀 You can now use AI Utilities!")
+        print(f"You can now use AI Utilities!")
     
     def _run_guided_setup(self) -> Dict[str, any]:
         """Run guided setup with step-by-step instructions"""
-        print("\n📋 Guided Setup - Step-by-step instructions")
+        print("\nGuided Setup - Step-by-step instructions")
         print("=" * 50)
         
         # This would provide step-by-step guidance
@@ -463,7 +463,7 @@ class EnhancedSetupSystem:
         print("=" * 60)
         
         # OS-specific environment variable instructions
-        print("\n🔧 Environment Variable Setup:")
+        print("\nEnvironment Variable Setup:")
         print("-" * 30)
         
         if self.os_info["name"] == "Windows":

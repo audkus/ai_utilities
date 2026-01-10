@@ -586,7 +586,7 @@ class ImprovedSetupSystem:
         # Set secure permissions
         env_file.chmod(0o600)
         
-        print(f"✅ Multi-provider configuration saved to {env_file}")
+        print(f"Multi-provider configuration saved to {env_file}")
         print(f"🔒 File permissions set to read/write for owner only")
     
     def load_existing_settings(self) -> Optional[Dict[str, Any]]:
@@ -638,13 +638,13 @@ class ImprovedSetupSystem:
     
     def interactive_setup_with_existing(self) -> Dict[str, Any]:
         """Run interactive setup with option to use existing settings"""
-        print("🚀 AI Utilities Enhanced Setup System")
+        print("AI Utilities Enhanced Setup System")
         print("=" * 50)
         
         # Check for existing settings
         existing = self.load_existing_settings()
         if existing:
-            print("📁 Found existing configuration:")
+            print("Found existing configuration:")
             print(f"   Provider: {existing.get('provider', 'Unknown')}")
             print(f"   Model: {existing.get('model', 'Unknown')}")
             print(f"   Update Check: {existing.get('update_check_days', 'Unknown')} days")
@@ -654,13 +654,13 @@ class ImprovedSetupSystem:
                 try:
                     choice = input("Use existing settings? (Y/n, or 'e' to edit): ").strip().lower()
                     if choice in ['', 'y', 'yes']:
-                        print("✅ Using existing settings")
+                        print("Using existing settings")
                         return {"existing_settings": existing, "action": "use_existing"}
                     elif choice in ['e', 'edit']:
-                        print("🔧 Editing existing configuration...")
+                        print("Editing existing configuration...")
                         break
                     elif choice in ['n', 'no']:
-                        print("🆕 Creating new configuration...")
+                        print("Creating new configuration...")
                         break
                     else:
                         print("Please enter Y/n/e")
@@ -734,7 +734,7 @@ class ImprovedSetupSystem:
     
     def interactive_tiered_setup(self) -> Dict[str, Any]:
         """Run the complete tiered interactive setup"""
-        print("🚀 AI Utilities Enhanced Setup System")
+        print("AI Utilities Enhanced Setup System")
         print("=" * 50)
         
         # Step 1: Choose setup level
@@ -774,24 +774,24 @@ def run_tiered_setup():
 
     def demonstrate_improvements(self):
         """Demonstrate the improvements made"""
-        print("🚀 Improved Setup System - Addressing User Feedback")
+        print("Improved Setup System - Addressing User Feedback")
         print("=" * 65)
         
-        print("\n✅ IMPROVEMENTS MADE:")
-        print("1. 💰 Removed specific pricing - now uses cost model descriptions")
-        print("2. 🤖 Replaced specific models with model categories")
-        print("3. 🎯 Added multi-provider selection support")
-        print("4. 🔧 Improved environment variable handling for multiple providers")
-        print("5. 📏 Fixed max_tokens default to 700 and improved explanation")
-        print("6. 📚 Clarified that tokens = ~1/4 word, not time-based")
+        print("\nIMPROVEMENTS MADE:")
+        print("1. Removed specific pricing - now uses cost model descriptions")
+        print("2. Replaced specific models with model categories")
+        print("3. Added multi-provider selection support")
+        print("4. Improved environment variable handling for multiple providers")
+        print("5. Fixed max_tokens default to 700 and improved explanation")
+        print("6. Clarified that tokens = ~1/4 word, not time-based")
         
-        print("\n🤖 PROVIDER INFORMATION (Future-Proof):")
+        print("\nPROVIDER INFORMATION (Future-Proof):")
         for provider in self.provider_registry.list_providers():
             print(f"\n{provider.name}:")
             print(f"   Cost Model: {provider.cost_model}")
             print(f"   Categories: {', '.join(provider.model_categories)}")
         
-        print("\n⚙️ PARAMETER EXPLANATIONS (Accurate):")
+        print("\nPARAMETER EXPLANATIONS (Accurate):")
         max_tokens = self.param_registry.get_parameter("max_tokens")
         if max_tokens:
             print(f"Max Tokens: {max_tokens.description}")
@@ -803,13 +803,13 @@ def main():
     setup = ImprovedSetupSystem()
     setup.demonstrate_improvements()
     
-    print("\n🎯 KEY IMPROVEMENTS SUMMARY:")
+    print("\nKEY IMPROVEMENTS SUMMARY:")
     print("=" * 40)
-    print("✅ Future-proof provider information")
-    print("✅ Multi-provider selection capability")
-    print("✅ Accurate parameter explanations")
-    print("✅ Flexible environment variable handling")
-    print("✅ Clear token vs time distinction")
+    print("Future-proof provider information")
+    print("Multi-provider selection capability")
+    print("Accurate parameter explanations")
+    print("Flexible environment variable handling")
+    print("Clear token vs time distinction")
 
 if __name__ == "__main__":
     main()
