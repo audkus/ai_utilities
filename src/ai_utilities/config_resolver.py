@@ -404,18 +404,11 @@ def resolve_model(settings, provider: str) -> str:
     Raises:
         MissingModelError: If no model is configured and provider has no default
     """
-    import os
-    
-    # 1) Settings model takes priority
+    # 1) Settings model takes priority (populated by Pydantic from AI_MODEL/OPENAI_MODEL)
     if settings.model and settings.model.strip():
         return settings.model.strip()
     
-    # 2) Environment variable AI_MODEL
-    env_model = os.getenv("AI_MODEL")
-    if env_model and env_model.strip():
-        return env_model.strip()
-    
-    # 3) Provider-specific defaults (only for providers with real defaults)
+    # 2) Provider-specific defaults (only for providers with real defaults)
     provider_defaults = {
         "openai": "gpt-3.5-turbo",
         "groq": "llama3-70b-8192",
@@ -428,7 +421,7 @@ def resolve_model(settings, provider: str) -> str:
     if provider in provider_defaults:
         return provider_defaults[provider]
     
-    # 4) No model found - raise clear error
+    # 3) No model found - raise clear error
     raise MissingModelError(
         f"Model is required for provider '{provider}'. "
         f"Set AiSettings(model=...) or export AI_MODEL=..."
