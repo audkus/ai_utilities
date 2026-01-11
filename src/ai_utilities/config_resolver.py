@@ -96,7 +96,12 @@ def resolve_provider(
     if base_url:
         return _infer_provider_from_url(base_url)
     
-    # 5) Default to OpenAI
+    # 5) Infer from provider-specific base URLs in environment
+    env_provider = _infer_provider_from_env_base_urls()
+    if env_provider:
+        return _validate(env_provider)
+    
+    # 6) Default to OpenAI
     return "openai"
 
 
@@ -139,6 +144,56 @@ def _infer_provider_from_url(base_url: str) -> str:
     
     # Default to openai-compatible for custom endpoints
     return "openai_compatible"
+
+
+def _infer_provider_from_env_base_urls() -> Optional[str]:
+    """Infer provider from provider-specific base URL environment variables.
+    
+    Returns:
+        Provider name if found, None otherwise
+    """
+    import os
+    
+    # Check for provider-specific base URLs in order of preference
+    provider_base_url_mapping = {
+        "TEXT_GENERATION_WEBUI_BASE_URL": "text-generation-webui",
+        "FASTCHAT_BASE_URL": "fastchat", 
+        "OLLAMA_BASE_URL": "ollama",
+        "LMSTUDIO_BASE_URL": "lmstudio",
+    }
+    
+    for env_var, provider in provider_base_url_mapping.items():
+        if os.getenv(env_var):
+            return provider
+    
+    return None
+
+
+def _get_provider_specific_base_url(provider: str) -> Optional[str]:
+    """Get provider-specific base URL from environment variables.
+    
+    Args:
+        provider: Provider name
+        
+    Returns:
+        Provider-specific base URL or None if not found
+    """
+    import os
+    
+    # Mapping of providers to their specific environment variables
+    provider_base_url_mapping = {
+        "text_generation_webui": "TEXT_GENERATION_WEBUI_BASE_URL",
+        "fastchat": "FASTCHAT_BASE_URL",
+        "ollama": "OLLAMA_BASE_URL", 
+        "lmstudio": "LMSTUDIO_BASE_URL",
+        "text-generation-webui": "TEXT_GENERATION_WEBUI_BASE_URL",  # Alternative naming
+    }
+    
+    env_var = provider_base_url_mapping.get(provider.lower())
+    if env_var:
+        return os.getenv(env_var)
+    
+    return None
 
 
 def resolve_api_key(
@@ -274,11 +329,16 @@ def resolve_base_url(
     if base_url:
         return base_url
     
-    # 2) Settings base URL
+    # 2) Settings base URL (AI_BASE_URL)
     if settings_base_url:
         return settings_base_url
     
-    # 3) Provider default base URL
+    # 3) Provider-specific base URLs from environment
+    provider_base_url = _get_provider_specific_base_url(provider)
+    if provider_base_url:
+        return provider_base_url
+    
+    # 4) Provider default base URL
     if provider == "openai_compatible":
         raise MissingBaseUrlError("base_url is required")
 

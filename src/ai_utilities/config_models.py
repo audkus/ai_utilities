@@ -484,6 +484,56 @@ class AiSettings(BaseSettings):
     # Cache namespace
     cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
     
+    @field_validator('provider', mode='before')
+    @classmethod
+    def get_provider(cls, v):
+        """Get provider from environment with provider-specific base URL inference."""
+        if v is not None:
+            return v
+        
+        # Check explicit AI_PROVIDER first
+        ai_provider = os.getenv('AI_PROVIDER')
+        if ai_provider:
+            return ai_provider
+        
+        # Then infer from provider-specific base URLs
+        from .config_resolver import _infer_provider_from_env_base_urls
+        try:
+            env_provider = _infer_provider_from_env_base_urls()
+            if env_provider:
+                return env_provider
+        except Exception:
+            pass
+        
+        return "openai"  # Fallback to OpenAI
+    
+    @field_validator('base_url', mode='before')
+    @classmethod  
+    def get_base_url(cls, v):
+        """Get base URL from environment with provider-specific support."""
+        if v is not None:
+            return v
+        
+        # First check AI_BASE_URL
+        ai_base_url = os.getenv('AI_BASE_URL')
+        if ai_base_url:
+            return ai_base_url
+        
+        # Then check provider-specific base URLs
+        from .config_resolver import _get_provider_specific_base_url
+        
+        # Get the resolved provider (this will include provider-specific inference)
+        from .config_resolver import resolve_provider
+        try:
+            provider = resolve_provider()
+            provider_base_url = _get_provider_specific_base_url(provider)
+            if provider_base_url:
+                return provider_base_url
+        except Exception:
+            pass
+        
+        return None
+
     @field_validator('openai_api_key', mode='before')
     @classmethod
     def get_openai_key(cls, v):
