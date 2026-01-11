@@ -66,13 +66,24 @@ def resolve_provider(
     valid_providers = {
         "openai",
         "groq",
-        "together",
+        "together", 
         "openrouter",
         "ollama",
         "lmstudio",
         "text-generation-webui",
         "fastchat",
         "openai_compatible",
+        # Additional providers from documentation
+        "anyscale",
+        "fireworks", 
+        "replicate",
+        "vllm",
+        "oobabooga",
+        "localai",
+        "azure",
+        "google-vertex",
+        "aws-bedrock", 
+        "ibm-watsonx",
     }
 
     def _validate(name: str) -> str:
@@ -301,6 +312,14 @@ def _get_vendor_key_for_provider(provider: str, env_vars: Dict[str, str]) -> Opt
         "together": "TOGETHER_API_KEY",
         "openrouter": "OPENROUTER_API_KEY",
         "openai_compatible": "AI_API_KEY",  # Fallback for custom endpoints
+        # Additional providers from documentation
+        "anyscale": "ANYSCALE_API_KEY",
+        "fireworks": "FIREWORKS_API_KEY",
+        "replicate": "REPLICATE_API_TOKEN",
+        "azure": "AZURE_OPENAI_API_KEY",
+        "google-vertex": "GOOGLE_APPLICATION_CREDENTIALS",
+        "aws-bedrock": "AWS_ACCESS_KEY_ID",  # Simplified - would need full AWS auth
+        "ibm-watsonx": "IBM_CLOUD_API_KEY",
     }
     
     env_key = key_mapping.get(provider)
@@ -351,6 +370,17 @@ def resolve_base_url(
         "lmstudio": "http://localhost:1234/v1",
         "text-generation-webui": "http://localhost:5000/v1",
         "fastchat": "http://localhost:8000/v1",
+        # Additional providers from documentation
+        "anyscale": "https://api.endpoints.anyscale.com/v1",
+        "fireworks": "https://api.fireworks.ai/inference/v1",
+        "replicate": "https://api.replicate.com/v1",
+        "vllm": "http://localhost:8000/v1",
+        "oobabooga": "http://localhost:7860/v1", 
+        "localai": "http://localhost:8080/v1",
+        "azure": "https://your-resource.openai.azure.com",
+        "google-vertex": "https://us-central1-aiplatform.googleapis.com/v1",
+        "aws-bedrock": "https://bedrock-runtime.us-east-1.amazonaws.com",
+        "ibm-watsonx": "https://us-south.ml.cloud.ibm.com",
     }
     
     return defaults.get(provider, "https://api.openai.com/v1")
