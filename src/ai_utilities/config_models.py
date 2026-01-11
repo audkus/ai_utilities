@@ -11,7 +11,7 @@ from typing import Any, Dict, Literal, Optional, Union
 from configparser import ConfigParser
 from datetime import datetime, timedelta
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -383,7 +383,7 @@ class AiSettings(BaseSettings):
     Environment Variables:
         AI_API_KEY: API key (required for OpenAI, optional for local providers)
         AI_PROVIDER: Provider type ("openai" | "openai_compatible") (default: "openai")
-        AI_MODEL: Model name (default: provider-specific)
+        AI_MODEL: Model name (required, also accepts OPENAI_MODEL as legacy alias)
         AI_TEMPERATURE: Response temperature 0.0-2.0 (default: 0.7)
         AI_MAX_TOKENS: Maximum response tokens (optional)
         AI_BASE_URL: Custom API base URL (required for openai_compatible provider)
@@ -441,7 +441,11 @@ class AiSettings(BaseSettings):
     ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
     lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
     
-    model: Optional[str] = Field(default=None, description="Model to use (required)")
+    model: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("AI_MODEL", "OPENAI_MODEL"),
+        description="Model to use (required)"
+    )
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
     base_url: Optional[str] = Field(default=None, description="Custom base URL for API (required for openai_compatible)")
@@ -638,15 +642,16 @@ class AiSettings(BaseSettings):
         """Restore original environment variables (deprecated - no longer needed)."""
         pass  # No-op since we no longer mutate os.environ
     
-    @field_validator('model')
+    @field_validator('model', mode='before')
     @classmethod
-    def validate_model(cls, v):
-        """Validate that model is a non-empty string or None."""
+    def normalize_model(cls, v):
+        """Normalize model value: treat empty/whitespace as None."""
         if v is None:
             return v
-        if not v or not v.strip():
-            raise ValueError("Model cannot be empty")
-        return v.strip()
+        if isinstance(v, str):
+            v = v.strip()
+            return v if v else None
+        return v
     
     @field_validator('api_key')
     @classmethod
