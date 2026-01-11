@@ -322,6 +322,76 @@ pip install ai-utilities[all]
 
 ---
 
+## Basic Setup
+
+### Interactive Setup (Recommended)
+
+The easiest way to configure AI Utilities is with the interactive setup wizard:
+
+```bash
+# Run the setup wizard
+ai-utilities setup
+
+# Or alternatively:
+python -m ai_utilities setup
+```
+
+The setup wizard will guide you through:
+- Choosing your AI provider (OpenAI, Groq, Together AI, etc.)
+- Setting up your API key
+- Configuring model selection
+- Creating/updating your `.env` file
+
+### Manual Setup via Environment Variables
+
+If you prefer manual configuration, set these environment variables:
+
+```bash
+# Required configuration
+export AI_PROVIDER=openai
+export AI_API_KEY=your-api-key-here
+export AI_MODEL=gpt-3.5-turbo
+
+# Optional: Custom base URL for compatible endpoints
+# export AI_BASE_URL=https://your-custom-endpoint.com/v1
+```
+
+### Minimal Python Usage
+
+Once configured, using the library is simple:
+
+```python
+from ai_utilities import AiClient
+
+# Create client (loads from .env file automatically)
+client = AiClient()
+
+# Make a request
+response = client.ask("What is the capital of France?")
+print(response.text)
+```
+
+---
+
+## Non-Interactive Environments
+
+The core library is designed to be non-blocking and safe for automated environments:
+
+- **No prompts**: `AiClient()` will never ask for interactive input
+- **Clear errors**: Missing configuration raises `ProviderConfigurationError`
+- **Environment loading**: Automatically loads from `.env` files if present
+- **CI/CD safe**: Safe for use in CI/CD pipelines, Docker containers, and servers
+
+If configuration is missing, you'll see a clear error message:
+
+```
+Provider 'openai' configuration error: API key is required
+Run: ai-utilities setup
+Or set AI_API_KEY / AI_PROVIDER / AI_MODEL manually
+```
+
+---
+
 ## API Stability (v1.x)
 
 The following are considered stable public APIs and will follow semantic versioning:
