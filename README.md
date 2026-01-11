@@ -89,13 +89,20 @@ from ai_utilities import AiClient
 # Create client with automatic caching
 client = AiClient()
 
+# What is caching?
+# Caching stores AI responses locally so identical questions 
+# get instant answers without API calls or costs.
+
 # Ask questions with intelligent caching
 result = client.ask(
     "Explain quantum computing in simple terms",
-    cache_namespace="learning"
+    cache_namespace="learning"  # Groups related cached responses
 )
 
 print(result.text)
+
+# First call: Hits API, costs tokens, stores response
+# Second call (same question): Instant response, $0 cost
 
 # Monitor usage automatically
 print(f"Tokens used: {result.usage.total_tokens}")
@@ -745,6 +752,26 @@ local_client = AiClient(provider="lmstudio", base_url="http://localhost:1234/v1"
 ---
 
 ## 🧠 Smart Caching
+
+### What is Caching?
+
+Caching is the practice of storing AI responses locally so that when you ask the same question again, you get an instant answer without making another API call. This provides three key benefits:
+
+1. **Cost Savings** - Avoid paying for identical API requests
+2. **Speed** - Cached responses are instant (no network latency)
+3. **Reliability** - Works even when APIs are unavailable
+
+### How It Works
+
+```python
+# First time you ask:
+response = client.ask("What is Python?")
+# → Hits OpenAI API, costs ~0.001 USD, takes 1-2 seconds
+
+# Second time you ask (same question):
+response = client.ask("What is Python?")  
+# → Returns cached response instantly, $0 cost, ~0ms
+```
 
 AI Utilities includes intelligent caching with multiple backends to reduce API costs and improve response times.
 
