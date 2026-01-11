@@ -26,6 +26,11 @@ class MissingBaseUrlError(Exception):
     pass
 
 
+class MissingModelError(Exception):
+    """Raised when a model is required but not configured."""
+    pass
+
+
 @dataclass
 class ResolvedConfig:
     """Resolved configuration for a request."""
@@ -386,6 +391,50 @@ def resolve_base_url(
     return defaults.get(provider, "https://api.openai.com/v1")
 
 
+def resolve_model(settings, provider: str) -> str:
+    """Resolve model using precedence rules.
+    
+    Args:
+        settings: AiSettings instance
+        provider: Resolved provider name
+        
+    Returns:
+        Resolved model name
+        
+    Raises:
+        MissingModelError: If no model is configured and provider has no default
+    """
+    import os
+    
+    # 1) Settings model takes priority
+    if settings.model and settings.model.strip():
+        return settings.model.strip()
+    
+    # 2) Environment variable AI_MODEL
+    env_model = os.getenv("AI_MODEL")
+    if env_model and env_model.strip():
+        return env_model.strip()
+    
+    # 3) Provider-specific defaults (only for providers with real defaults)
+    provider_defaults = {
+        "openai": "gpt-3.5-turbo",
+        "groq": "llama3-70b-8192",
+        "together": "meta-llama/Llama-3-8b-chat-hf",
+        "openrouter": "meta-llama/llama-3-8b-instruct:free",
+        # Note: Local providers typically require explicit model selection
+        # Enterprise providers often require model specification per deployment
+    }
+    
+    if provider in provider_defaults:
+        return provider_defaults[provider]
+    
+    # 4) No model found - raise clear error
+    raise MissingModelError(
+        f"Model is required for provider '{provider}'. "
+        f"Set AiSettings(model=...) or export AI_MODEL=..."
+    )
+
+
 def resolve_request_config(
     settings,
     provider: Optional[str] = None,
@@ -448,8 +497,8 @@ def resolve_request_config(
     except MissingBaseUrlError as e:
         raise MissingBaseUrlError(str(e))  # Re-raise so provider_factory can catch it 
         
-    # Resolve other parameters (per-request wins, then settings)
-    resolved_model = model or settings.model
+    # Resolve other parameters (per-request wins, then settings, then defaults)
+    resolved_model = model or resolve_model(settings, resolved_provider)
     resolved_temperature = temperature or settings.temperature
     resolved_max_tokens = max_tokens or getattr(settings, 'max_tokens', None)
     resolved_timeout = timeout or settings.request_timeout_s or settings.timeout
