@@ -70,12 +70,16 @@ class OpenAIProvider(BaseProvider):
         # Add response format for JSON mode if requested and model supports it
         model = params["model"]
         
-        # JSON mode is supported by most recent GPT models
-        # Use a flexible check rather than hardcoded list
+        # JSON mode is supported by recent GPT models and most OpenAI-compatible models
+        # Use model name patterns to detect JSON capability
         supports_json_mode = (
-            model.startswith("test-model-1") or 
-            model.startswith("test-model-3") or 
-            model in ["test-model-5", "test-model-7", "test-model-8"]
+            model.startswith("gpt-4") or 
+            model.startswith("gpt-3.5-turbo") or
+            "json" in model.lower() or
+            model.startswith("claude-3") or
+            model in ["o1-preview", "o1-mini"] or
+            # For OpenAI-compatible providers, assume JSON support unless explicitly disabled
+            self.provider_name != "openai"
         )
         
         if return_format == "json" and supports_json_mode:

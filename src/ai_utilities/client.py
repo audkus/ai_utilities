@@ -1695,28 +1695,19 @@ class AiClient:
             params["dimensions"] = dimensions
         
         response = client.embeddings.create(**params)
-        
         return [item.embedding for item in response.data]
 
 
 # Convenience function for backward compatibility
-def create_client(api_key: Optional[str] = None, model: str = "test-model-1", show_progress: bool = True, **kwargs) -> AiClient:
-    """
-    Create an AI client with common parameters.
-    
-    This is a convenience function for quickly creating an AiClient with the most
-    commonly used parameters. It's useful for simple use cases and backward
-    compatibility.
+def create_client(api_key: Optional[str] = None, model: Optional[str] = None, show_progress: bool = True, **kwargs) -> AiClient:
+    """Create an AiClient with explicit parameters.
     
     Args:
-        api_key: OpenAI API key. If provided, takes highest precedence.
-                 If None, will resolve from environment/.env automatically.
-        model: Model name to use (default: "test-model-1")
-        show_progress: Whether to show progress indicator during requests
-        **kwargs: Additional settings passed to AiSettings:
-                 - temperature: Response temperature 0.0-2.0
-                 - max_tokens: Maximum response tokens
-                 - timeout: Request timeout in seconds
+        api_key: API key to use (required for most providers)
+        model: Model name to use (required)
+        show_progress: Whether to show progress indicators
+        **kwargs: Additional settings parameters
+        
                  - base_url: Custom API base URL
     
     Returns:

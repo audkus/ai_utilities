@@ -5,7 +5,7 @@ from typing import Optional, TYPE_CHECKING, List
 from .base_provider import BaseProvider
 from .openai_compatible_provider import OpenAICompatibleProvider
 from .provider_exceptions import ProviderConfigurationError, MissingOptionalDependencyError
-from ..config_resolver import resolve_request_config, MissingApiKeyError, UnknownProviderError, MissingBaseUrlError
+from ..config_resolver import resolve_request_config, MissingApiKeyError, UnknownProviderError, MissingBaseUrlError, MissingModelError
 
 if TYPE_CHECKING:
     from ..client import AiSettings
@@ -100,5 +100,7 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
             raise ProviderConfigurationError("API key is required", "openai")
         else:
             raise ProviderConfigurationError(str(e), provider_name)
+    except MissingModelError as e:
+        raise ProviderConfigurationError(str(e), getattr(settings, "provider", "unknown"))
     except UnknownProviderError as e:
         raise ProviderConfigurationError(str(e), getattr(settings, "provider", "unknown"))

@@ -36,7 +36,7 @@ Example Usage:
     audio_data = client.generate_audio("Hello, world!", voice="nova")
     
     # Using explicit settings
-    settings = AiSettings(api_key="your-key", model="test-model-1")
+    settings = AiSettings(api_key="your-key", model="gpt-4")
     client = AiClient(settings)
     response = client.ask_json("List 5 AI trends")
 """

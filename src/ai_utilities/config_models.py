@@ -186,16 +186,16 @@ class AIConfig(BaseModel):
     
     models: Dict[str, ModelConfig] = Field(
         default_factory=lambda: {
-            "test-model-1": ModelConfig(),
-            "test-model-2": ModelConfig(
+            "gpt-3.5-turbo": ModelConfig(),
+            "gpt-4": ModelConfig(
                 requests_per_minute=5000,
                 tokens_per_minute=2000000,
                 tokens_per_day=20000000
             ),
-            "test-model-3": ModelConfig(
-                requests_per_minute=5000,
-                tokens_per_minute=500000,
-                tokens_per_day=1500000
+            "gpt-4-turbo": ModelConfig(
+                requests_per_minute=3000,
+                tokens_per_minute=3000000,
+                tokens_per_day=30000000
             ),
         },
         description="Model-specific rate limiting configurations"
@@ -282,16 +282,16 @@ class AIConfig(BaseModel):
             # Ensure we have the default models if none provided
             if not models_overrides:
                 models_overrides = {
-                    "test-model-1": {},
-                    "test-model-2": {
+                    "gpt-3.5-turbo": {},
+                    "gpt-4": {
                         "requests_per_minute": 5000,
                         "tokens_per_minute": 2000000,
                         "tokens_per_day": 20000000
                     },
-                    "test-model-3": {
-                        "requests_per_minute": 5000,
-                        "tokens_per_minute": 500000,
-                        "tokens_per_day": 1500000
+                    "gpt-4-turbo": {
+                        "requests_per_minute": 3000,
+                        "tokens_per_minute": 3000000,
+                        "tokens_per_day": 30000000
                     },
                 }
             
@@ -383,7 +383,7 @@ class AiSettings(BaseSettings):
     Environment Variables:
         AI_API_KEY: API key (required for OpenAI, optional for local providers)
         AI_PROVIDER: Provider type ("openai" | "openai_compatible") (default: "openai")
-        AI_MODEL: Model name (default: "test-model-1")
+        AI_MODEL: Model name (default: provider-specific)
         AI_TEMPERATURE: Response temperature 0.0-2.0 (default: 0.7)
         AI_MAX_TOKENS: Maximum response tokens (optional)
         AI_BASE_URL: Custom API base URL (required for openai_compatible provider)
@@ -441,7 +441,7 @@ class AiSettings(BaseSettings):
     ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
     lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
     
-    model: str = Field(default="test-model-1", description="Default model to use")
+    model: Optional[str] = Field(default=None, description="Model to use (required)")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
     base_url: Optional[str] = Field(default=None, description="Custom base URL for API (required for openai_compatible)")
@@ -641,7 +641,9 @@ class AiSettings(BaseSettings):
     @field_validator('model')
     @classmethod
     def validate_model(cls, v):
-        """Validate that model is a non-empty string."""
+        """Validate that model is a non-empty string or None."""
+        if v is None:
+            return v
         if not v or not v.strip():
             raise ValueError("Model cannot be empty")
         return v.strip()
@@ -688,7 +690,7 @@ class AiSettings(BaseSettings):
             max_tokens_raw = openai_section.get('max_tokens')
             settings_dict = {
                 'api_key': openai_section.get('api_key'),
-                'model': openai_section.get('model', 'test-model-1'),
+                'model': openai_section.get('model'),  # No default - require explicit model
                 'temperature': float(openai_section.get('temperature', 0.7)),
                 'max_tokens': int(max_tokens_raw) if max_tokens_raw and max_tokens_raw.strip() else None,
                 'base_url': openai_section.get('base_url'),
@@ -736,7 +738,7 @@ class AiSettings(BaseSettings):
         
         # Check current environment
         current_api_key = os.getenv("AI_API_KEY")
-        current_model = os.getenv("AI_MODEL", "test-model-1")
+        current_model = os.getenv("AI_MODEL")  # No default - model is required
         current_temperature = os.getenv("AI_TEMPERATURE", "0.7")
         
         # Determine if setup is needed
@@ -931,9 +933,9 @@ class AiSettings(BaseSettings):
             # Use historical models as baseline for comparison
             # This list only needs to include models that existed at time of implementation
             baseline_models = {
-                'test-model-1', 'test-model-3', 'test-model-5',
                 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
-                'gpt-3.5-turbo-instruct', 'text-davinci-003',
+                'gpt-3.5-turbo-instruct', 'gpt-4', 'gpt-4-turbo',
+                'text-davinci-003',
                 'text-curie-001', 'text-babbage-001', 'text-ada-001'
             }
             
