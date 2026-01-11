@@ -112,12 +112,12 @@ class AiClient:
         - Progress indication
         - Provider abstraction
         - Environment-based configuration
-        - Interactive setup for missing API keys
+        - Non-blocking by default (use CLI for setup)
     """
     
-    def __init__(self, settings: Optional[AiSettings] = None, provider: Optional[BaseProvider] = None, 
+    def __init__(self, settings: Optional["AiSettings"] = None, provider: Optional[BaseProvider] = None, 
                  track_usage: bool = False, usage_file: Optional[Path] = None, 
-                 show_progress: bool = True, auto_setup: bool = True, smart_setup: bool = False,
+                 show_progress: bool = True, auto_setup: bool = False, smart_setup: bool = False,
                  cache: Optional[CacheBackend] = None):
         """Initialize AI client with explicit settings.
         
@@ -127,19 +127,29 @@ class AiClient:
             track_usage: Whether to track usage statistics
             usage_file: Custom file for usage tracking
             show_progress: Whether to show progress indicator during requests
-            auto_setup: Whether to automatically prompt for setup if API key is missing
-            smart_setup: Whether to use smart setup (checks for new models daily)
+            auto_setup: Whether to automatically prompt for setup if API key missing (DEPRECATED - use CLI)
+            smart_setup: Whether to use smart setup (DEPRECATED - use CLI)
             cache: Optional cache backend to override settings-based cache configuration
+            
+        Note:
+            The interactive setup has been moved to the CLI. Use 'ai-utilities setup' command
+            for interactive configuration. By default, the client only loads from .env files.
         """
         if settings is None:
             if smart_setup:
                 settings = AiSettings.smart_setup()
             elif auto_setup:
-                # Use basic interactive setup (only if API key missing)
+                # DEPRECATED: Use 'ai-utilities setup' instead
+                import warnings
+                warnings.warn(
+                    "auto_setup is deprecated. Use 'ai-utilities setup' command for interactive setup.",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
                 settings = AiSettings.interactive_setup()
             else:
-                # Auto-load .env only outside pytest
-                if not _running_under_pytest() and Path(".env").exists():
+                # Load from .env if it exists, otherwise use empty settings
+                if Path(".env").exists():
                     settings = AiSettings.from_dotenv(".env")
                 else:
                     settings = AiSettings()
@@ -1713,23 +1723,11 @@ def create_client(api_key: Optional[str] = None, model: Optional[str] = None, sh
     Returns:
         AiClient: Configured AI client ready for use
     
-    Example:
-        # Quick client with API key
-        client = create_client(api_key="your-key", model="gpt-4")
+    Raises:
+        ProviderConfigurationError: If required configuration is missing
         
-        # Using environment variables or .env file
-        client = create_client()
-        
-        # With custom settings
-        client = create_client(
-            api_key="your-key",
-            model="gpt-4",
-            temperature=0.5,
-            max_tokens=1000
-        )
-        
-        # Use the client
-        response = client.ask("What is AI?")
+    Note:
+        For interactive setup, run 'ai-utilities setup' command instead.
     """
     # Create settings first
     settings = AiSettings(model=model, **kwargs)

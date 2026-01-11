@@ -71,6 +71,9 @@ complete = [
   "ai-utilities[dev,audio]",
 ]
 
+[project.scripts]
+ai-utilities = "ai_utilities.cli:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
