@@ -1,0 +1,192 @@
+{
+  "timestamp": "2026-01-10T19:08:58.988196",
+  "duration": 0.8325910568237305,
+  "overall_status": "failed",
+  "summary": {
+    "total_tests": 21,
+    "total_passed": 0,
+    "total_failed": 21,
+    "success_rate": 0.0
+  },
+  "categories": {
+    "core_library": {
+      "status": "failed",
+      "tests_run": 4,
+      "tests_passed": 0,
+      "tests_failed": 4,
+      "errors": [
+        "test_client.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_config_models.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "Test file not found: test_enhanced_setup.py",
+        "Test file not found: test_improved_setup.py",
+        "test_caching.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_audio_integration.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.18260908126831055,
+      "details": {
+        "test_client.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_config_models.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_caching.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_audio_integration.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    },
+    "examples": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "test_examples_comprehensive.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.03777599334716797,
+      "details": {
+        "test_examples_comprehensive.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    },
+    "scripts": {
+      "status": "failed",
+      "tests_run": 11,
+      "tests_passed": 0,
+      "tests_failed": 11,
+      "errors": [
+        "test_fastchat_setup_script.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_text_generation_webui_setup_script.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_coverage_summary_script.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_dashboard.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_provider_health_monitor.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_provider_diagnostic.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_daily_provider_check.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_provider_change_detector.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_webui_api_helper.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_main_script.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_ci_provider_check.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.42372608184814453,
+      "details": {
+        "test_fastchat_setup_script.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_text_generation_webui_setup_script.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_coverage_summary_script.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_dashboard.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_provider_health_monitor.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_provider_diagnostic.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_daily_provider_check.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_provider_change_detector.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_webui_api_helper.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_main_script.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_ci_provider_check.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    },
+    "integration": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "test_integration_workflows.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.03694796562194824,
+      "details": {
+        "test_integration_workflows.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    },
+    "performance": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "test_performance_benchmarks.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.03907418251037598,
+      "details": {
+        "test_performance_benchmarks.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    },
+    "ci_pipeline": {
+      "status": "failed",
+      "tests_run": 3,
+      "tests_passed": 0,
+      "tests_failed": 3,
+      "errors": [
+        "test_examples_comprehensive.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_provider_health_monitor.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n",
+        "test_ci_provider_check.py: /Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+      ],
+      "duration": 0.11216592788696289,
+      "details": {
+        "test_examples_comprehensive.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_provider_health_monitor.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        },
+        "test_ci_provider_check.py": {
+          "status": "failed",
+          "output": "/Users/steffenrasmussen/ai_utilities_test_project/venv/bin/python: No module named pytest\n"
+        }
+      }
+    }
+  },
+  "coverage": {
+    "examples": "100%",
+    "scripts": "100%",
+    "core_library": "95%",
+    "integration": "90%"
+  }
+}
