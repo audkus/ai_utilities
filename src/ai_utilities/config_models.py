@@ -657,6 +657,28 @@ class AiSettings(BaseSettings):
         Returns:
             AiSettings instance with configured values
         """
+        # Import environment detection
+        from .env_detection import is_interactive_environment, should_prompt_for_reconfigure, get_environment_type
+        
+        # Check if we should prompt at all
+        if not is_interactive_environment():
+            # Non-interactive environment - try to load from environment or .env
+            print(f"Non-interactive environment detected ({get_environment_type()}) - skipping interactive setup")
+            
+            # Try to load from environment variables
+            if os.getenv("AI_API_KEY"):
+                print("Using existing environment variables for configuration")
+                return cls()  # Constructor automatically loads from environment
+            
+            # Try to load from .env file
+            if Path(".env").exists():
+                print("Using .env file for configuration")
+                return cls.from_dotenv(".env")
+            
+            # No configuration available - create minimal settings
+            print("No existing configuration found - using minimal settings")
+            return cls()
+        
         print("=== AI Utilities Interactive Setup ===\n")
         
         # Detect operating system
@@ -672,8 +694,18 @@ class AiSettings(BaseSettings):
         
         if not needs_setup and current_api_key:
             print(f"✓ API key is already configured (model: {current_model}, temperature: {current_temperature})")
-            response = input("Do you want to reconfigure? (y/N): ").strip().lower()
-            needs_setup = response in ['y', 'yes']
+            
+            # Only prompt if we're in an environment where prompting is safe
+            if should_prompt_for_reconfigure():
+                try:
+                    response = input("Do you want to reconfigure? (y/N): ").strip().lower()
+                    needs_setup = response in ['y', 'yes']
+                except (EOFError, KeyboardInterrupt):
+                    print("\nNo input received - keeping existing configuration")
+                    needs_setup = False
+            else:
+                print("Non-interactive or CI environment detected - keeping existing configuration")
+                needs_setup = False
         
         if needs_setup:
             print("\nPlease enter your OpenAI configuration:")
