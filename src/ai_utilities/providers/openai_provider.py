@@ -19,18 +19,27 @@ from .provider_exceptions import FileTransferError
 class OpenAIProvider(BaseProvider):
     """OpenAI provider for AI requests."""
     
-    def __init__(self, settings):
+    def __init__(self, settings, client=None):
         """Initialize OpenAI provider.
         
         Args:
             settings: AI settings containing api_key, model, temperature, etc.
+            client: Optional OpenAI client instance (for testing)
         """
         self.settings = settings
-        self.client = OpenAI(
-            api_key=settings.api_key,
-            base_url=settings.base_url,
-            timeout=settings.timeout
-        )
+        if client is not None:
+            self.client = client
+        else:
+            self.client = OpenAI(
+                api_key=settings.api_key,
+                base_url=settings.base_url,
+                timeout=settings.timeout
+            )
+    
+    @property
+    def provider_name(self) -> str:
+        """Get the provider name."""
+        return "openai"
     
     def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, Dict[str, Any]]:
         """Ask a single question to OpenAI.
