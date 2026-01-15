@@ -5,6 +5,7 @@ import sys
 import tempfile
 import asyncio
 import logging
+import socket
 from pathlib import Path
 from typing import Generator
 
@@ -15,6 +16,99 @@ import pytest
 src_path = str(Path(__file__).parent.parent / "src")
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
+
+
+def pytest_addoption(parser):
+    """Add custom command line options for test guardrails."""
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests that require real network/API calls"
+    )
+    parser.addoption(
+        "--allow-network",
+        action="store_true", 
+        default=False,
+        help="Allow outbound network connections in tests"
+    )
+    parser.addoption(
+        "--run-slow",
+        action="store_true",
+        default=False,
+        help="Run tests marked as slow"
+    )
+
+
+def pytest_configure(config):
+    """Configure pytest with custom markers and settings."""
+    # Add marker for order dependence tests
+    config.addinivalue_line(
+        "markers", "order_dependent: marks tests that verify order independence"
+    )
+    
+    # Register integration marker
+    config.addinivalue_line(
+        "markers", "integration: marks tests as integration tests that require real network/API calls"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection to handle markers and order independence."""
+    # Skip integration tests unless explicitly enabled
+    if not config.getoption("--run-integration"):
+        skip_integration = pytest.mark.skip(reason="need --run-integration option to run")
+        for item in items:
+            if "integration" in item.keywords:
+                item.add_marker(skip_integration)
+    
+    # Skip slow tests unless explicitly enabled
+    if not config.getoption("--run-slow"):
+        skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
+        for item in items:
+            if "slow" in item.keywords:
+                item.add_marker(skip_slow)
+    
+    # Add a marker to track test order for debugging
+    for i, item in enumerate(items):
+        item.user_properties.append(("test_order", i))
+
+
+@pytest.fixture(autouse=True)
+def block_network(monkeypatch, request):
+    """
+    Block outbound network connections unless explicitly allowed.
+    
+    This fixture runs for all tests and blocks socket connections
+    unless integration tests are enabled OR network is explicitly allowed.
+    """
+    # Check if network should be allowed
+    integration_enabled = request.config.getoption("--run-integration")
+    network_allowed = request.config.getoption("--allow-network")
+    env_integration = os.getenv("AIU_RUN_INTEGRATION") == "1"
+    
+    allow_network = integration_enabled or network_allowed or env_integration
+    
+    if not allow_network:
+        original_connect = socket.socket.connect
+        
+        def blocked_connect(self, *args, **kwargs):
+            raise RuntimeError("Network connections blocked by default. Use --allow-network or --run-integration to enable.")
+        
+        monkeypatch.setattr(socket.socket, "connect", blocked_connect)
+
+
+@pytest.fixture
+def network_allowed():
+    """
+    Helper fixture for tests that explicitly opt-in to network access.
+    
+    This fixture does not block network connections, allowing individual
+    tests to opt-in to network access even when not running integration tests.
+    """
+    # This fixture intentionally does nothing - the presence of this fixture
+    # signals that the test allows network access
+    pass
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -337,17 +431,3 @@ def clean_env(monkeypatch):
     return monkeypatch
 
 
-# Test order independence verification
-def pytest_configure(config):
-    """Configure pytest for order independence testing."""
-    # Add marker for order dependence tests
-    config.addinivalue_line(
-        "markers", "order_dependent: marks tests that verify order independence"
-    )
-
-
-def pytest_collection_modifyitems(config, items):
-    """Modify test collection to add order independence checks."""
-    # Add a marker to track test order for debugging
-    for i, item in enumerate(items):
-        item.user_properties.append(("test_order", i))

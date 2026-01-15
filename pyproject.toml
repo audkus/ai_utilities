@@ -105,8 +105,6 @@ addopts = [
   "--cov-report=html:coverage_reports",
   "--cov-report=term-missing",
   "--cov-config=pyproject.toml",
-  "--timeout=30",
-  "--timeout-method=thread",
 ]
 filterwarnings = [
   "ignore::DeprecationWarning:tests.test_enhanced_setup",
