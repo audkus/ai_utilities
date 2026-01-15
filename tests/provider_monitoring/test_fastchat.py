@@ -17,6 +17,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from ai_utilities import create_client
 
+
+@pytest.mark.integration
 def test_fastchat():
     """Comprehensive test for FastChat integration."""
     
