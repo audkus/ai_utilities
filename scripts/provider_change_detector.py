@@ -148,10 +148,17 @@ class ProviderChangeDetector:
     
     def save_report(self, report: str, filename: str = None):
         """Save report to file."""
+        from pathlib import Path
+        
+        # Create reports directory
+        reports_dir = Path("reports") / "provider_health"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        
         if not filename:
             filename = f"provider_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
         
-        with open(filename, 'w') as f:
+        filepath = reports_dir / filename
+        with open(filepath, 'w') as f:
             f.write(report)
         
         print(f"📄 Report saved: {filename}")

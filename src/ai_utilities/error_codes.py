@@ -155,7 +155,7 @@ class AIUtilitiesError(Exception):
         return self.error_info.to_dict()
     
     def __str__(self) -> str:
-        return f"[{self.error_info.code.value}] {self.error_info.message}"
+        return f"[{self.error_info.code}] {self.error_info.message}"
 
 
 # Specialized exception classes

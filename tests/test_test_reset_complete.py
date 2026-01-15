@@ -1,0 +1,499 @@
+"""
+Comprehensive tests for _test_reset module to achieve 100% coverage.
+"""
+
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+import os
+
+
+class TestTestResetComplete:
+    """Comprehensive test suite for _test_reset module."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        # Clear any existing AI environment variables
+        self.original_env = {}
+        for key in list(os.environ.keys()):
+            if key.startswith('AI_'):
+                self.original_env[key] = os.environ.pop(key)
+    
+    def teardown_method(self):
+        """Clean up after tests."""
+        # Restore original environment variables
+        for key, value in self.original_env.items():
+            os.environ[key] = value
+        # Clear any test environment variables
+        for key in list(os.environ.keys()):
+            if key.startswith('AI_'):
+                os.environ.pop(key, None)
+    
+    @patch('ai_utilities._test_reset._reset_ai_settings_cache')
+    @patch('ai_utilities._test_reset._reset_provider_factory_state')
+    @patch('ai_utilities._test_reset._reset_config_resolver_caches')
+    @patch('ai_utilities._test_reset._reset_contextvar_state')
+    def test_reset_global_state_for_tests_success(self, mock_reset_context, mock_reset_config, 
+                                                mock_reset_provider, mock_reset_settings):
+        """Test successful reset of global state."""
+        # Call the function
+        from ai_utilities._test_reset import reset_global_state_for_tests
+        reset_global_state_for_tests()
+        
+        # Verify all reset functions are called
+        mock_reset_settings.assert_called_once()
+        mock_reset_provider.assert_called_once()
+        mock_reset_config.assert_called_once()
+        mock_reset_context.assert_called_once()
+    
+    @patch('ai_utilities._test_reset._reset_ai_settings_cache')
+    @patch('ai_utilities._test_reset._reset_provider_factory_state')
+    @patch('ai_utilities._test_reset._reset_config_resolver_caches')
+    @patch('ai_utilities._test_reset._reset_contextvar_state')
+    def test_reset_global_state_for_tests_with_exceptions(self, mock_reset_context, mock_reset_config, 
+                                                        mock_reset_provider, mock_reset_settings):
+        """Test reset global state handles exceptions gracefully."""
+        # Configure mocks to raise exceptions
+        mock_reset_settings.side_effect = Exception("Settings error")
+        mock_reset_provider.side_effect = Exception("Provider error")
+        mock_reset_config.side_effect = Exception("Config error")
+        mock_reset_context.side_effect = Exception("Context error")
+        
+        # Call the function - should not raise exceptions
+        from ai_utilities._test_reset import reset_global_state_for_tests
+        
+        # Should not raise any exceptions despite individual failures
+        reset_global_state_for_tests()
+        
+        # Verify all functions were still called
+        mock_reset_settings.assert_called_once()
+        mock_reset_provider.assert_called_once()
+        mock_reset_config.assert_called_once()
+        mock_reset_context.assert_called_once()
+    
+    @patch('ai_utilities._test_reset._reset_ai_settings_cache')
+    @patch('ai_utilities._test_reset._reset_provider_factory_state')
+    @patch('ai_utilities._test_reset._reset_config_resolver_caches')
+    @patch('ai_utilities._test_reset._reset_contextvar_state')
+    def test_reset_global_state_for_tests_partial_exceptions(self, mock_reset_context, mock_reset_config, 
+                                                          mock_reset_provider, mock_reset_settings):
+        """Test reset global state with some exceptions."""
+        # Configure some mocks to raise exceptions
+        mock_reset_settings.side_effect = Exception("Settings error")
+        mock_reset_provider.return_value = None  # Success
+        mock_reset_config.side_effect = Exception("Config error")
+        mock_reset_context.return_value = None  # Success
+        
+        # Call the function
+        from ai_utilities._test_reset import reset_global_state_for_tests
+        reset_global_state_for_tests()
+        
+        # Verify all functions were called despite exceptions
+        mock_reset_settings.assert_called_once()
+        mock_reset_provider.assert_called_once()
+        mock_reset_config.assert_called_once()
+        mock_reset_context.assert_called_once()
+    
+    def test_reset_ai_settings_cache_with_model_config(self):
+        """Test resetting AiSettings cache when model_config exists."""
+        with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
+            # Configure mock with model_config
+            mock_config = Mock()
+            mock_config._env_file_cache = Mock()
+            mock_ai_settings.model_config = mock_config
+            mock_ai_settings._cached_settings = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+            
+            # Verify cache clearing
+            mock_config._env_file_cache.clear.assert_called_once()
+            mock_ai_settings._cached_settings.clear.assert_called_once()
+    
+    def test_reset_ai_settings_cache_without_model_config(self):
+        """Test resetting AiSettings cache when model_config doesn't exist."""
+        with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
+            # Configure mock without model_config
+            del mock_ai_settings.model_config
+            mock_ai_settings._cached_settings = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+            
+            # Verify only cached_settings is cleared
+            mock_ai_settings._cached_settings.clear.assert_called_once()
+    
+    def test_reset_ai_settings_cache_without_cached_settings(self):
+        """Test resetting AiSettings cache when _cached_settings doesn't exist."""
+        with patch('ai_utilities._test_reset.AiSettings') as mock_ai_settings:
+            # Configure mock without _cached_settings
+            mock_config = Mock()
+            mock_config._env_file_cache = Mock()
+            mock_ai_settings.model_config = mock_config
+            del mock_ai_settings._cached_settings
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+            
+            # Verify only env_file_cache is cleared
+            mock_config._env_file_cache.clear.assert_called_once()
+    
+    def test_reset_ai_settings_cache_no_attributes(self):
+        """Test resetting AiSettings cache when no cache attributes exist."""
+        with patch('ai_utilities._test_reset.AiSettings') as mock_ai_settings:
+            # Configure mock with no cache attributes
+            del mock_ai_settings.model_config
+            del mock_ai_settings._cached_settings
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+    
+    def test_reset_ai_settings_cache_with_exception(self):
+        """Test resetting AiSettings cache handles exceptions."""
+        with patch('ai_utilities._test_reset.AiSettings') as mock_ai_settings:
+            # Configure mock to raise exception
+            mock_ai_settings.model_config = Mock()
+            mock_ai_settings.model_config._env_file_cache = Mock()
+            mock_ai_settings.model_config._env_file_cache.clear.side_effect = Exception("Clear error")
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+    
+    def test_reset_provider_factory_state_success(self):
+        """Test successful reset of provider factory state."""
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            # Configure mock
+            mock_factory._instance = "existing_instance"
+            mock_factory._provider_cache = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+            
+            # Verify reset
+            assert mock_factory._instance is None
+            mock_factory._provider_cache.clear.assert_called_once()
+    
+    def test_reset_provider_factory_state_no_instance(self):
+        """Test reset provider factory when _instance doesn't exist."""
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            # Configure mock without _instance
+            del mock_factory._instance
+            mock_factory._provider_cache = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+            
+            # Verify cache is still cleared
+            mock_factory._provider_cache.clear.assert_called_once()
+    
+    def test_reset_provider_factory_state_no_cache(self):
+        """Test reset provider factory when _provider_cache doesn't exist."""
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            # Configure mock without _provider_cache
+            mock_factory._instance = "existing_instance"
+            del mock_factory._provider_cache
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+            
+            # Verify instance is still reset
+            assert mock_factory._instance is None
+    
+    def test_reset_provider_factory_state_no_attributes(self):
+        """Test reset provider factory when no attributes exist."""
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            # Configure mock with no attributes
+            del mock_factory._instance
+            del mock_factory._provider_cache
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+    
+    def test_reset_provider_factory_state_import_error(self):
+        """Test reset provider factory handles ImportError."""
+        with patch('ai_utilities._test_reset.ProviderFactory', side_effect=ImportError("Module not found")):
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+    
+    def test_reset_provider_factory_state_with_exception(self):
+        """Test reset provider factory handles exceptions."""
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            # Configure mock to raise exception
+            mock_factory._instance = "existing_instance"
+            mock_factory._provider_cache = Mock()
+            mock_factory._provider_cache.clear.side_effect = Exception("Clear error")
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+    
+    def test_reset_config_resolver_caches_success(self):
+        """Test successful reset of config resolver caches."""
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            # Configure mock
+            mock_resolver._config_cache = Mock()
+            mock_resolver._env_cache = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+            
+            # Verify caches are cleared
+            mock_resolver._config_cache.clear.assert_called_once()
+            mock_resolver._env_cache.clear.assert_called_once()
+    
+    def test_reset_config_resolver_caches_no_config_cache(self):
+        """Test reset config resolver when _config_cache doesn't exist."""
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            # Configure mock without _config_cache
+            del mock_resolver._config_cache
+            mock_resolver._env_cache = Mock()
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+            
+            # Verify env_cache is still cleared
+            mock_resolver._env_cache.clear.assert_called_once()
+    
+    def test_reset_config_resolver_caches_no_env_cache(self):
+        """Test reset config resolver when _env_cache doesn't exist."""
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            # Configure mock without _env_cache
+            mock_resolver._config_cache = Mock()
+            del mock_resolver._env_cache
+            
+            # Call the function
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+            
+            # Verify config_cache is still cleared
+            mock_resolver._config_cache.clear.assert_called_once()
+    
+    def test_reset_config_resolver_caches_no_attributes(self):
+        """Test reset config resolver when no cache attributes exist."""
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            # Configure mock with no cache attributes
+            del mock_resolver._config_cache
+            del mock_resolver._env_cache
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+    
+    def test_reset_config_resolver_caches_import_error(self):
+        """Test reset config resolver handles ImportError."""
+        with patch('ai_utilities._test_reset.ConfigResolver', side_effect=ImportError("Module not found")):
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+    
+    def test_reset_config_resolver_caches_with_exception(self):
+        """Test reset config resolver handles exceptions."""
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            # Configure mock to raise exception
+            mock_resolver._config_cache = Mock()
+            mock_resolver._config_cache.clear.side_effect = Exception("Clear error")
+            mock_resolver._env_cache = Mock()
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+    
+    def test_reset_contextvar_state_success(self):
+        """Test successful reset of contextvar state."""
+        with patch('ai_utilities._test_reset._reset_all_overrides') as mock_reset:
+            # Call the function
+            from ai_utilities._test_reset import _reset_contextvar_state
+            _reset_contextvar_state()
+            
+            # Verify reset function is called
+            mock_reset.assert_called_once()
+    
+    def test_reset_contextvar_state_import_error(self):
+        """Test reset contextvar state handles ImportError."""
+        with patch('ai_utilities._test_reset._reset_all_overrides', side_effect=ImportError("Module not found")):
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_contextvar_state
+            _reset_contextvar_state()
+    
+    def test_reset_contextvar_state_with_exception(self):
+        """Test reset contextvar state handles exceptions."""
+        with patch('ai_utilities._test_reset._reset_all_overrides', side_effect=Exception("Reset error")):
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_contextvar_state
+            _reset_contextvar_state()
+    
+    def test_get_current_global_state_with_ai_env_vars(self):
+        """Test getting current global state with AI environment variables."""
+        # Set up test environment variables
+        os.environ['AI_API_KEY'] = 'test-key'
+        os.environ['AI_MODEL'] = 'gpt-4'
+        os.environ['AI_BASE_URL'] = 'https://api.test.com'
+        os.environ['OTHER_VAR'] = 'should-not-appear'
+        
+        with patch('ai_utilities._test_reset.get_env_overrides', return_value={'AI_TEMPERATURE': '0.5'}):
+            # Call the function
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify result
+            assert 'ai_environment_vars' in result
+            assert 'contextvar_overrides' in result
+            
+            # Check AI environment variables
+            ai_env = result['ai_environment_vars']
+            assert ai_env['AI_API_KEY'] == 'test-key'
+            assert ai_env['AI_MODEL'] == 'gpt-4'
+            assert ai_env['AI_BASE_URL'] == 'https://api.test.com'
+            assert 'OTHER_VAR' not in ai_env
+            
+            # Check contextvar overrides
+            assert result['contextvar_overrides'] == {'AI_TEMPERATURE': '0.5'}
+    
+    def test_get_current_global_state_no_ai_env_vars(self):
+        """Test getting current global state with no AI environment variables."""
+        with patch('ai_utilities._test_reset.get_env_overrides', return_value={}):
+            # Call the function
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify result
+            assert result['ai_environment_vars'] == {}
+            assert result['contextvar_overrides'] == {}
+    
+    def test_get_current_global_state_import_error(self):
+        """Test getting global state when env_overrides module not available."""
+        with patch('ai_utilities._test_reset.get_env_overrides', side_effect=ImportError("Module not found")):
+            # Call the function
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify result handles import error gracefully
+            assert result['ai_environment_vars'] == {}
+            assert result['contextvar_overrides'] == {}
+    
+    def test_get_current_global_state_with_exception(self):
+        """Test getting global state handles exceptions."""
+        with patch('ai_utilities._test_reset.get_env_overrides', side_effect=Exception("Get error")):
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify result handles exception gracefully
+            assert result['ai_environment_vars'] == {}
+            assert result['contextvar_overrides'] == {}
+    
+    def test_get_current_global_state_empty_environment(self):
+        """Test getting global state with empty environment."""
+        # Ensure no AI environment variables
+        for key in list(os.environ.keys()):
+            if key.startswith('AI_'):
+                os.environ.pop(key, None)
+        
+        with patch('ai_utilities._test_reset.get_env_overrides', return_value={'AI_TIMEOUT': '30'}):
+            # Call the function
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify result
+            assert result['ai_environment_vars'] == {}
+            assert result['contextvar_overrides'] == {'AI_TIMEOUT': '30'}
+    
+    def test_get_current_global_state_many_ai_vars(self):
+        """Test getting global state with many AI environment variables."""
+        # Set up many test environment variables
+        ai_vars = {
+            'AI_API_KEY': 'key123',
+            'AI_MODEL': 'gpt-3.5-turbo',
+            'AI_BASE_URL': 'https://api.openai.com',
+            'AI_TEMPERATURE': '0.7',
+            'AI_MAX_TOKENS': '2000',
+            'AI_TIMEOUT': '60',
+            'AI_REQUEST_TIMEOUT_S': '30.5',
+            'AI_PROVIDER': 'openai',
+            'AI_ORG_ID': 'org-123',
+            'AI_PROJECT_ID': 'proj-456'
+        }
+        
+        for key, value in ai_vars.items():
+            os.environ[key] = value
+        
+        with patch('ai_utilities._test_reset.get_env_overrides', return_value={}):
+            # Call the function
+            from ai_utilities._test_reset import get_current_global_state
+            result = get_current_global_state()
+            
+            # Verify all AI variables are captured
+            assert len(result['ai_environment_vars']) == len(ai_vars)
+            for key, value in ai_vars.items():
+                assert result['ai_environment_vars'][key] == value
+    
+    def test_reset_global_state_multiple_calls(self):
+        """Test that reset_global_state_for_tests can be called multiple times."""
+        with patch('ai_utilities._test_reset._reset_ai_settings_cache') as mock_settings, \
+             patch('ai_utilities._test_reset._reset_provider_factory_state') as mock_provider, \
+             patch('ai_utilities._test_reset._reset_config_resolver_caches') as mock_config, \
+             patch('ai_utilities._test_reset._reset_contextvar_state') as mock_context:
+            
+            # Call the function multiple times
+            from ai_utilities._test_reset import reset_global_state_for_tests
+            
+            reset_global_state_for_tests()
+            reset_global_state_for_tests()
+            reset_global_state_for_tests()
+            
+            # Verify all functions were called three times
+            assert mock_settings.call_count == 3
+            assert mock_provider.call_count == 3
+            assert mock_config.call_count == 3
+            assert mock_context.call_count == 3
+    
+    def test_reset_functions_isolated_behavior(self):
+        """Test that each reset function works in isolation."""
+        # Test each reset function individually
+        with patch('ai_utilities._test_reset.AiSettings') as mock_ai_settings:
+            mock_ai_settings.model_config = Mock()
+            mock_ai_settings.model_config._env_file_cache = Mock()
+            mock_ai_settings._cached_settings = Mock()
+            
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+            
+            mock_ai_settings.model_config._env_file_cache.clear.assert_called_once()
+            mock_ai_settings._cached_settings.clear.assert_called_once()
+        
+        with patch('ai_utilities._test_reset.ProviderFactory') as mock_factory:
+            mock_factory._instance = "test"
+            mock_factory._provider_cache = Mock()
+            
+            from ai_utilities._test_reset import _reset_provider_factory_state
+            _reset_provider_factory_state()
+            
+            assert mock_factory._instance is None
+            mock_factory._provider_cache.clear.assert_called_once()
+        
+        with patch('ai_utilities._test_reset.ConfigResolver') as mock_resolver:
+            mock_resolver._config_cache = Mock()
+            mock_resolver._env_cache = Mock()
+            
+            from ai_utilities._test_reset import _reset_config_resolver_caches
+            _reset_config_resolver_caches()
+            
+            mock_resolver._config_cache.clear.assert_called_once()
+            mock_resolver._env_cache.clear.assert_called_once()
+        
+        with patch('ai_utilities._test_reset._reset_all_overrides') as mock_reset:
+            from ai_utilities._test_reset import _reset_contextvar_state
+            _reset_contextvar_state()
+            
+            mock_reset.assert_called_once()

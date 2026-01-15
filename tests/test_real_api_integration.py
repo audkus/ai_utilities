@@ -34,6 +34,8 @@ from ai_utilities import AiClient, AiSettings, create_provider, ProviderConfigur
 class TestRealAPIIntegration:
     """Test real API integration with actual network calls."""
     
+    @pytest.mark.integration
+    @pytest.mark.openai
     @pytest.mark.skipif(
         not os.getenv("AI_API_KEY"),
         reason="Requires AI_API_KEY environment variable"
@@ -56,6 +58,8 @@ class TestRealAPIIntegration:
         
         print(f"✅ OpenAI API response: {response}")
     
+    @pytest.mark.integration
+    @pytest.mark.openai
     @pytest.mark.skipif(
         not os.getenv("AI_API_KEY"),
         reason="Requires AI_API_KEY environment variable"
@@ -80,6 +84,7 @@ class TestRealAPIIntegration:
         
         print(f"✅ OpenAI JSON response: {response}")
     
+    @pytest.mark.integration
     @pytest.mark.skipif(
         not (os.getenv("AI_PROVIDER") == "openai_compatible" and os.getenv("AI_BASE_URL")),
         reason="Requires AI_PROVIDER=openai_compatible and AI_BASE_URL for local AI testing"

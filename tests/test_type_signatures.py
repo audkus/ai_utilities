@@ -18,7 +18,7 @@ class TestTypeSignatures:
     def test_ask_returns_str_for_text_format(self):
         """Test ask() returns string for text format."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         response = client.ask("test prompt", return_format="text")
         assert isinstance(response, str)
@@ -27,7 +27,7 @@ class TestTypeSignatures:
     def test_ask_returns_dict_for_json_format(self):
         """Test ask() returns dict for JSON format."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         response = client.ask("test prompt", return_format="json")
         assert isinstance(response, dict)
@@ -37,7 +37,7 @@ class TestTypeSignatures:
     def test_ask_returns_list_for_multiple_prompts_text(self):
         """Test ask() returns list of strings for multiple prompts with text format."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         prompts = ["prompt 1", "prompt 2", "prompt 3"]
         responses = client.ask(prompts, return_format="text")
@@ -50,7 +50,7 @@ class TestTypeSignatures:
     def test_ask_returns_list_for_multiple_prompts_json(self):
         """Test ask() returns list of dicts for multiple prompts with JSON format."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         prompts = ["prompt 1", "prompt 2", "prompt 3"]
         responses = client.ask(prompts, return_format="json")
@@ -64,7 +64,7 @@ class TestTypeSignatures:
     def test_ask_json_returns_dict_or_list(self):
         """Test ask_json() returns dict or list."""
         fake_provider = FakeProvider(['{"test": "data"}'])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         response = client.ask_json("test prompt")
         assert isinstance(response, (dict, list))
@@ -87,7 +87,7 @@ class TestParameterFiltering:
             usage_client_id="test-client",
             update_check_days=15
         )
-        client = AiClient(settings=settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Make a request
         client.ask("test prompt")
@@ -118,7 +118,7 @@ class TestParameterFiltering:
             temperature=0.7,
             max_tokens=200
         )
-        client = AiClient(settings=settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Make request with overrides
         client.ask(
@@ -149,7 +149,7 @@ class TestParameterFiltering:
             max_tokens=None,  # This should be excluded
             base_url=None     # This should be excluded
         )
-        client = AiClient(settings=settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Make a request
         client.ask("test prompt")

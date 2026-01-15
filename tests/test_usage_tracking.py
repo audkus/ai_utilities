@@ -63,7 +63,7 @@ def test_ai_client_with_usage_tracking():
         stats_file = Path(temp_dir) / "ai_usage.json"
         
         # Create client with usage tracking
-        client = AiClient(provider=fake_provider, track_usage=True, usage_file=stats_file, auto_setup=False)
+        client = AiClient(provider=fake_provider, track_usage=True, usage_file=stats_file)
         
         # Make some requests
         response1 = client.ask("Test question 1")
@@ -82,7 +82,7 @@ def test_ai_client_with_usage_tracking():
 def test_ai_client_without_usage_tracking():
     """Test AiClient without usage tracking (default)."""
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, auto_setup=False)
+    client = AiClient(provider=fake_provider)
     
     # Make request
     response = client.ask("Test question")

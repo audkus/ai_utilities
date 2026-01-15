@@ -22,11 +22,11 @@ class TestEnvOverrides:
         assert overrides == {}
         assert isinstance(overrides, dict)
     
-    def test_override_env_basic(self):
+    def test_override_env_basic(self, monkeypatch):
         """Test basic override_env functionality."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
+        # Set up initial environment using monkeypatch
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
+        monkeypatch.setenv('AI_TEMPERATURE', '0.7')
         
         # Test with overrides
         with override_env({'AI_MODEL': 'test-model-2', 'AI_TEMPERATURE': '1.0'}):
@@ -41,10 +41,6 @@ class TestEnvOverrides:
         # Verify original environment is unchanged
         assert os.environ['AI_MODEL'] == 'test-model-1'
         assert os.environ['AI_TEMPERATURE'] == '0.7'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
     
     def test_override_env_nested(self):
         """Test nested override_env contexts."""
@@ -93,9 +89,9 @@ class TestEnvOverrides:
             assert overrides['AI_MAX_TOKENS'] == '2000'
             assert overrides['AI_TIMEOUT'] == '30.5'
     
-    def test_override_env_exception_handling(self):
+    def test_override_env_exception_handling(self, monkeypatch):
         """Test that environment is restored even if exception occurs."""
-        os.environ['AI_MODEL'] = 'test-model-1'
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
         
         try:
             with override_env({'AI_MODEL': 'test-model-2'}):
@@ -120,7 +116,7 @@ class TestEnvOverrides:
         
         # Test with no overrides - should use defaults
         settings = AiSettings()
-        assert settings.model == 'test-model-1'  # Default value
+        assert settings.model == 'gpt-3.5-turbo'  # Default value from set_model_default validator
         assert settings.temperature == 0.7  # Default value
         
         # Test with overrides - should use override values
@@ -191,36 +187,37 @@ class TestEnvOverrides:
         overrides = get_env_overrides()
         assert overrides == {}
     
-    def test_ai_settings_integration(self):
+    def test_ai_settings_integration(self, monkeypatch):
         """Test AiSettings integration with environment overrides."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
-        
-        # Test default behavior (no overrides)
+        # Don't set any environment variables - test default behavior first
         settings = AiSettings()
-        assert settings.model == 'test-model-1'
+        assert settings.model == 'gpt-3.5-turbo'  # Default from validator
         assert settings.temperature == 0.7
         
-        # Test with overrides
+        # Now set up initial environment using monkeypatch
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
+        monkeypatch.setenv('AI_TEMPERATURE', '0.7')
+        
+        # Test with environment variables (no overrides)
+        settings = AiSettings()
+        assert settings.model == 'test-model-1'  # From environment
+        assert settings.temperature == 0.7      # From environment
+        
+        # Test with overrides - should override environment
         with override_env({'AI_MODEL': 'test-model-2', 'AI_TEMPERATURE': '1.0'}):
             settings = AiSettings()
             assert settings.model == 'test-model-2'
             assert settings.temperature == 1.0
         
-        # Test that original environment is restored
+        # Test that original environment is restored after override
         settings = AiSettings()
-        assert settings.model == 'test-model-1'
-        assert settings.temperature == 0.7
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
+        assert settings.model == 'test-model-1'  # Back to environment
+        assert settings.temperature == 0.7      # Back to environment
     
-    def test_ai_settings_precedence(self):
+    def test_ai_settings_precedence(self, monkeypatch):
         """Test that explicit kwargs have highest precedence."""
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
+        monkeypatch.setenv('AI_TEMPERATURE', '0.7')
         
         with override_env({'AI_MODEL': 'test-model-2', 'AI_TEMPERATURE': '1.0'}):
             # Explicit kwargs should override both environment and overrides
@@ -232,15 +229,11 @@ class TestEnvOverrides:
             settings = AiSettings(temperature=0.5)
             assert settings.model == 'test-model-2'  # From override
             assert settings.temperature == 0.5      # From kwargs
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
     
     @pytest.mark.asyncio
-    async def test_async_isolation(self):
+    async def test_async_isolation(self, monkeypatch):
         """Test that environment overrides work correctly in async contexts."""
-        os.environ['AI_MODEL'] = 'test-model-1'
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
         
         async def task1():
             with override_env({'AI_MODEL': 'test-model-2'}):
@@ -251,29 +244,26 @@ class TestEnvOverrides:
         async def task2():
             with override_env({'AI_MODEL': 'test-model-1-turbo'}):
                 settings = AiSettings()
-                await asyncio.sleep(0.05)  # Allow other tasks to run
+                await asyncio.sleep(0.1)  # Allow other tasks to run
                 return settings.model
         
         # Run tasks concurrently
         results = await asyncio.gather(task1(), task2())
         
-        # Each task should have its own isolated environment
+        # Each task should see its own override
         assert 'test-model-2' in results
         assert 'test-model-1-turbo' in results
         
-        # Original environment should be unchanged
-        settings = AiSettings()
-        assert settings.model == 'test-model-1'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
+        # Verify no context pollution after tasks complete
+        overrides = get_env_overrides()
+        assert overrides == {}
     
-    def test_thread_isolation(self):
+    def test_thread_isolation(self, monkeypatch):
         """Test that environment overrides work correctly across threads."""
         import threading
         import time
         
-        os.environ['AI_MODEL'] = 'test-model-1'
+        monkeypatch.setenv('AI_MODEL', 'test-model-1')
         results = {}
         
         def thread_task(thread_id, model_name):
@@ -297,20 +287,16 @@ class TestEnvOverrides:
         for thread in threads:
             thread.join()
         
-        # Each thread should have its own isolated environment
-        assert len(results) == 3
-        assert 'test-model-2' in results.values()
-        assert 'test-model-1-turbo' in results.values()
-        assert 'test-model-1-32k' in results.values()
+        # Each thread should see its own override
+        assert results[1] == 'test-model-2'
+        assert results[2] == 'test-model-1-turbo'
+        assert results[3] == 'test-model-1-32k'
         
-        # Original environment should be unchanged
-        settings = AiSettings()
-        assert settings.model == 'test-model-1'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
+        # Verify no context pollution after threads complete
+        overrides = get_env_overrides()
+        assert overrides == {}
     
-    def test_no_os_environ_mutation(self):
+    def test_no_os_environ_mutation(self, monkeypatch):
         """Test that override_env does not mutate os.environ."""
         original_env = dict(os.environ)
         

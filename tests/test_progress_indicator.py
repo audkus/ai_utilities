@@ -12,7 +12,7 @@ def test_progress_indicator_enabled_by_default():
     """Test that progress indicator is enabled by default."""
     from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
-    client = AiClient(settings, auto_setup=False)
+    client = AiClient(settings)
     assert client.show_progress is True
 
 
@@ -20,7 +20,7 @@ def test_progress_indicator_can_be_disabled():
     """Test that progress indicator can be disabled."""
     from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
-    client = AiClient(settings, show_progress=False, auto_setup=False)
+    client = AiClient(settings, show_progress=False)
     assert client.show_progress is False
 
 
@@ -53,7 +53,7 @@ def test_progress_indicator_disabled():
 def test_ai_client_with_progress_indicator(capsys):
     """Test AiClient with progress indicator enabled."""
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, show_progress=True, auto_setup=False)
+    client = AiClient(provider=fake_provider, show_progress=True)
     
     # Make a request
     response = client.ask("Test question")
@@ -67,7 +67,7 @@ def test_ai_client_with_progress_indicator(capsys):
 def test_ai_client_without_progress_indicator(capsys):
     """Test AiClient with progress indicator disabled."""
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, show_progress=False, auto_setup=False)
+    client = AiClient(provider=fake_provider, show_progress=False)
     
     # Make a request
     response = client.ask("Test question")
@@ -126,7 +126,7 @@ def test_progress_indicator_enable_disable():
 def test_ask_many_uses_progress_indicator(capsys):
     """Test that ask_many also uses progress indicator."""
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, show_progress=True, auto_setup=False)
+    client = AiClient(provider=fake_provider, show_progress=True)
     
     prompts = ["Question 1", "Question 2"]
     responses = client.ask_many(prompts)
@@ -140,7 +140,7 @@ def test_ask_many_uses_progress_indicator(capsys):
 def test_ask_json_uses_progress_indicator(capsys):
     """Test that ask_json also uses progress indicator."""
     fake_provider = FakeProvider(['{"result": "success"}'])
-    client = AiClient(provider=fake_provider, show_progress=True, auto_setup=False)
+    client = AiClient(provider=fake_provider, show_progress=True)
     
     response = client.ask_json("Return JSON")
     

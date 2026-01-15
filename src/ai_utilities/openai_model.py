@@ -97,17 +97,3 @@ class OpenAIModel:
         )
         
         return formatted_response
-
-    @staticmethod
-    def clean_response(response: str) -> str:
-        """
-        Legacy method for backward compatibility.
-        
-        Args:
-            response (str): The raw response from the AI model.
-            
-        Returns:
-            str: The cleaned response.
-        """
-        logger.warning("clean_response is deprecated. Use ResponseProcessor.extract_json instead.")
-        return ResponseProcessor.extract_json(response)

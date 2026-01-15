@@ -102,14 +102,18 @@ class RateLimiter:
         it initializes the statistics with default values.
         """
         if os.path.exists(self.ai_stats_file):
-            with open(self.ai_stats_file) as file:
-                data = json.load(file)
-                self.tokens_used_today = data.get("tokens_used_today", 0)
-                self.last_reset = datetime.fromisoformat(data.get("last_reset", datetime.now().isoformat()))
-                # Ensure the stats file includes the current module and its limits
-                data.setdefault("module_name", self.module_name)
-                data.setdefault("max_limits", {"tpd": self.tpd})
-                self.save_stats(data)
+            try:
+                with open(self.ai_stats_file) as file:
+                    data = json.load(file)
+                    self.tokens_used_today = data.get("tokens_used_today", 0)
+                    self.last_reset = datetime.fromisoformat(data.get("last_reset", datetime.now().isoformat()))
+                    # Ensure the stats file includes the current module and its limits
+                    data.setdefault("module_name", self.module_name)
+                    data.setdefault("max_limits", {"tpd": self.tpd})
+                    self.save_stats(data)
+            except (json.JSONDecodeError, ValueError, KeyError, TypeError, PermissionError, OSError):
+                # Handle invalid JSON and file permission errors gracefully by resetting to defaults
+                self.reset_daily_usage()
         else:
             self.reset_daily_usage()
 
@@ -127,8 +131,12 @@ class RateLimiter:
                 "module_name": self.module_name,
                 "max_limits": {"tpd": self.tpd}
             }
-        with open(self.ai_stats_file, "w") as file:
-            json.dump(data, file)
+        try:
+            with open(self.ai_stats_file, "w") as file:
+                json.dump(data, file)
+        except (PermissionError, OSError):
+            # Silently handle file permission errors - stats are not critical
+            pass
 
     def reset_daily_usage(self) -> None:
         """

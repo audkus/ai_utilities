@@ -43,10 +43,9 @@ pip install -e ".[dev,all]"    # Everything
 
 ```bash
 # Run tests to verify setup
-pytest
+python3 -m pytest tests/
 
-# Check CLI functionality
-python -m ai_utilities --help
+# Test the canonical setup wizard
 ai-utilities setup --dry-run --non-interactive
 ```
 
@@ -126,9 +125,9 @@ ai_utilities/
 │   ├── config_models.py       # Configuration models
 │   ├── config_resolver.py     # Configuration resolution
 │   ├── cli.py                 # Command-line interface
-│   ├── setup/                 # Setup wizard
+│   ├── setup/                 # Setup wizard (canonical)
 │   │   ├── __init__.py
-│   │   └── wizard.py
+│   │   └── wizard.py           # Main setup implementation
 │   ├── providers/             # Provider implementations
 │   │   ├── __init__.py
 │   │   ├── base_provider.py

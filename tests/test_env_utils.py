@@ -1,201 +1,336 @@
-"""Tests for environment variable utilities to prevent contamination."""
+"""
+Tests for env_utils module.
+
+This module tests environment variable utilities to ensure proper isolation
+and cleanup functionality.
+"""
 
 import os
-import sys
-
 import pytest
+from unittest.mock import patch
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from ai_utilities.client import AiSettings
-from ai_utilities.config_models import AIConfig
-from ai_utilities.env_overrides import (
-    get_ai_env,
-    get_ai_env_bool,
-    get_ai_env_float,
-    get_ai_env_int,
-    get_env_overrides,
-    override_env,
+from ai_utilities.env_utils import (
+    cleanup_ai_env_vars,
+    get_ai_env_vars,
+    validate_ai_env_vars,
+    isolated_env_context
 )
 
 
-class TestEnvironmentIsolation:
-    """Test environment variable isolation utilities."""
+class TestCleanupAiEnvVars:
+    """Test cleanup_ai_env_vars function."""
     
-    def test_isolated_env_context_basic(self):
-        """Test basic isolated environment context."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
-        
-        # Test isolated context
-        with override_env({'AI_MODEL': 'test-model-2', 'AI_TEMPERATURE': '1.0'}):
-            current_overrides = get_env_overrides()
-            assert current_overrides['AI_MODEL'] == 'test-model-2'
-            assert current_overrides['AI_TEMPERATURE'] == '1.0'
-            
-            # Test helper functions
-            assert get_ai_env('MODEL') == 'test-model-2'
-            assert get_ai_env_float('TEMPERATURE') == 1.0
-        
-        # Verify environment is restored
-        current_overrides = get_env_overrides()
-        assert current_overrides == {}
-        
-        # Verify original environment is intact
-        assert os.environ['AI_MODEL'] == 'test-model-1'
-        assert os.environ['AI_TEMPERATURE'] == '0.7'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
-    
-    def test_isolated_env_context_cleanup(self):
-        """Test that isolated context cleans up properly."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
+    def test_cleanup_ai_env_vars_removes_ai_variables(self):
+        """Test that cleanup removes all AI_ variables."""
+        # Set up some AI environment variables
         os.environ['AI_API_KEY'] = 'test-key'
+        os.environ['AI_MODEL'] = 'test-model'
+        os.environ['OTHER_VAR'] = 'should-remain'
         
         try:
-            # Test isolated context with exception
-            with override_env({'AI_MODEL': 'test-model-2'}):
-                assert get_ai_env('MODEL') == 'test-model-2'
-                raise ValueError("Test exception")
-        except ValueError:
-            pass  # Expected
-        
-        # Verify environment is restored even after exception
-        current_overrides = get_env_overrides()
-        assert current_overrides == {}
-        assert os.environ['AI_MODEL'] == 'test-model-1'
-        assert os.environ['AI_API_KEY'] == 'test-key'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_API_KEY']
-    
-    def test_ai_settings_isolation(self):
-        """Test AiSettings with environment variable isolation."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
-        
-        # Test isolated creation using new approach
-        with override_env({
-            'AI_MODEL': 'test-model-2',
-            'AI_TEMPERATURE': '1.0'
-        }):
-            settings = AiSettings()
-            assert settings.model == 'test-model-2'
-            assert settings.temperature == 1.0
-        
-        # Verify original environment is intact
-        assert os.environ['AI_MODEL'] == 'test-model-1'
-        assert os.environ['AI_TEMPERATURE'] == '0.7'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
-    
-    def test_ai_settings_deprecated_isolated(self):
-        """Test deprecated AiSettings.create_isolated still works."""
-        # Set up initial environment
-        os.environ['AI_MODEL'] = 'test-model-1'
-        os.environ['AI_TEMPERATURE'] = '0.7'
-        
-        # Test deprecated method still works
-        settings = AiSettings.create_isolated({
-            'AI_MODEL': 'test-model-2',
-            'AI_TEMPERATURE': '1.0'
-        })
-        
-        assert settings.model == 'test-model-2'
-        assert settings.temperature == 1.0
-        
-        # Verify original environment is intact
-        assert os.environ['AI_MODEL'] == 'test-model-1'
-        assert os.environ['AI_TEMPERATURE'] == '0.7'
-        
-        # Clean up
-        del os.environ['AI_MODEL']
-        del os.environ['AI_TEMPERATURE']
-    
-    def test_ai_config_isolation(self):
-        """Test AIConfig with environment variable isolation."""
-        # Set up initial environment
-        os.environ['AI_MODEL_RPM'] = '1000'
-        os.environ['AI_TEST_MODEL_1_RPM'] = '2000'
-        
-        # Test isolated creation
-        with override_env({
-            'AI_MODEL_RPM': '3000',
-            'AI_TEST_MODEL_1_RPM': '4000'
-        }):
-            config = AIConfig()
-            assert config.models['test-model-2'].requests_per_minute == 3000
-            assert config.models['test-model-1'].requests_per_minute == 4000
-        
-        # Verify original environment is intact
-        assert os.environ['AI_MODEL_RPM'] == '1000'
-        assert os.environ['AI_TEST_MODEL_1_RPM'] == '2000'
-        
-        # Clean up
-        del os.environ['AI_MODEL_RPM']
-        del os.environ['AI_TEST_MODEL_1_RPM']
-    
-    def test_multiple_isolated_contexts(self):
-        """Test multiple isolated contexts don't interfere with each other."""
-        # First context
-        with override_env({'AI_MODEL': 'test-model-2'}):
-            settings1 = AiSettings()
-            assert settings1.model == 'test-model-2'
+            cleanup_ai_env_vars()
             
-            # Nested context
-            with override_env({'AI_MODEL': 'test-model-1'}):
-                settings2 = AiSettings()
-                assert settings2.model == 'test-model-1'
+            # AI variables should be removed
+            assert 'AI_API_KEY' not in os.environ
+            assert 'AI_MODEL' not in os.environ
             
-            # Back to first context
-            settings3 = AiSettings()
-            assert settings3.model == 'test-model-2'
-        
-        # Environment should be clean
-        current_overrides = get_env_overrides()
-        assert current_overrides == {}
+            # Non-AI variables should remain
+            assert os.environ['OTHER_VAR'] == 'should-remain'
+        finally:
+            # Clean up any remaining variables
+            for var in ['AI_API_KEY', 'AI_MODEL']:
+                if var in os.environ:
+                    del os.environ[var]
     
-    def test_helper_functions(self):
-        """Test environment helper functions."""
-        with override_env({
-            'AI_MODEL': 'test-model-1',
-            'AI_TEMPERATURE': '0.9',
-            'AI_MAX_TOKENS': '2000',
-            'AI_USE_AI': 'true'
-        }):
-            assert get_ai_env('MODEL') == 'test-model-1'
-            assert get_ai_env_float('TEMPERATURE') == 0.9
-            assert get_ai_env_int('MAX_TOKENS') == 2000
-            assert get_ai_env_bool('USE_AI') is True
-            assert get_ai_env_bool('NONEXISTENT') is False
-            assert get_ai_env('NONEXISTENT') is None
+    def test_cleanup_ai_env_vars_with_no_ai_variables(self):
+        """Test cleanup when no AI variables exist."""
+        # Ensure no AI variables exist
+        ai_vars = [k for k in os.environ.keys() if k.startswith('AI_')]
+        for var in ai_vars:
+            del os.environ[var]
+        
+        # Should not raise an error
+        cleanup_ai_env_vars()
     
-    def test_no_os_environ_mutation(self):
-        """Test that override_env does not mutate os.environ."""
-        original_env = dict(os.environ)
+    def test_cleanup_ai_env_vars_with_empty_values(self):
+        """Test cleanup with empty AI variable values."""
+        os.environ['AI_EMPTY'] = ''
+        os.environ['AI_API_KEY'] = 'key'
         
-        with override_env({
-            'AI_MODEL': 'test-model-2',
-            'AI_TEMPERATURE': '0.9',
-            'AI_CUSTOM_VAR': 'test'
-        }):
-            # os.environ should be unchanged
-            assert os.environ.get('AI_MODEL') == original_env.get('AI_MODEL')
-            assert os.environ.get('AI_TEMPERATURE') == original_env.get('AI_TEMPERATURE')
-            assert 'AI_CUSTOM_VAR' not in os.environ
-        
-        # Environment should be exactly as it was
-        assert os.environ == original_env
+        try:
+            cleanup_ai_env_vars()
+            
+            # Both should be removed regardless of value
+            assert 'AI_EMPTY' not in os.environ
+            assert 'AI_API_KEY' not in os.environ
+        finally:
+            for var in ['AI_EMPTY', 'AI_API_KEY']:
+                if var in os.environ:
+                    del os.environ[var]
 
 
-if __name__ == '__main__':
-    pytest.main([__file__])
+class TestGetAiEnvVars:
+    """Test get_ai_env_vars function."""
+    
+    def test_get_ai_env_vars_returns_only_ai_variables(self):
+        """Test that only AI_ variables are returned."""
+        # Set up test environment
+        os.environ['AI_API_KEY'] = 'test-key'
+        os.environ['AI_MODEL'] = 'test-model'
+        os.environ['OTHER_VAR'] = 'should-not-appear'
+        
+        try:
+            result = get_ai_env_vars()
+            
+            # Should only contain AI variables
+            assert 'AI_API_KEY' in result
+            assert 'AI_MODEL' in result
+            assert 'OTHER_VAR' not in result
+            assert result['AI_API_KEY'] == 'test-key'
+            assert result['AI_MODEL'] == 'test-model'
+        finally:
+            # Clean up
+            for var in ['AI_API_KEY', 'AI_MODEL']:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_get_ai_env_vars_with_no_ai_variables(self):
+        """Test when no AI variables exist."""
+        # Ensure no AI variables
+        ai_vars = [k for k in os.environ.keys() if k.startswith('AI_')]
+        for var in ai_vars:
+            del os.environ[var]
+        
+        result = get_ai_env_vars()
+        assert result == {}
+    
+    def test_get_ai_env_vars_with_case_sensitivity(self):
+        """Test that function is case sensitive."""
+        os.environ['AI_API_KEY'] = 'test-key'
+        os.environ['ai_api_key'] = 'lowercase-key'  # Should not be included
+        os.environ['Ai_Api_Key'] = 'mixed-key'     # Should not be included
+        
+        try:
+            result = get_ai_env_vars()
+            
+            # Only uppercase AI_ should be included
+            assert 'AI_API_KEY' in result
+            assert 'ai_api_key' not in result
+            assert 'Ai_Api_Key' not in result
+        finally:
+            for var in ['AI_API_KEY', 'ai_api_key', 'Ai_Api_Key']:
+                if var in os.environ:
+                    del os.environ[var]
+
+
+class TestValidateAiEnvVars:
+    """Test validate_ai_env_vars function."""
+    
+    def test_validate_ai_env_vars_filters_known_variables(self):
+        """Test that only known AI variables are returned."""
+        # Set up test environment with known and unknown variables
+        os.environ['AI_API_KEY'] = 'test-key'
+        os.environ['AI_MODEL'] = 'test-model'
+        os.environ['AI_UNKNOWN_VAR'] = 'unknown'
+        os.environ['OTHER_VAR'] = 'not-ai'
+        
+        try:
+            result = validate_ai_env_vars()
+            
+            # Should only include known AI variables
+            assert 'AI_API_KEY' in result
+            assert 'AI_MODEL' in result
+            assert 'AI_UNKNOWN_VAR' not in result
+            assert 'OTHER_VAR' not in result
+        finally:
+            # Clean up
+            for var in ['AI_API_KEY', 'AI_MODEL', 'AI_UNKNOWN_VAR']:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_validate_ai_env_vars_with_all_known_variables(self):
+        """Test with all known AI variables."""
+        known_vars = {
+            'AI_API_KEY', 'AI_MODEL', 'AI_TEMPERATURE', 'AI_MAX_TOKENS',
+            'AI_BASE_URL', 'AI_TIMEOUT', 'AI_UPDATE_CHECK_DAYS', 'AI_USE_AI',
+            'AI_MEMORY_THRESHOLD', 'AI_MODEL_RPM', 'AI_MODEL_TPM', 'AI_MODEL_TPD',
+            'AI_GPT_4_RPM', 'AI_GPT_4_TPM', 'AI_GPT_4_TPD',
+            'AI_GPT_3_5_TURBO_RPM', 'AI_GPT_3_5_TURBO_TPM', 'AI_GPT_3_5_TURBO_TPD',
+            'AI_GPT_4_TURBO_RPM', 'AI_GPT_4_TURBO_TPM', 'AI_GPT_4_TURBO_TPD',
+            'AI_USAGE_SCOPE', 'AI_USAGE_CLIENT_ID'
+        }
+        
+        # Set all known variables
+        for var in known_vars:
+            os.environ[var] = f'value-{var.lower()}'
+        
+        try:
+            result = validate_ai_env_vars()
+            
+            # All known variables should be included
+            assert set(result.keys()) == known_vars
+            
+            # Values should be preserved
+            for var in known_vars:
+                assert result[var] == f'value-{var.lower()}'
+        finally:
+            # Clean up
+            for var in known_vars:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_validate_ai_env_vars_with_no_known_variables(self):
+        """Test when no known AI variables exist."""
+        os.environ['AI_UNKNOWN'] = 'unknown'
+        
+        try:
+            result = validate_ai_env_vars()
+            assert result == {}
+        finally:
+            if 'AI_UNKNOWN' in os.environ:
+                del os.environ['AI_UNKNOWN']
+
+
+class TestIsolatedEnvContext:
+    """Test isolated_env_context context manager."""
+    
+    def test_isolated_env_context_sets_and_restores_variables(self):
+        """Test that variables are set and properly restored."""
+        # Set initial state
+        os.environ['EXISTING_VAR'] = 'original-value'
+        
+        env_vars = {
+            'AI_API_KEY': 'test-key',
+            'EXISTING_VAR': 'modified-value',
+            'NEW_VAR': 'new-value'
+        }
+        
+        try:
+            with isolated_env_context(env_vars):
+                # Variables should be set within context
+                assert os.environ['AI_API_KEY'] == 'test-key'
+                assert os.environ['EXISTING_VAR'] == 'modified-value'
+                assert os.environ['NEW_VAR'] == 'new-value'
+            
+            # Variables should be restored after context
+            assert os.environ['EXISTING_VAR'] == 'original-value'
+            assert 'AI_API_KEY' not in os.environ
+            assert 'NEW_VAR' not in os.environ
+        finally:
+            # Clean up any remaining variables
+            for var in ['AI_API_KEY', 'EXISTING_VAR', 'NEW_VAR']:
+                if var in os.environ and var != 'EXISTING_VAR':
+                    del os.environ[var]
+    
+    def test_isolated_env_context_with_no_variables(self):
+        """Test context manager with no variables."""
+        # Should not raise an error
+        with isolated_env_context():
+            pass
+    
+    def test_isolated_env_context_with_empty_dict(self):
+        """Test context manager with empty dictionary."""
+        with isolated_env_context({}):
+            pass
+    
+    def test_isolated_env_context_restores_on_exception(self):
+        """Test that environment is restored even if exception occurs."""
+        os.environ['EXISTING_VAR'] = 'original-value'
+        
+        env_vars = {'AI_API_KEY': 'test-key'}
+        
+        try:
+            with pytest.raises(ValueError):
+                with isolated_env_context(env_vars):
+                    assert os.environ['AI_API_KEY'] == 'test-key'
+                    raise ValueError("Test exception")
+            
+            # Environment should still be restored
+            assert os.environ['EXISTING_VAR'] == 'original-value'
+            assert 'AI_API_KEY' not in os.environ
+        finally:
+            if 'AI_API_KEY' in os.environ:
+                del os.environ['AI_API_KEY']
+    
+    def test_isolated_env_context_nested(self):
+        """Test nested context managers."""
+        os.environ['EXISTING_VAR'] = 'original'
+        
+        try:
+            with isolated_env_context({'OUTER': 'outer-value'}):
+                assert os.environ['OUTER'] == 'outer-value'
+                
+                with isolated_env_context({'INNER': 'inner-value', 'OUTER': 'nested-value'}):
+                    assert os.environ['INNER'] == 'inner-value'
+                    assert os.environ['OUTER'] == 'nested-value'
+                
+                # Outer context should be restored
+                assert os.environ['OUTER'] == 'outer-value'
+                assert 'INNER' not in os.environ
+            
+            # Everything should be restored
+            assert os.environ['EXISTING_VAR'] == 'original'
+            assert 'OUTER' not in os.environ
+            assert 'INNER' not in os.environ
+        finally:
+            for var in ['OUTER', 'INNER']:
+                if var in os.environ:
+                    del os.environ[var]
+
+
+class TestIntegration:
+    """Integration tests for env_utils functions."""
+    
+    def test_cleanup_and_get_interaction(self):
+        """Test interaction between cleanup and get functions."""
+        # Set up multiple AI variables
+        ai_vars = {
+            'AI_API_KEY': 'key1',
+            'AI_MODEL': 'model1',
+            'AI_TEMPERATURE': '0.5'
+        }
+        
+        for key, value in ai_vars.items():
+            os.environ[key] = value
+        
+        try:
+            # Verify variables are there
+            result = get_ai_env_vars()
+            assert len(result) >= 3
+            
+            # Clean up
+            cleanup_ai_env_vars()
+            
+            # Verify they're gone
+            result = get_ai_env_vars()
+            assert result == {}
+        finally:
+            # Ensure cleanup
+            cleanup_ai_env_vars()
+    
+    def test_validate_and_isolated_context_interaction(self):
+        """Test interaction between validation and isolated context."""
+        os.environ['AI_API_KEY'] = 'original-key'
+        os.environ['AI_UNKNOWN'] = 'unknown-value'
+        
+        try:
+            # Initial validation should include known variables
+            result = validate_ai_env_vars()
+            assert 'AI_API_KEY' in result
+            assert 'AI_UNKNOWN' not in result
+            
+            # Use isolated context to modify environment
+            with isolated_env_context({'AI_MODEL': 'test-model', 'AI_UNKNOWN': 'temp'}):
+                result = validate_ai_env_vars()
+                assert 'AI_API_KEY' in result  # Still there from original
+                assert 'AI_MODEL' in result   # Added by context
+                assert 'AI_UNKNOWN' not in result  # Still filtered out
+            
+            # Back to original state
+            result = validate_ai_env_vars()
+            assert 'AI_API_KEY' in result
+            assert 'AI_MODEL' not in result
+        finally:
+            cleanup_ai_env_vars()
+            if 'AI_API_KEY' in os.environ:
+                del os.environ['AI_API_KEY']

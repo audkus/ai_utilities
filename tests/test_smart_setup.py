@@ -1,6 +1,7 @@
 """Tests for smart setup functionality including model checking and caching."""
 
 import json
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -125,20 +126,15 @@ class TestSmartSetup:
             
             assert settings.api_key == "test-key"
 
-    def test_ai_client_smart_setup_parameter(self):
-        """Test AiClient smart_setup parameter."""
+    def test_ai_client_initialization_with_provider(self):
+        """Test AiClient initialization with explicit provider."""
         fake_provider = FakeProvider()
         
-        # Test smart_setup=True
-        with patch('ai_utilities.AiSettings.smart_setup') as mock_smart:
-            mock_settings = MagicMock()
-            mock_settings.api_key = "smart-setup-key"
-            mock_smart.return_value = mock_settings
-            
-            client = AiClient(provider=fake_provider, smart_setup=True)
-            
-            mock_smart.assert_called_once()
-            assert client.settings.api_key == "smart-setup-key"
+        # Test basic initialization with provider
+        client = AiClient(provider=fake_provider)
+        
+        assert client.provider == fake_provider
+        assert client.settings is not None
 
     def test_ai_client_check_for_updates(self, monkeypatch):
         """Test AiClient.check_for_updates method."""
@@ -151,7 +147,7 @@ class TestSmartSetup:
                 'cached': False
             }
             
-            client = AiClient(auto_setup=False)
+            client = AiClient()
             result = client.check_for_updates()
             
             mock_check.assert_called_once_with("test-key", 30)
@@ -168,16 +164,17 @@ class TestSmartSetup:
                 'cached': False
             }
             
-            client = AiClient(auto_setup=False)
-            result = client.check_for_updates(force_check=True)
-            
-            mock_check.assert_called_once_with("test-key", check_interval_days=0)
-            assert result['has_updates'] is False
+            with patch.dict(os.environ, {"AI_API_KEY": "test-key"}):
+                client = AiClient()
+                result = client.check_for_updates(force_check=True)
+                
+                mock_check.assert_called_once_with("test-key", check_interval_days=0)
+                assert result['has_updates'] is False
 
     def test_ai_client_check_for_updates_no_api_key(self):
         """Test AiClient.check_for_updates when no API key is configured."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.check_for_updates()
         
@@ -187,7 +184,7 @@ class TestSmartSetup:
     def test_ai_client_reconfigure(self):
         """Test AiClient.reconfigure method."""
         fake_provider = FakeProvider()
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive:
             mock_settings = AiSettings(api_key="new-key", model="test-model-1o")

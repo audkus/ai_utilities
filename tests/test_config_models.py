@@ -90,7 +90,7 @@ class TestOpenAIConfig:
     def test_default_openai_config(self):
         """Test default OpenAIConfig creation."""
         config = OpenAIConfig()
-        assert config.model == "test-model-1"
+        assert config.model == "gpt-3.5-turbo"
         assert config.api_key_env == "AI_API_KEY"
         assert config.base_url is None
         assert config.timeout == 30
@@ -100,14 +100,14 @@ class TestOpenAIConfig:
     def test_valid_custom_openai_config(self):
         """Test OpenAIConfig with valid custom values."""
         config = OpenAIConfig(
-            model="test-model-2",
+            model="gpt-4",
             api_key_env="MY_API_KEY",
             base_url="https://api.openai.com/v1",
             timeout=60,
             temperature=0.5,
             max_tokens=1000
         )
-        assert config.model == "test-model-2"
+        assert config.model == "gpt-4"
         assert config.api_key_env == "MY_API_KEY"
         assert config.base_url == "https://api.openai.com/v1"
         assert config.timeout == 60
@@ -138,7 +138,7 @@ class TestOpenAIConfig:
         config = OpenAIConfig()
         
         with pytest.raises(Exception):
-            config.model = "test-model-2"
+            config.model = "gpt-4"
 
 
 class TestAIConfig:
@@ -161,10 +161,11 @@ class TestAIConfig:
         config = AIConfig()
         assert config.use_ai is True
         assert config.ai_provider == "openai"
-        assert config.openai.model == "test-model-1"
+        assert config.openai.model == "gpt-3.5-turbo"  # Production default
         assert len(config.models) >= 3  # Should have default models
-        assert "test-model-1" in config.models
-        assert "test-model-2" in config.models
+        assert "gpt-3.5-turbo" in config.models
+        assert "gpt-4" in config.models
+        assert "gpt-4-turbo" in config.models
     
     @pytest.mark.hanging
     def test_environment_variable_integration(self):

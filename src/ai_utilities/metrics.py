@@ -53,6 +53,7 @@ class MetricsCollector:
         self.histograms: Dict[str, List[HistogramBucket]] = defaultdict(list)
         self.timers: Dict[str, deque] = defaultdict(lambda: deque(maxlen=max_history))
         self.labels: Dict[str, Dict[str, str]] = {}
+        self.descriptions: Dict[str, str] = {}  # Store metric descriptions
         self.lock = threading.Lock()
         
         # Initialize standard metrics
@@ -89,15 +90,17 @@ class MetricsCollector:
     def create_counter(self, name: str, description: str, labels: Optional[Dict[str, str]] = None) -> None:
         """Create a counter metric."""
         with self.lock:
+            key = self._make_key(name, labels or {})
+            self.descriptions[key] = description
             if labels:
-                key = self._make_key(name, labels)
                 self.labels[key] = labels
     
     def create_gauge(self, name: str, description: str, labels: Optional[Dict[str, str]] = None) -> None:
         """Create a gauge metric."""
         with self.lock:
+            key = self._make_key(name, labels or {})
+            self.descriptions[key] = description
             if labels:
-                key = self._make_key(name, labels)
                 self.labels[key] = labels
     
     def create_histogram(self, name: str, description: str, buckets: Optional[List[float]] = None, labels: Optional[Dict[str, str]] = None) -> None:
@@ -108,6 +111,7 @@ class MetricsCollector:
         with self.lock:
             key = self._make_key(name, labels or {})
             self.histograms[key] = [HistogramBucket(bound, 0) for bound in buckets]
+            self.descriptions[key] = description
             if labels:
                 self.labels[key] = labels
     
@@ -115,12 +119,24 @@ class MetricsCollector:
         """Increment a counter metric."""
         key = self._make_key(name, labels or {})
         with self.lock:
+            # Store labels if this is the first time we see this metric
+            if key not in self.labels and labels:
+                self.labels[key] = labels
+            # Store description if not present (use a default)
+            if key not in self.descriptions:
+                self.descriptions[key] = f"Counter metric {name}"
             self.counters[key] += value
     
     def set_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
         """Set a gauge metric value."""
         key = self._make_key(name, labels or {})
         with self.lock:
+            # Store labels if this is the first time we see this metric
+            if key not in self.labels and labels:
+                self.labels[key] = labels
+            # Store description if not present (use a default)
+            if key not in self.descriptions:
+                self.descriptions[key] = f"Gauge metric {name}"
             self.gauges[key] = value
     
     def observe_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
@@ -128,7 +144,10 @@ class MetricsCollector:
         key = self._make_key(name, labels or {})
         with self.lock:
             if key not in self.histograms:
-                self.create_histogram(name, "", labels=labels)
+                # Create histogram inline without calling create_histogram to avoid deadlock
+                if labels:
+                    self.labels[key] = labels
+                self.histograms[key] = [HistogramBucket(bound, 0) for bound in [0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0, float('inf')]]
             
             for bucket in self.histograms[key]:
                 if value <= bucket.upper_bound:
@@ -141,12 +160,13 @@ class MetricsCollector:
             self.timers[key].append(duration)
     
     def _make_key(self, name: str, labels: Dict[str, str]) -> str:
-        """Create a unique key from name and labels."""
+        """Create a unique key from name and labels for internal storage."""
         if not labels:
             return name
         
+        # Use a separator that won't appear in metric names for internal storage
         label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))
-        return f"{name}{{{label_str}}}"
+        return f"{name}|{label_str}"
     
     def get_all_metrics(self) -> List[MetricValue]:
         """Get all current metrics as MetricValue objects."""
@@ -154,39 +174,70 @@ class MetricsCollector:
         timestamp = time.time()
         
         with self.lock:
-            # Counters
-            for key, value in self.counters.items():
+            # Counters - include all, even zero-valued ones
+            all_counter_keys = set(self.counters.keys()) | set(self.descriptions.keys())
+            for key in all_counter_keys:
+                value = self.counters.get(key, 0.0)
                 labels = self.labels.get(key, {})
+                description = self.descriptions.get(key, "")
+                
+                # Extract name from internal key
+                if "|" in key:
+                    name, _ = key.split("|", 1)
+                else:
+                    name = key
+                
                 metrics.append(MetricValue(
-                    name=key,
+                    name=name,
                     value=value,
                     metric_type=MetricType.COUNTER,
                     timestamp=timestamp,
-                    labels=labels
+                    labels=labels,
+                    description=description
                 ))
             
-            # Gauges
-            for key, value in self.gauges.items():
+            # Gauges - include all, even zero-valued ones
+            all_gauge_keys = set(self.gauges.keys()) | set(self.descriptions.keys())
+            for key in all_gauge_keys:
+                value = self.gauges.get(key, 0.0)
                 labels = self.labels.get(key, {})
+                description = self.descriptions.get(key, "")
+                
+                # Extract name from internal key
+                if "|" in key:
+                    name, _ = key.split("|", 1)
+                else:
+                    name = key
+                
                 metrics.append(MetricValue(
-                    name=key,
+                    name=name,
                     value=value,
                     metric_type=MetricType.GAUGE,
                     timestamp=timestamp,
-                    labels=labels
+                    labels=labels,
+                    description=description
                 ))
             
-            # Histograms
+            # Histograms - only include buckets with counts > 0
             for key, buckets in self.histograms.items():
                 labels = self.labels.get(key, {})
+                description = self.descriptions.get(key, "")
+                
+                # Extract name from internal key
+                if "|" in key:
+                    name, _ = key.split("|", 1)
+                else:
+                    name = key
+                
                 for bucket in buckets:
                     if bucket.count > 0:
                         metrics.append(MetricValue(
-                            name=f"{key}_bucket",
+                            name=f"{name}_bucket",
                             value=bucket.count,
                             metric_type=MetricType.COUNTER,
                             timestamp=timestamp,
-                            labels={**labels, "le": str(bucket.upper_bound)}
+                            labels={**labels, "le": str(bucket.upper_bound)},
+                            description=description
                         ))
         
         return metrics
@@ -198,7 +249,9 @@ class MetricsCollector:
             self.gauges.clear()
             self.histograms.clear()
             self.timers.clear()
-            self._init_standard_metrics()
+        
+        # Initialize standard metrics outside of lock to avoid deadlock
+        self._init_standard_metrics()
 
 
 class PrometheusExporter:
