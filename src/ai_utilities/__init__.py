@@ -47,6 +47,7 @@ from .config_models import AiSettings
 from .file_models import UploadedFile
 from .json_parsing import JsonParseError, parse_json_from_text
 from .models import AskResult
+from .openai_client import OpenAIClient
 from .audio import (
     AudioProcessor,
     load_audio_file,
@@ -100,6 +101,9 @@ __all__ = [
     # Usage tracking
     'UsageTracker',
     'create_usage_tracker',
+    
+    # OpenAI client (internal, for testing)
+    'OpenAIClient',
     
     # Audio processing (stable but may be moved to submodule in future)
     'AudioProcessor',
