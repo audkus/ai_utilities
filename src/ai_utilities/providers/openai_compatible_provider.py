@@ -78,6 +78,11 @@ class OpenAICompatibleProvider(BaseProvider):
         
         logger.info(f"Initialized OpenAI-compatible provider with base_url: {self.base_url}")
     
+    @property
+    def provider_name(self) -> str:
+        """Get the provider name."""
+        return "openai_compatible"
+    
     def _check_capability(self, capability: str) -> None:
         """Check if the provider supports a capability.
         
