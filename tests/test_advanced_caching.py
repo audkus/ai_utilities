@@ -25,7 +25,7 @@ class TestAdvancedCaching:
             cache_max_temperature=0.5
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # High temperature request should not be cached
         response1 = client.ask("test", temperature=0.8)
@@ -67,8 +67,8 @@ class TestAdvancedCaching:
             cache_namespace="client_b"
         )
         
-        client1 = AiClient(settings1, provider=fake_provider, auto_setup=False)
-        client2 = AiClient(settings2, provider=fake_provider, auto_setup=False)
+        client1 = AiClient(settings1, provider=fake_provider)
+        client2 = AiClient(settings2, provider=fake_provider)
         
         # Both clients should make their own calls (separate caches)
         response1 = client1.ask("test")
@@ -95,7 +95,7 @@ class TestAdvancedCaching:
             cache_ttl_s=3600  # Long TTL
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # First call
         response1 = client.ask("test")
@@ -119,7 +119,7 @@ class TestAdvancedCaching:
             cache_backend="memory"
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Different parameters should create separate cache entries
         response1 = client.ask("test", temperature=0.5)
@@ -143,7 +143,7 @@ class TestAdvancedCaching:
             cache_backend="memory"
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Should work with cache enabled
         response = client.ask("test")
@@ -163,7 +163,7 @@ class TestAdvancedCaching:
             cache_enabled=False  # Explicitly disabled
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # All calls should go to provider (no caching)
         response1 = client.ask("test")
@@ -191,7 +191,7 @@ class TestAdvancedCaching:
                 cache_namespace="test"
             )
             
-            client1 = AiClient(settings1, provider=fake_provider, auto_setup=False)
+            client1 = AiClient(settings1, provider=fake_provider)
             
             # Make a request to populate cache
             response1 = client1.ask("test")
@@ -206,7 +206,7 @@ class TestAdvancedCaching:
                 cache_namespace="test"
             )
             
-            client2 = AiClient(settings2, provider=fake_provider, auto_setup=False)
+            client2 = AiClient(settings2, provider=fake_provider)
             
             # Should use cached response
             response2 = client2.ask("test")
@@ -224,7 +224,7 @@ class TestAdvancedCaching:
             cache_backend="memory"
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Multiple identical requests should generate same cache key
         for i in range(5):
@@ -243,7 +243,7 @@ class TestAdvancedCaching:
             cache_backend="null"  # Explicit null backend
         )
         
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Should never cache with null backend
         for i in range(3):

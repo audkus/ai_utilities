@@ -31,17 +31,17 @@ def main():
     # Demo texts to generate
     demo_texts = [
         {
-            "text": "Hello, this is a demonstration of AI-powered text-to-speech synthesis.",
+            "text": "Hello, this is a test of the audio generation system.",
             "voice": "alloy",
             "description": "Standard greeting with alloy voice"
         },
         {
-            "text": "Welcome to the future of audio processing with artificial intelligence.",
+            "text": "This is an example using a different voice for comparison.",
             "voice": "nova", 
             "description": "Welcome message with nova voice"
         },
         {
-            "text": "The quick brown fox jumps over the lazy dog. This pangram tests all letters of the alphabet.",
+            "text": "The echo voice provides a unique sound texture for audio output.",
             "voice": "echo",
             "description": "Pangram with echo voice"
         }
@@ -170,21 +170,25 @@ def demo_speed_variations(client):
 
 def demo_format_variations(client):
     """Demonstrate different audio formats."""
-    print("\n📁 Format Variations Demo")
-    print("=" * 30)
+    print("\n📋 Audio Format Demo")
+    print("=" * 25)
     
-    processor = AudioProcessor(client=client)
+    # Create output directory
+    output_dir = Path("test_output") / "audio_formats"
+    output_dir.mkdir(parents=True, exist_ok=True)
     
-    test_text = "This demo shows different audio formats for speech synthesis."
-    formats = [AudioFormat.MP3, AudioFormat.WAV, AudioFormat.FLAC, AudioFormat.OGG]
+    formats = [AudioFormat.MP3, AudioFormat.WAV, AudioFormat.FLAC]
+    test_text = "This is a test of different audio formats for comparison."
     
     print(f"📝 Text: \"{test_text}\"")
     print(f"🎤 Voice: alloy")
+    print(f"📁 Output directory: {output_dir}")
     
     for format in formats:
         try:
             print(f"\n📁 Generating in {format.value.upper()} format...")
             
+            processor = client.get_audio_processor()
             result = processor.generate_audio(
                 text=test_text,
                 voice="alloy",
@@ -192,7 +196,7 @@ def demo_format_variations(client):
                 response_format=format
             )
             
-            output_path = Path(f"format_test_{format.value}.{format.value}")
+            output_path = output_dir / f"format_test_{format.value}.{format.value}"
             result.save_to_file(output_path)
             
             print(f"   ✅ Saved to: {output_path}")

@@ -28,10 +28,12 @@ client = AiClient()
 
 # Make a request
 response = client.ask("What is the capital of France?")
-print(response.text)
+print(response)
 
-# Monitor usage
-print(f"Tokens used: {response.usage.total_tokens}")
+# Monitor usage (if tracking enabled)
+usage_stats = client.get_usage_stats()
+if usage_stats:
+    print(f"Tokens used: {usage_stats.total_tokens}")
 ```
 
 ### Configuration
@@ -100,7 +102,7 @@ from ai_utilities import AsyncAiClient
 async def main():
     client = AsyncAiClient()
     response = await client.ask("Hello, world!")
-    print(response.text)
+    print(response)
 
 asyncio.run(main())
 ```
@@ -145,8 +147,51 @@ asyncio.run(main())
 5. **Caching not working**
    ```bash
    export AI_CACHE_ENABLED=true
-   export AI_CACHE_BACKEND=sqlite
-   ```
+export AI_CACHE_BACKEND=sqlite
+```
+
+## Testing
+
+### Running Tests
+
+This project uses pytest with timeout protection to prevent hanging tests.
+
+#### Unit Tests (Fast)
+```bash
+# Run unit tests only (no external API calls)
+pytest -m "not integration" --timeout=30
+```
+
+#### Integration Tests (Requires API Keys)
+```bash
+# Set up API key first
+export AI_API_KEY=your-api-key
+
+# Run integration tests
+pytest -m "integration" --timeout=120
+```
+
+#### All Tests
+```bash
+# Run all tests with appropriate timeouts
+pytest -m "not integration" --timeout=30  # Unit tests
+pytest -m "integration" --timeout=120     # Integration tests (if API key available)
+```
+
+### Test Timeouts
+
+- **Unit tests**: 30 seconds per test (fail fast)
+- **Integration tests**: 120 seconds per test (allow for network latency)
+- **Request timeouts**: 30 seconds default (configurable via `AI_TIMEOUT`)
+
+### Test Categories
+
+- **Unit tests**: Fast tests without external dependencies
+- **Integration tests**: Tests that call real APIs (marked with `@pytest.mark.integration`)
+
+Integration tests are automatically skipped if API keys are missing.
+
+For detailed testing guidelines, see [CI_TIMEOUT_GUIDELINES.md](CI_TIMEOUT_GUIDELINES.md).
 
 ## Where to Go Next
 

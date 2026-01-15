@@ -91,7 +91,7 @@ class OpenAIConfig(BaseModel):
     )
     
     model: str = Field(
-        default="test-model-1",
+        default="gpt-3.5-turbo",
         description="Default OpenAI model to use"
     )
     
@@ -194,7 +194,7 @@ class AIConfig(BaseModel):
             ),
             "gpt-4-turbo": ModelConfig(
                 requests_per_minute=3000,
-                tokens_per_minute=3000000,
+                tokens_per_minute=2000000,
                 tokens_per_day=30000000
             ),
         },
@@ -290,7 +290,7 @@ class AIConfig(BaseModel):
                     },
                     "gpt-4-turbo": {
                         "requests_per_minute": 3000,
-                        "tokens_per_minute": 3000000,
+                        "tokens_per_minute": 2000000,
                         "tokens_per_day": 30000000
                     },
                 }
@@ -443,7 +443,6 @@ class AiSettings(BaseSettings):
     
     model: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices("AI_MODEL", "OPENAI_MODEL"),
         description="Model to use (required)"
     )
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
@@ -629,19 +628,6 @@ class AiSettings(BaseSettings):
         else:
             return value
     
-    @classmethod
-    def create_isolated(cls, env_vars: Optional[dict] = None, **data):
-        """Create AiSettings with isolated environment variables (deprecated - use override_env)."""
-        from .env_overrides import override_env
-        
-        with override_env(env_vars):
-            settings = cls(**data)
-            return settings
-    
-    def cleanup_env(self):
-        """Restore original environment variables (deprecated - no longer needed)."""
-        pass  # No-op since we no longer mutate os.environ
-    
     @field_validator('model', mode='before')
     @classmethod
     def normalize_model(cls, v):
@@ -652,6 +638,71 @@ class AiSettings(BaseSettings):
             v = v.strip()
             return v if v else None
         return v
+    
+    @model_validator(mode='before')
+    @classmethod
+    def apply_contextvar_overrides(cls, data):
+        """Apply contextvar overrides before pydantic-settings processing."""
+        from .env_overrides import get_env_overrides
+        
+        if isinstance(data, dict):
+            # Get both real environment and contextvar overrides
+            real_env = dict(os.environ)
+            context_overrides = get_env_overrides()
+            
+            # Contextvar overrides take precedence over real environment
+            combined_env = {**real_env, **context_overrides}
+            
+            if combined_env:
+                # Apply environment/contextvar overrides only if not already set in explicit kwargs
+                # Explicit kwargs take precedence over environment and contextvar overrides
+                env_data = {}
+                
+                # Only apply environment override if not already in explicit data
+                if 'AI_MODEL' in combined_env and 'model' not in data:
+                    env_data['model'] = combined_env['AI_MODEL']
+                
+                if 'AI_TEMPERATURE' in combined_env and 'temperature' not in data:
+                    try:
+                        env_data['temperature'] = float(combined_env['AI_TEMPERATURE'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_MAX_TOKENS' in combined_env and 'max_tokens' not in data:
+                    try:
+                        env_data['max_tokens'] = int(combined_env['AI_MAX_TOKENS'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_TIMEOUT' in combined_env and 'timeout' not in data:
+                    try:
+                        env_data['timeout'] = int(combined_env['AI_TIMEOUT'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_API_KEY' in combined_env and 'api_key' not in data:
+                    env_data['api_key'] = combined_env['AI_API_KEY']
+                
+                if 'AI_PROVIDER' in combined_env and 'provider' not in data:
+                    env_data['provider'] = combined_env['AI_PROVIDER']
+                
+                if 'AI_BASE_URL' in combined_env and 'base_url' not in data:
+                    env_data['base_url'] = combined_env['AI_BASE_URL']
+                
+                # Merge environment overrides with input data
+                # Environment overrides come after explicit kwargs
+                data = {**data, **env_data}
+        
+        return data
+    
+    @model_validator(mode='after')
+    def set_model_default(self) -> 'AiSettings':
+        """Set default model only if no model was explicitly provided."""
+        # Only set default if model is truly None and no explicit value was provided
+        # Don't override if model was set by environment or contextvar
+        if self.model is None:
+            self.model = "gpt-3.5-turbo"
+        return self
     
     @field_validator('api_key')
     @classmethod

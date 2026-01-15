@@ -14,7 +14,7 @@ class TestNoNetworkScenarios:
         """Test that AiClient can be created and used without network calls."""
         # Use FakeProvider to avoid any network calls
         fake_provider = FakeProvider(["Test response: {prompt}"])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         # Should work without any network access
         response = client.ask("test prompt")
@@ -24,7 +24,7 @@ class TestNoNetworkScenarios:
         """Test create_client convenience function without network."""
         settings = AiSettings(api_key="fake-key", model="test-model")
         fake_provider = FakeProvider(["Response: {prompt}"])
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         response = client.ask("test")
         assert "Response: test" in response
@@ -68,7 +68,7 @@ class TestNoNetworkScenarios:
     def test_client_works_with_explicit_provider(self):
         """Test that client works when provider is explicitly provided."""
         fake_provider = FakeProvider(["test response"])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         # Should work without any setup calls
         response = client.ask("test")
@@ -91,7 +91,7 @@ class TestProviderErrorHandling:
         # This should not crash during creation but fail gracefully when used
         settings = AiSettings(provider="openai", api_key=None)
         fake_provider = FakeProvider(["test response"])
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Should work with fake provider even without real API key
         response = client.ask("test")
@@ -104,7 +104,7 @@ class TestProviderErrorHandling:
         
         # Should be able to create client
         fake_provider = FakeProvider(["fallback response"])
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         response = client.ask("test")
         assert response == "fallback response"
@@ -115,7 +115,7 @@ class TestProviderErrorHandling:
         error_provider = FakeProvider()
         error_provider.ask = MagicMock(side_effect=Exception("Provider error"))
         
-        client = AiClient(provider=error_provider, auto_setup=False)
+        client = AiClient(provider=error_provider)
         
         # Should propagate the error
         with pytest.raises(Exception, match="Provider error"):
@@ -130,7 +130,7 @@ class TestProviderErrorHandling:
         if hasattr(minimal_provider, 'advanced_feature'):
             delattr(minimal_provider, 'advanced_feature')
         
-        client = AiClient(provider=minimal_provider, auto_setup=False)
+        client = AiClient(provider=minimal_provider)
         
         # Should still work for basic operations
         response = client.ask("test")
@@ -189,7 +189,7 @@ class TestOfflineConfiguration:
         )
         
         fake_provider = FakeProvider(["offline response"])
-        client = AiClient(settings, provider=fake_provider, auto_setup=False)
+        client = AiClient(settings, provider=fake_provider)
         
         # Verify settings are applied
         assert client.settings.api_key == "offline-key"

@@ -30,7 +30,7 @@ class TestAskJson:
             '{"name": "Alice", "age": 30}',
             "This is text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_json("Create a person")
         assert isinstance(result, dict)
@@ -43,7 +43,7 @@ class TestAskJson:
             '```json\n{"name": "Bob", "age": 25}\n```',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_json("Create a person")
         assert isinstance(result, dict)
@@ -56,7 +56,7 @@ class TestAskJson:
             'Here is the result: {"name": "Charlie", "age": 35} - End of response.',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_json("Create a person")
         assert isinstance(result, dict)
@@ -69,7 +69,7 @@ class TestAskJson:
             '["red", "blue", "green"]',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_json("List colors")
         assert isinstance(result, list)
@@ -81,7 +81,7 @@ class TestAskJson:
             '{"name": "Alice", "age": 30',  # Missing closing brace
             '{"name": "Alice", "age": 30}'  # Fixed JSON
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_json("Create a person", max_repairs=1)
         assert isinstance(result, dict)
@@ -95,7 +95,7 @@ class TestAskJson:
             '{"name": "Alice", "age": 30',  # Still broken
             '{"name": "Alice", "age": 30'   # Still broken
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         with pytest.raises(JsonParseError) as exc_info:
             client.ask_json("Create a person", max_repairs=2)
@@ -107,7 +107,7 @@ class TestAskJson:
         fake_provider = FakeProvider([
             '{"name": "Alice", "age": 30'  # Broken JSON
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         with pytest.raises(JsonParseError):
             client.ask_json("Create a person", max_repairs=0)
@@ -122,7 +122,7 @@ class TestAskTyped:
             '{"name": "Alice", "age": 30, "email": "alice@example.com"}',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_typed("Create a person", PersonModel)
         assert isinstance(result, PersonModel)
@@ -136,7 +136,7 @@ class TestAskTyped:
             '{"name": "Bob", "age": 25}',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_typed("Create a person", PersonModel)
         assert isinstance(result, PersonModel)
@@ -150,7 +150,7 @@ class TestAskTyped:
             '{"name": "Charlie", "age": "not_a_number"}',  # Invalid age type
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         with pytest.raises(ValidationError):
             client.ask_typed("Create a person", PersonModel)
@@ -161,7 +161,7 @@ class TestAskTyped:
             '{"name": "David"}',  # Missing required age field
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         with pytest.raises(ValidationError):
             client.ask_typed("Create a person", PersonModel)
@@ -173,7 +173,7 @@ class TestAskTyped:
             '{"name": "Eve", "age": 28}',  # Fixed JSON
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_typed("Create a person", PersonModel, max_repairs=1)
         assert isinstance(result, PersonModel)
@@ -186,7 +186,7 @@ class TestAskTyped:
             '{"name": "Frank", "age": 32}',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_typed(
             "Create a person", 
@@ -224,7 +224,7 @@ class TestComplexModels:
             '{"name": "Grace", "age": 30, "address": {"street": "123 Main St", "city": "Springfield", "zipcode": "12345"}}',
             "Text response"
         ])
-        client = AiClient(provider=fake_provider, auto_setup=False)
+        client = AiClient(provider=fake_provider)
         
         result = client.ask_typed("Create a person with address", self.PersonWithAddress)
         assert isinstance(result, self.PersonWithAddress)

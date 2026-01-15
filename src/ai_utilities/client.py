@@ -42,8 +42,14 @@ def _sanitize_namespace(ns: str) -> str:
     # Strip whitespace and convert to lowercase
     sanitized = ns.strip().lower()
     
-    # Replace most special chars with underscores, but keep some safe ones
+    # Transliterate unicode to ascii (ñ → n) first
+    import unicodedata
     import re
+    # Normalize unicode and remove diacritics
+    sanitized = unicodedata.normalize('NFKD', sanitized)
+    sanitized = ''.join(c for c in sanitized if not unicodedata.combining(c))
+    
+    # Replace any remaining non-alphanumeric chars (except allowed ones) with underscore
     sanitized = re.sub(r'[^a-z0-9_.-]', '_', sanitized)
     
     # Remove consecutive underscores
@@ -52,21 +58,26 @@ def _sanitize_namespace(ns: str) -> str:
     # Limit length and strip leading/trailing underscores
     sanitized = sanitized[:50].strip('_')
     
-    # Ensure it's not empty
-    if not sanitized:
+    # Return default if empty or only underscores
+    if not sanitized or sanitized == '_':
         sanitized = "default"
     
     return sanitized
 
 
-def _default_namespace() -> str:
+def _default_namespace(path: Optional[Path] = None) -> str:
     """Generate default namespace based on current working directory.
     
+    Args:
+        path: Optional custom path to use for namespace generation
+        
     Returns:
         Stable namespace string for current project
     """
-    # Use current working directory for namespace
-    cwd_hash = stable_hash({"cwd": str(Path.cwd().resolve())})
+    # Use provided path or current working directory for namespace
+    if path is None:
+        path = Path.cwd().resolve()
+    cwd_hash = stable_hash({"cwd": str(path)})
     return f"proj_{cwd_hash[:12]}"
 
 
@@ -117,8 +128,7 @@ class AiClient:
     
     def __init__(self, settings: Optional["AiSettings"] = None, provider: Optional[BaseProvider] = None, 
                  track_usage: bool = False, usage_file: Optional[Path] = None, 
-                 show_progress: bool = True, auto_setup: bool = False, smart_setup: bool = False,
-                 cache: Optional[CacheBackend] = None):
+                 show_progress: bool = True, cache: Optional[CacheBackend] = None):
         """Initialize AI client with explicit settings.
         
         Args:
@@ -127,8 +137,6 @@ class AiClient:
             track_usage: Whether to track usage statistics
             usage_file: Custom file for usage tracking
             show_progress: Whether to show progress indicator during requests
-            auto_setup: Whether to automatically prompt for setup if API key missing (DEPRECATED - use CLI)
-            smart_setup: Whether to use smart setup (DEPRECATED - use CLI)
             cache: Optional cache backend to override settings-based cache configuration
             
         Note:
@@ -136,23 +144,11 @@ class AiClient:
             for interactive configuration. By default, the client only loads from .env files.
         """
         if settings is None:
-            if smart_setup:
-                settings = AiSettings.smart_setup()
-            elif auto_setup:
-                # DEPRECATED: Use 'ai-utilities setup' instead
-                import warnings
-                warnings.warn(
-                    "auto_setup is deprecated. Use 'ai-utilities setup' command for interactive setup.",
-                    DeprecationWarning,
-                    stacklevel=2
-                )
-                settings = AiSettings.interactive_setup()
+            # Load from .env if it exists, otherwise use empty settings
+            if Path(".env").exists():
+                settings = AiSettings.from_dotenv(".env")
             else:
-                # Load from .env if it exists, otherwise use empty settings
-                if Path(".env").exists():
-                    settings = AiSettings.from_dotenv(".env")
-                else:
-                    settings = AiSettings()
+                settings = AiSettings()
         
         self.settings = settings
         

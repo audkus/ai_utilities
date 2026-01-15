@@ -67,7 +67,7 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=term-missing
+        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=html:coverage_reports --cov-report=term-missing
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
@@ -76,6 +76,14 @@ jobs:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+    
+    - name: Upload HTML coverage report
+      if: matrix.python-version == '3.9'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: coverage_reports/
+        retention-days: 30
 
   minimal-install:
     name: Minimal Install Test (Required)

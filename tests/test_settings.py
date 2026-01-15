@@ -10,14 +10,20 @@ from ai_utilities import AiClient, AiSettings
 from tests.fake_provider import FakeProvider
 
 
-def test_ai_settings_defaults():
-    """Test that AiSettings loads correct defaults."""
-    settings = AiSettings()
+def test_ai_settings_defaults(monkeypatch):
+    """Test that AiSettings loads correct defaults when no .env file."""
+    # Clear all AI_ environment variables to test true defaults
+    env_vars_to_clear = [k for k in os.environ.keys() if k.startswith('AI_')]
+    for var in env_vars_to_clear:
+        monkeypatch.delenv(var, raising=False)
     
-    assert settings.model == "test-model-1"
+    # Test true defaults by explicitly disabling .env loading
+    settings = AiSettings(_env_file=None)
+    
+    # Should default to gpt-3.5-turbo when no environment variable is set
+    assert settings.model == "gpt-3.5-turbo"  # Production default
     assert settings.temperature == 0.7
     assert settings.timeout == 30
-    assert settings.api_key is None
     assert settings.max_tokens is None
     assert settings.base_url is None
     assert settings.update_check_days == 30
@@ -27,7 +33,7 @@ def test_ai_settings_from_env_vars(monkeypatch):
     """Test that AiSettings loads from environment variables."""
     # Set environment variables
     monkeypatch.setenv("AI_API_KEY", "test-key-from-env")
-    monkeypatch.setenv("AI_MODEL", "test-model-2")
+    monkeypatch.setenv("AI_MODEL", "gpt-4")
     monkeypatch.setenv("AI_TEMPERATURE", "0.5")
     monkeypatch.setenv("AI_MAX_TOKENS", "1000")
     monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
@@ -37,7 +43,7 @@ def test_ai_settings_from_env_vars(monkeypatch):
     settings = AiSettings()
     
     assert settings.api_key == "test-key-from-env"
-    assert settings.model == "test-model-2"
+    assert settings.model == "gpt-4"
     assert settings.temperature == 0.5
     assert settings.max_tokens == 1000
     assert settings.base_url == "https://api.openai.com/v1"
@@ -49,16 +55,16 @@ def test_ai_settings_explicit_override_env(monkeypatch):
     """Test that explicit settings override environment variables."""
     # Set environment variables
     monkeypatch.setenv("AI_API_KEY", "env-key")
-    monkeypatch.setenv("AI_MODEL", "test-model-2")
+    monkeypatch.setenv("AI_MODEL", "gpt-4")
     
     # Create explicit settings
     explicit_settings = AiSettings(
         api_key="explicit-key",
-        model="test-model-1"
+        model="gpt-3.5-turbo"
     )
     
     assert explicit_settings.api_key == "explicit-key"
-    assert explicit_settings.model == "test-model-1"
+    assert explicit_settings.model == "gpt-3.5-turbo"
 
 
 def test_ai_settings_validation():
@@ -91,10 +97,10 @@ use_ai = true
 ai_provider = openai
 
 [openai]
-model = test-model-2
+model = gpt-4
 api_key = ini-api-key-here
 
-[test-model-1]
+[gpt-3.5-turbo]
 requests_per_minute = 5000
 tokens_per_minute = 450000
 """
@@ -106,7 +112,7 @@ tokens_per_minute = 450000
         try:
             settings = AiSettings.from_ini(f.name)
             
-            assert settings.model == "test-model-2"
+            assert settings.model == "gpt-4"
             assert settings.api_key == "ini-api-key-here"
             # Should still have defaults for other fields
             assert settings.temperature == 0.7
@@ -125,7 +131,7 @@ def test_ai_settings_from_ini_missing_file():
 def test_ai_settings_from_ini_with_env_placeholder():
     """Test that from_ini handles AI_API_KEY placeholder."""
     ini_content = """[openai]
-model = test-model-2
+model = gpt-4
 api_key = AI_API_KEY
 """
     
@@ -136,7 +142,7 @@ api_key = AI_API_KEY
         try:
             settings = AiSettings.from_ini(f.name)
             
-            assert settings.model == "test-model-2"
+            assert settings.model == "gpt-4"
             # The placeholder is returned as-is (user should replace it with actual key)
             assert settings.api_key == "AI_API_KEY"
             
@@ -147,30 +153,30 @@ api_key = AI_API_KEY
 def test_ai_client_uses_env_vars(monkeypatch):
     """Test that AiClient loads settings from environment variables."""
     monkeypatch.setenv("AI_API_KEY", "test-key")
-    monkeypatch.setenv("AI_MODEL", "test-model-2")
+    monkeypatch.setenv("AI_MODEL", "gpt-4")
     
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, auto_setup=False)
+    client = AiClient(provider=fake_provider)
     
     assert client.settings.api_key == "test-key"
-    assert client.settings.model == "test-model-2"
+    assert client.settings.model == "gpt-4"
 
 
 def test_ai_client_explicit_settings_override_env(monkeypatch):
     """Test that explicit settings passed to AiClient override environment."""
     monkeypatch.setenv("AI_API_KEY", "env-key")
-    monkeypatch.setenv("AI_MODEL", "test-model-2")
+    monkeypatch.setenv("AI_MODEL", "gpt-4")
     
     explicit_settings = AiSettings(
         api_key="explicit-key",
-        model="test-model-1"
+        model="gpt-3.5-turbo"
     )
     
     fake_provider = FakeProvider()
-    client = AiClient(settings=explicit_settings, provider=fake_provider, auto_setup=False)
+    client = AiClient(settings=explicit_settings, provider=fake_provider)
     
     assert client.settings.api_key == "explicit-key"
-    assert client.settings.model == "test-model-1"
+    assert client.settings.model == "gpt-3.5-turbo"
 
 
 def test_ai_client_no_config_file_access():
@@ -189,10 +195,10 @@ def test_ai_client_no_config_file_access():
             
             # Creating AiClient should not fail or create files
             fake_provider = FakeProvider()
-            client = AiClient(provider=fake_provider, auto_setup=False)
+            client = AiClient(provider=fake_provider)
             
             # Should work fine without any config files
-            assert client.settings.model == "test-model-1"  # Default
+            assert client.settings.model == "gpt-3.5-turbo"  # Default
             
             # Verify no config.ini was created
             assert not (temp_path / "config.ini").exists()

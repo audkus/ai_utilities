@@ -60,6 +60,10 @@ class TestApiKeyResolution:
     
     def test_env_file_used_when_env_var_missing(self, tmp_path):
         """Test that .env file is used when environment variable is missing."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Create test .env file
         env_file = tmp_path / ".env"
         env_file.write_text("AI_API_KEY=env-file-key\n")
@@ -75,6 +79,10 @@ class TestApiKeyResolution:
     
     def test_env_file_ignored_when_placeholder(self, tmp_path):
         """Test that placeholder .env value is ignored."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Create test .env file with placeholder
         env_file = tmp_path / ".env"
         env_file.write_text("AI_API_KEY=your-key-here\n")
@@ -90,6 +98,10 @@ class TestApiKeyResolution:
     
     def test_missing_api_key_raises_error(self, tmp_path):
         """Test that MissingApiKeyError is raised when no key is found."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Change to temp directory to avoid .env file interference
         original_cwd = os.getcwd()
         try:
@@ -131,6 +143,10 @@ class TestApiKeyResolution:
     
     def test_env_file_read_error_silently_ignored(self, tmp_path):
         """Test that .env file read errors are silently ignored."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Create a file that can't be read properly
         env_file = tmp_path / ".env"
         env_file.write_text("AI_API_KEY=valid-key\n")
@@ -174,6 +190,10 @@ class TestMissingApiKeyError:
     
     def test_error_message_contains_required_elements(self, tmp_path):
         """Test that error message contains all required elements."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Change to temp directory to avoid .env file interference
         original_cwd = os.getcwd()
         try:
@@ -199,6 +219,10 @@ class TestMissingApiKeyError:
     
     def test_error_message_platform_specific(self, tmp_path):
         """Test that error message is platform-specific."""
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
+        
         # Change to temp directory to avoid .env file interference
         original_cwd = os.getcwd()
         try:
@@ -279,9 +303,8 @@ class TestIntegrationWithClient:
             
             # Test that OpenAI provider requires API key
             # The provider factory now converts MissingApiKeyError to ProviderConfigurationError
-            # Disable auto_setup to prevent interactive prompts and disable .env loading
             with pytest.raises(ProviderConfigurationError) as exc_info:
-                create_client(provider="openai", _env_file=None, auto_setup=False)
+                create_client(provider="openai", _env_file=None)
             
             # Check that the error message is still helpful
             error_message = str(exc_info.value)
@@ -292,6 +315,10 @@ class TestIntegrationWithClient:
     def test_create_client_with_env_file(self, tmp_path):
         """Test create_client works with .env file."""
         from ai_utilities.client import AiClient, AiSettings
+        
+        # Ensure environment variable is not set
+        if "AI_API_KEY" in os.environ:
+            del os.environ["AI_API_KEY"]
         
         # Create .env file
         env_file = tmp_path / ".env"
@@ -305,7 +332,7 @@ class TestIntegrationWithClient:
             settings = AiSettings.from_dotenv(str(env_file), provider="openai_compatible", base_url="http://localhost:11434/v1")
             
             # Use AiClient directly instead of create_client
-            client = AiClient(settings=settings, auto_setup=False)
+            client = AiClient(settings=settings)
             assert client.settings.api_key == "env-file-key"
         finally:
             os.chdir(original_cwd)

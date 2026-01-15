@@ -14,7 +14,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, ConfigDict
 
 
 class Source(BaseModel):
@@ -38,11 +38,12 @@ class Source(BaseModel):
     indexed_at: datetime = Field(default_factory=datetime.utcnow, description="When source was indexed")
     chunk_count: int = Field(default=0, description="Number of chunks created from this source")
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat(),
             Path: lambda v: str(v),
         }
+    )
     
     @computed_field
     @property
@@ -152,10 +153,11 @@ class Chunk(BaseModel):
     embedded_at: Optional[datetime] = Field(default=None, description="When embedding was created")
     embedding_dimensions: Optional[int] = Field(default=None, description="Dimensions of the embedding vector")
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat(),
         }
+    )
     
     @computed_field
     @property
@@ -191,10 +193,11 @@ class SearchHit(BaseModel):
     source_path: Path = Field(description="Path to the source file")
     source_type: str = Field(description="Type of the source file")
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             Path: lambda v: str(v),
         }
+    )
     
     @computed_field
     @property

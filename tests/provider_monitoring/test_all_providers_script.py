@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from ai_utilities import AiClient, AiSettings, ProviderConfigurationError
 
 
-def test_provider(name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+def run_provider_test(name: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Test a specific provider configuration."""
     print(f"\n{'='*60}")
     print(f"🧪 Testing {name}")
@@ -368,7 +368,7 @@ def main():
     # Run tests
     results = []
     for name, config in test_configs.items():
-        result = test_provider(name, config)
+        result = run_provider_test(name, config)
         results.append(result)
     
     # Print summary

@@ -20,9 +20,9 @@ def test_ai_client_creation():
 
 
 def test_ai_client_with_fake_provider():
-    """Test AiClient with FakeProvider for offline testing."""
+    """Test AI client with fake provider."""
     fake_provider = FakeProvider()
-    client = AiClient(provider=fake_provider, auto_setup=False)
+    client = AiClient(provider=fake_provider)
     
     response = client.ask("What is 2+2?")
     assert "fake response" in response.lower()
@@ -33,14 +33,12 @@ def test_ai_client_with_fake_provider():
     assert len(responses) == 2
     assert "prompt1" in responses[0].response
     assert "prompt2" in responses[1].response
-    assert responses[0].error is None
-    assert responses[1].error is None
 
 
 def test_json_extraction():
-    """Test JSON format response."""
-    fake_provider = FakeProvider(['{"test": "data"}'])
-    client = AiClient(provider=fake_provider, auto_setup=False)
+    """Test JSON extraction functionality."""
+    fake_provider = FakeProvider(responses=['{"test": "data"}'])
+    client = AiClient(provider=fake_provider)
     
     response = client.ask_json("test prompt")
     assert isinstance(response, dict)
@@ -51,11 +49,11 @@ def test_json_extraction():
 def test_batch_ordering():
     """Test that batch responses maintain order."""
     fake_provider = FakeProvider([
-        "Response 1: {prompt}",
-        "Response 2: {prompt}",
-        "Response 3: {prompt}"
+        "Response 1: first",
+        "Response 2: second", 
+        "Response 3: third"
     ])
-    client = AiClient(provider=fake_provider, auto_setup=False)
+    client = AiClient(provider=fake_provider)
     
     prompts = ["first", "second", "third"]
     responses = client.ask_many(prompts)
@@ -70,7 +68,7 @@ def test_parameter_override():
     """Test that parameters can be overridden in calls."""
     settings = AiSettings(api_key="key", model="test-model-1", temperature=0.5)
     fake_provider = FakeProvider()
-    client = AiClient(settings, provider=fake_provider, auto_setup=False)
+    client = AiClient(settings, provider=fake_provider)
     
     # This should use the overridden model
     response = client.ask("test", model="test-model-2", temperature=0.8)

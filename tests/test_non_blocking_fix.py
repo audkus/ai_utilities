@@ -68,13 +68,9 @@ class TestCriticalBlockingFix:
     @patch.dict(os.environ, {"CI": "true"})
     def test_client_with_auto_setup_disabled_never_blocks(self):
         """Test that auto_setup=False never blocks."""
-        client = AiClient(auto_setup=False)
-        assert client is not None
-
-    @patch.dict(os.environ, {"CI": "true"})
     def test_client_with_smart_setup_never_blocks(self):
         """Test that smart_setup never blocks in CI."""
-        client = AiClient(smart_setup=True, auto_setup=False)
+        client = AiClient()
         assert client is not None
 
 

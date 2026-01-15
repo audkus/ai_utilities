@@ -248,9 +248,9 @@ class TestAIConfigManager:
         
         # Mock rate limits
         mock_limits = {
-            "test-model-1": Mock()
+            "gpt-4": Mock()
         }
-        mock_limits["test-model-1"].to_model_config.return_value = ModelConfig(
+        mock_limits["gpt-4"].to_model_config.return_value = ModelConfig(
             requests_per_minute=7000,
             tokens_per_minute=600000,
             tokens_per_day=1800000
@@ -264,13 +264,13 @@ class TestAIConfigManager:
         
         # Load initial config
         initial_config = manager.load_config()
-        assert initial_config.models["test-model-1"].requests_per_minute != 7000
+        assert initial_config.models["gpt-4"].requests_per_minute != 7000
         
         # Update rate limits
         result = manager.update_rate_limits()
         
         assert result is True
-        assert manager._config.models["test-model-1"].requests_per_minute == 7000
+        assert manager._config.models["gpt-4"].requests_per_minute == 7000
     
     def test_update_rate_limits_no_fetcher(self):
         """Test updating rate limits without rate limit fetcher."""

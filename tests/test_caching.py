@@ -172,7 +172,7 @@ class TestAiClientCaching:
         """Test that ask() caches when enabled and temperature is low."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", cache_max_temperature=0.7)
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # First call
         response1 = client.ask("hello", temperature=0.2)
@@ -187,7 +187,7 @@ class TestAiClientCaching:
         """Test that ask() doesn't cache when disabled."""
         settings = AiSettings(cache_enabled=False)
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # First call
         client.ask("hello", temperature=0.2)
@@ -201,7 +201,7 @@ class TestAiClientCaching:
         """Test that ask() doesn't cache when temperature is too high."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", cache_max_temperature=0.7)
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Call with high temperature
         client.ask("hello", temperature=0.9)
@@ -215,7 +215,7 @@ class TestAiClientCaching:
         """Test that cache keys are sensitive to model."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Call with different models
         client.ask("hello", model="model1")
@@ -232,7 +232,7 @@ class TestAiClientCaching:
         """Test that cache keys are sensitive to relevant parameters."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Call with different temperatures
         client.ask("hello", temperature=0.1)
@@ -249,7 +249,7 @@ class TestAiClientCaching:
         """Test that list prompts are not cached in Phase 1."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Call with list prompt
         client.ask(["hello", "world"])
@@ -263,7 +263,7 @@ class TestAiClientCaching:
         """Test that ask_json() caches the parsed Python object."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Override ask_text to return predictable JSON and track calls
         call_count = 0
@@ -289,7 +289,7 @@ class TestAiClientCaching:
         """Test that ask_json() doesn't cache JSON parsing failures."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Clear any existing cache and use unique prompt
         client.cache.clear()
@@ -313,7 +313,7 @@ class TestAiClientCaching:
         """Test that ask_json cache keys include max_repairs parameter."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Override ask_text to return predictable JSON and track calls
         call_count = 0
@@ -338,7 +338,7 @@ class TestAiClientCaching:
         """Test that get_embeddings() works correctly (note: doesn't use cache currently)."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", api_key="test-key")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         # Mock OpenAI embeddings
         mock_embeddings = Mock()
@@ -367,7 +367,7 @@ class TestAiClientCaching:
         """Test that embeddings calls work correctly with different inputs (note: doesn't use cache currently)."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", api_key="test-key")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider)
         
         mock_embeddings = Mock()
         mock_embeddings.data = [Mock(embedding=[0.1, 0.2, 0.3])]
@@ -394,7 +394,7 @@ class TestAiClientCaching:
         provider = FakeProvider(settings)
         explicit_cache = NullCache()  # Override with null cache
         
-        client = AiClient(settings=settings, provider=provider, cache=explicit_cache, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider, cache=explicit_cache)
         
         # Should not cache despite settings
         client.ask("hello", temperature=0.2)
@@ -407,7 +407,7 @@ class TestAiClientCaching:
         """Test that cached responses are tracked in usage stats."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory")
         provider = FakeProvider(settings)
-        client = AiClient(settings=settings, provider=provider, track_usage=True, auto_setup=False)
+        client = AiClient(settings=settings, provider=provider, track_usage=True)
         
         # First call
         client.ask("hello", temperature=0.2)

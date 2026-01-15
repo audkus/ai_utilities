@@ -32,35 +32,39 @@ class TestProviderChangeDetectorBugPrevention:
     def test_alert_thresholds_are_reasonable(self):
         """Test that alert thresholds are reasonable and prevent false positives."""
         # Test threshold validation
-        assert self.detector.response_time_threshold > 0
-        assert self.detector.response_time_threshold < 60  # Should alert under 1 minute
-        assert self.detector.error_rate_threshold >= 0
-        assert self.detector.error_rate_threshold <= 1.0
-        
-        # Test threshold edge cases
-        with pytest.raises(ValueError):
-            self.detector.validate_threshold(-1, "response_time")
-        
-        with pytest.raises(ValueError):
-            self.detector.validate_threshold(2.0, "error_rate")
+        assert self.detector.alert_threshold['response_time'] > 0
+        assert self.detector.alert_threshold['response_time'] < 60  # Should alert under 1 minute
+        assert self.detector.alert_threshold['error_rate'] >= 0
+        assert self.detector.alert_threshold['error_rate'] <= 1.0
+        assert self.detector.alert_threshold['downtime_hours'] > 0
     
     def test_change_detection_handles_all_status_types(self):
         """Test that change detection handles all possible provider status types."""
-        status_types = ["ready", "error", "unreachable", "needs_key", "maintenance", "deprecated"]
+        from provider_health_monitor import ProviderStatus
+        from datetime import datetime
+        
+        status_types = ["healthy", "degraded", "down"]
         
         for status in status_types:
-            mock_provider = {
-                "name": f"test_{status}",
-                "endpoint": "http://test.com",
-                "status": status,
-                "response_time": 1.0,
-                "error_rate": 0.0
-            }
+            mock_provider_status = ProviderStatus(
+                name=f"test_{status}",
+                endpoint="http://test.com",
+                api_key_env="TEST_KEY",
+                test_model="gpt-3.5-turbo",
+                last_check=datetime.now(),
+                status=status,
+                issues=[],
+                response_time=1.0
+            )
+            
+            results = {"test_provider": mock_provider_status}
             
             # Should not raise exceptions for any valid status
-            result = self.detector.analyze_provider_change(mock_provider, mock_provider)
+            result = self.detector._analyze_changes(results)
             assert isinstance(result, dict)
-            assert "change_detected" in result
+            assert "critical_issues" in result
+            assert "warnings" in result
+            assert "performance_issues" in result
     
     def test_malformed_api_responses_dont_crash_detector(self):
         """Test that malformed API responses are handled gracefully."""

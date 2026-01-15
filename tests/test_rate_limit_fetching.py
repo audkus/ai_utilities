@@ -435,6 +435,155 @@ class TestRateLimitFetcherErrorHandling:
         
         # Cleanup
         cache_dir.chmod(0o755)  # Restore permissions for cleanup
+    
+    def test_get_model_rate_limit(self):
+        """Test getting rate limit for specific model."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        # Get rate limit for specific model
+        limit = fetcher.get_model_rate_limit("test-model-1")
+        
+        assert limit is not None
+        assert limit.model_name == "test-model-1"
+        assert limit.requests_per_minute > 0
+        assert limit.tokens_per_minute > 0
+        assert limit.tokens_per_day > 0
+        
+        # Test non-existent model
+        limit = fetcher.get_model_rate_limit("non-existent-model")
+        assert limit is None
+    
+    def test_get_model_rate_limit_force_refresh(self):
+        """Test getting rate limit with force refresh."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        # First call should populate cache
+        limit1 = fetcher.get_model_rate_limit("test-model-1")
+        
+        # Second call without force should use cache
+        limit2 = fetcher.get_model_rate_limit("test-model-1")
+        
+        # Third call with force refresh should update
+        limit3 = fetcher.get_model_rate_limit("test-model-1", force_refresh=True)
+        
+        assert limit1.model_name == limit2.model_name == limit3.model_name
+    
+    def test_clear_cache(self):
+        """Test clearing cache."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        # Populate cache
+        fetcher.get_rate_limits()
+        assert fetcher.cache_file.exists()
+        
+        # Clear cache
+        fetcher.clear_cache()
+        assert not fetcher.cache_file.exists()
+    
+    def test_get_cache_status(self):
+        """Test getting cache status."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        # Initial status (no cache)
+        status = fetcher.get_cache_status()
+        assert not status["cached"]
+        assert status["models_count"] == 0
+        assert status["last_updated"] is None
+        
+        # After populating cache
+        fetcher.get_rate_limits()
+        status = fetcher.get_cache_status()
+        assert status["cached"]
+        assert status["models_count"] > 0
+        assert status["last_updated"] is not None
+    
+    def test_cache_expiration(self):
+        """Test cache expiration logic."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir, cache_days=1)
+        
+        # Create expired cache
+        old_date = datetime.now() - timedelta(days=2)
+        cache_data = {
+            "models": {
+                "test-model": {
+                    "model_name": "test-model",
+                    "requests_per_minute": 100,
+                    "tokens_per_minute": 1000,
+                    "tokens_per_day": 10000,
+                    "last_updated": old_date.isoformat()
+                }
+            },
+            "last_updated": old_date.isoformat(),
+            "cache_days": 1
+        }
+        
+        with open(fetcher.cache_file, 'w') as f:
+            json.dump(cache_data, f)
+        
+        # Should detect expired cache and fetch fresh data
+        with patch.object(fetcher, '_fetch_from_api') as mock_fetch:
+            mock_fetch.return_value = {}
+            fetcher.get_rate_limits()
+            mock_fetch.assert_called_once()
+    
+    def test_to_model_config_value_clamping(self):
+        """Test that RateLimitInfo.to_model_config clamps values properly."""
+        # Create info with excessive values
+        info = RateLimitInfo(
+            model_name="test-model",
+            requests_per_minute=50000,  # Exceeds max
+            tokens_per_minute=5000000,  # Exceeds max
+            tokens_per_day=500000000,   # Exceeds max
+            last_updated=datetime.now()
+        )
+        
+        config = info.to_model_config()
+        
+        # Values should be clamped to maximums
+        assert config.requests_per_minute <= 10000
+        assert config.tokens_per_minute <= 2000000
+        assert config.tokens_per_day <= 50000000
+    
+    def test_cache_file_permissions_error(self):
+        """Test handling cache file permission errors."""
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        # Create cache file and make it read-only
+        fetcher.cache_file.write_text("test")
+        fetcher.cache_file.chmod(0o444)
+        
+        try:
+            # Should handle permission error gracefully
+            limits = fetcher.get_rate_limits()
+            assert len(limits) >= 8
+        finally:
+            # Restore permissions for cleanup
+            fetcher.cache_file.chmod(0o644)
+    
+    def test_concurrent_cache_access(self):
+        """Test concurrent access to cache."""
+        import threading
+        
+        fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
+        
+        def worker():
+            return fetcher.get_rate_limits()
+        
+        # Run multiple threads accessing cache
+        threads = []
+        results = []
+        
+        for i in range(5):
+            thread = threading.Thread(target=lambda: results.append(worker()))
+            threads.append(thread)
+            thread.start()
+        
+        for thread in threads:
+            thread.join()
+        
+        # All should succeed
+        for result in results:
+            assert len(result) >= 8
 
 
 class TestRateLimitFetcherIntegration:
