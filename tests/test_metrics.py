@@ -276,20 +276,28 @@ class TestTimer:
         """Test Timer context manager functionality."""
         collector = MetricsCollector()
         
-        # Patch the global metrics to use our test collector
-        with patch('ai_utilities.metrics.metrics') as mock_metrics:
-            mock_metrics.collector = collector
+        # Import and patch the metrics module directly
+        from ai_utilities.metrics import metrics
+        original_collector = metrics.collector
+        
+        try:
+            # Use our test collector
+            metrics.collector = collector
             timer = Timer("test_timer", {"env": "test"})
             
             with timer:
                 time.sleep(0.01)  # Reduced sleep time
         
         # Check that timer was recorded
-        key = "test_timer|env=test"  # Internal key format uses | not {}
-        assert key in collector.timers
-        assert len(collector.timers[key]) == 1
-        assert collector.timers[key][0] > 0.01  # Should be at least the sleep time
-        assert collector.timers[key][0] >= 0.01  # Should be at least 0.01 seconds
+            key = "test_timer|env=test"  # Internal key format uses | not {}
+            assert key in collector.timers
+            assert len(collector.timers[key]) == 1
+            assert collector.timers[key][0] > 0.01  # Should be at least the sleep time
+            assert collector.timers[key][0] >= 0.01  # Should be at least 0.01 seconds
+        
+        finally:
+            # Restore original collector
+            metrics.collector = original_collector
 
 
 class TestGlobalMetrics:

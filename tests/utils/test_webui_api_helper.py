@@ -18,11 +18,11 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 
 # Add scripts to path for imports
-scripts_dir = os.path.join(os.path.dirname(__file__), '..', 'scripts')
+scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 sys.path.insert(0, scripts_dir)
 
 # Add src to path for ai_utilities imports
-src_dir = os.path.join(os.path.dirname(__file__), '..', 'src')
+src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 sys.path.insert(0, src_dir)
 
 

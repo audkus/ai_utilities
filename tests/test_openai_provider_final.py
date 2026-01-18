@@ -49,15 +49,14 @@ class TestOpenAIProviderFinal:
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
     def test_provider_name_property_exists(self, mock_openai):
-        """Test that provider can have provider_name attribute."""
+        """Test that provider has provider_name attribute."""
         mock_openai.return_value = Mock()
         
         provider = OpenAIProvider(self.mock_settings)
         
-        # Test that we can set and access provider_name
-        provider.provider_name = "openai"
+        # Test that provider_name is read-only and returns "openai"
         assert provider.provider_name == "openai"
         
-        # Test with different name
-        provider.provider_name = "custom_provider"
-        assert provider.provider_name == "custom_provider"
+        # Verify it's a property, not a settable attribute
+        with pytest.raises(AttributeError):
+            provider.provider_name = "custom_provider"

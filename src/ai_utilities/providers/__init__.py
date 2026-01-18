@@ -1,34 +1,41 @@
 """Provider implementations for AI models."""
 
 from .base_provider import BaseProvider
-from .openai_compatible_provider import OpenAICompatibleProvider
 from .provider_factory import create_provider
 from .provider_capabilities import ProviderCapabilities
 from .provider_exceptions import ProviderCapabilityError, ProviderConfigurationError, FileTransferError, MissingOptionalDependencyError
 
-# Lazy import OpenAIProvider to avoid dependency issues
-def _get_openai_provider():
-    try:
-        from .openai_provider import OpenAIProvider
-        return OpenAIProvider
-    except ImportError as e:
-        raise MissingOptionalDependencyError(
-            "OpenAI provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
-        ) from e
+# Re-export modules for direct access
+from . import provider_factory as provider_factory
+from . import openai_compatible_provider as openai_compatible_provider
 
 # Make OpenAIProvider available lazily
-class LazyOpenAIProvider:
-    def __getattr__(self, name):
-        OpenAIProvider = _get_openai_provider()
-        return getattr(OpenAIProvider, name)
+try:
+    from .openai_provider import OpenAIProvider as OpenAIProvider
+except ImportError as e:
+    class OpenAIProvider:  # callable (class)
+        def __init__(self, *args, **kwargs):
+            raise MissingOptionalDependencyError(
+                "OpenAI provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
+            ) from e
 
-OpenAIProvider = LazyOpenAIProvider()
+# Make OpenAICompatibleProvider available lazily for patching
+try:
+    from .openai_compatible_provider import OpenAICompatibleProvider as OpenAICompatibleProvider
+except ImportError as e:
+    class OpenAICompatibleProvider:  # callable (class)
+        def __init__(self, *args, **kwargs):
+            raise MissingOptionalDependencyError(
+                "OpenAI Compatible provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
+            ) from e
 
 __all__ = [
     "BaseProvider", 
     "OpenAIProvider", 
     "OpenAICompatibleProvider",
     "create_provider",
+    "provider_factory",
+    "openai_compatible_provider",
     "ProviderCapabilities",
     "ProviderCapabilityError", 
     "ProviderConfigurationError",

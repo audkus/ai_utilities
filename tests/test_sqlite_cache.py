@@ -14,7 +14,7 @@ import pytest
 
 from ai_utilities.cache import SqliteCache, NullCache
 from ai_utilities.client import AiClient, AiSettings, _sanitize_namespace, _default_namespace, _running_under_pytest
-from tests.test_caching import FakeProvider
+from tests.utils.test_caching import FakeProvider
 
 
 class TestSqliteCacheBasics:

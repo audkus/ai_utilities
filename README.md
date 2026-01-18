@@ -118,6 +118,38 @@ asyncio.run(main())
 
 ## Troubleshooting
 
+### SSL Backend Requirements
+
+ai_utilities requires OpenSSL ≥ 1.1.1 for reliable HTTPS operations. Some macOS Python installations use LibreSSL, which is unsupported by urllib3 v2 (used by requests).
+
+**Symptoms:**
+- HTTPS requests may fail unexpectedly
+- Warning: `NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+`
+- Warning: `SSLBackendCompatibilityWarning: SSL Backend Compatibility Notice: Detected LibreSSL`
+
+**Check your SSL backend:**
+```python
+import ssl
+print(ssl.OPENSSL_VERSION)
+```
+
+**Fixes:**
+- Use Python from python.org (recommended)
+- Install via Homebrew: `brew install python`
+- Use pyenv: `pyenv install 3.11.0`
+- Avoid system Python on macOS
+
+**Why OpenSSL is required:**
+- urllib3 v2 dropped LibreSSL support for security reasons
+- HTTPS behavior may be unreliable with LibreSSL
+- This is an environment compatibility notice, not a bug in ai_utilities
+- Network functionality may be affected
+
+**Filtering warnings in pytest:**
+```bash
+pytest -W "ignore::SSLBackendCompatibilityWarning"
+```
+
 ### Top 5 Common Issues
 
 1. **"API key is required"**

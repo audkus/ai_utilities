@@ -9,10 +9,22 @@ from unittest.mock import Mock, patch
 import sys
 
 # Mock the imports to avoid circular dependency issues
+# Create real exception classes for the mock
+class MockKnowledgeIndexError(Exception):
+    pass
+
+class MockKnowledgeValidationError(Exception):
+    pass
+
+# Create a mock exceptions module with real exception classes
+mock_exceptions = Mock()
+mock_exceptions.KnowledgeIndexError = MockKnowledgeIndexError
+mock_exceptions.KnowledgeValidationError = MockKnowledgeValidationError
+
 with patch.dict('sys.modules', {
     'ai_utilities.knowledge.backend': Mock(),
     'ai_utilities.knowledge.chunking': Mock(), 
-    'ai_utilities.knowledge.exceptions': Mock(),
+    'ai_utilities.knowledge.exceptions': mock_exceptions,
     'ai_utilities.knowledge.sources': Mock(),
 }):
     from ai_utilities.knowledge.indexer import KnowledgeIndexer
@@ -79,6 +91,9 @@ class TestKnowledgeIndexerSimple:
         mock_chunker = Mock()
         mock_embedding_client = Mock()
         
+        # Configure mock to return empty set for get_existing_sources
+        mock_backend.get_existing_sources.return_value = set()
+        
         indexer = KnowledgeIndexer(
             backend=mock_backend,
             file_loader=mock_file_loader,
@@ -138,6 +153,23 @@ class TestKnowledgeIndexerSimple:
         mock_chunker = Mock()
         mock_embedding_client = Mock()
         
+        # Configure mock to return empty set for get_existing_sources
+        mock_backend.get_existing_sources.return_value = set()
+        
+        # Configure mock source
+        mock_source = Mock()
+        mock_source.source_id = "test_source_123"
+        mock_source.sha256_hash = "abc123"
+        mock_file_loader.load_source.return_value = mock_source
+        
+        # Configure mock chunks
+        mock_chunk = Mock()
+        mock_chunk.text = "Test chunk content"
+        mock_chunker.chunk_text.return_value = [mock_chunk]
+        
+        # Configure mock embeddings
+        mock_embedding_client.get_embeddings.return_value = [[0.1, 0.2, 0.3]]
+        
         indexer = KnowledgeIndexer(
             backend=mock_backend,
             file_loader=mock_file_loader,
@@ -163,8 +195,13 @@ class TestKnowledgeIndexerSimple:
         mock_chunker = Mock()
         mock_embedding_client = Mock()
         
-        # Add remove_source method to mock
-        mock_backend.remove_source = Mock()
+        # Add delete_source method to mock (this is what indexer actually calls)
+        mock_backend.delete_source = Mock()
+        
+        # Mock source
+        mock_source = Mock()
+        mock_source.source_id = "test_source_123"
+        mock_file_loader.load_source.return_value = mock_source
         
         indexer = KnowledgeIndexer(
             backend=mock_backend,
@@ -173,9 +210,11 @@ class TestKnowledgeIndexerSimple:
             embedding_client=mock_embedding_client
         )
         
-        source_id = "test_source_123"
-        indexer.remove_source(source_id)
-        mock_backend.remove_source.assert_called_once_with(source_id)
+        # Test with Path object (as expected by the method)
+        from pathlib import Path
+        source_path = Path("test_file.txt")
+        indexer.remove_source(source_path)
+        mock_backend.delete_source.assert_called_once_with("test_source_123")
     
     def test_get_index_stats_method(self):
         """Test get_index_stats method."""
@@ -184,12 +223,18 @@ class TestKnowledgeIndexerSimple:
         mock_chunker = Mock()
         mock_embedding_client = Mock()
         
-        # Mock get_index_stats method
-        mock_backend.get_index_stats.return_value = {
+        # Mock get_stats method (this is what indexer actually calls)
+        mock_backend.get_stats.return_value = {
             'total_sources': 5,
             'total_chunks': 100,
             'total_embeddings': 100
         }
+        
+        # Add missing properties that get_index_stats accesses
+        mock_backend.embedding_dimension = 1536
+        mock_chunker.chunk_size = 1000
+        mock_chunker.chunk_overlap = 200
+        mock_chunker.min_chunk_size = 100
         
         indexer = KnowledgeIndexer(
             backend=mock_backend,
@@ -199,10 +244,15 @@ class TestKnowledgeIndexerSimple:
         )
         
         stats = indexer.get_index_stats()
-        assert stats['total_sources'] == 5
-        assert stats['total_chunks'] == 100
-        assert stats['total_embeddings'] == 100
-        mock_backend.get_index_stats.assert_called_once()
+        # Access nested structure as returned by get_index_stats
+        assert stats['backend']['total_sources'] == 5
+        assert stats['backend']['total_chunks'] == 100
+        assert stats['backend']['total_embeddings'] == 100
+        assert stats['chunker']['chunk_size'] == 1000
+        assert stats['chunker']['chunk_overlap'] == 200
+        assert stats['chunker']['min_chunk_size'] == 100
+        assert stats['embedding']['dimension'] == 1536
+        mock_backend.get_stats.assert_called_once()
     
     def test_index_file_method_signature(self):
         """Test _index_file method exists and has correct signature."""

@@ -97,35 +97,6 @@ exclude_lines = [
   "@(abc\\.)?abstractmethod",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
-addopts = [
-  "--cov=ai_utilities",
-  "--cov-report=html:coverage_reports",
-  "--cov-report=term-missing",
-  "--cov-config=pyproject.toml",
-]
-filterwarnings = [
-  "ignore::DeprecationWarning:tests.test_enhanced_setup",
-  "ignore::pydantic.PydanticDeprecatedSince20:ai_utilities.knowledge.models",
-  "ignore::pydantic.PydanticDeprecatedSince20",
-]
-markers = [
-  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-  "integration: marks tests as integration tests that require real network/API calls",
-  "openai: marks tests that require OpenAI API access",
-  "groq: marks tests that require Groq API access", 
-  "together: marks tests that require Together AI API access",
-  "openrouter: marks tests that require OpenRouter API access",
-  "ollama: marks tests that require Ollama server",
-  "lmstudio: marks tests that require LM Studio server",
-  "text_generation_webui: marks tests that require text-generation-webui server",
-  "fastchat: marks tests that require FastChat server",
-  "hanging: marks tests that hang in full suite (should be run separately)",
-  "dashboard: marks tests related to dashboard functionality",
-]
-
 [project.urls]
 Homepage = "https://github.com/audkus/ai_utilities"
 Repository = "https://github.com/audkus/ai_utilities"

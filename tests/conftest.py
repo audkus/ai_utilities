@@ -1,14 +1,18 @@
-"""pytest configuration and fixtures for ai_utilities testing."""
+"""
+pytest configuration and fixtures for ai_utilities tests.
+
+This module provides common fixtures and configuration for all tests.
+"""
 
 import os
 import sys
 import tempfile
-import asyncio
+import shutil
 import logging
 import socket
 from pathlib import Path
-from typing import Generator
-
+from typing import Dict, Any, Iterator, Optional
+import warnings
 import pytest
 
 # Add src directory to Python path for imports
@@ -96,6 +100,53 @@ def block_network(monkeypatch, request):
             raise RuntimeError("Network connections blocked by default. Use --allow-network or --run-integration to enable.")
         
         monkeypatch.setattr(socket.socket, "connect", blocked_connect)
+
+
+@pytest.fixture(autouse=True)
+def patch_openai_constructors(monkeypatch, request):
+    """
+    Patch OpenAI constructors globally to prevent real network calls.
+    
+    This fixture runs for all tests and patches OpenAI constructors
+    unless integration tests are enabled OR network is explicitly allowed.
+    """
+    # Check if we should allow real OpenAI calls
+    integration_enabled = request.config.getoption("--run-integration")
+    network_allowed = request.config.getoption("--allow-network")
+    env_integration = os.getenv("AIU_RUN_INTEGRATION") == "1"
+    is_integration_test = "integration" in request.node.keywords
+    
+    allow_real_openai = integration_enabled or network_allowed or env_integration or is_integration_test
+    
+    if not allow_real_openai:
+        from unittest.mock import MagicMock
+        
+        # Create mock response with realistic structure
+        mock_chat_response = MagicMock()
+        mock_choice = MagicMock()
+        mock_message = MagicMock()
+        mock_message.content = "ok"
+        mock_choice.message = mock_message
+        mock_chat_response.choices = [mock_choice]
+        
+        mock_file_response = MagicMock()
+        mock_file_response.id = "file-123"
+        mock_file_response.filename = "test.txt"
+        mock_file_response.bytes = 1024
+        mock_file_response.purpose = "assistants"
+        mock_file_response.created_at = 1640995200
+        
+        # Create mock OpenAI client
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_chat_response
+        mock_client.files.create.return_value = mock_file_response
+        mock_client.files.retrieve.return_value = mock_file_response
+        mock_client.files.content.return_value = b"test content"
+        
+        # Patch the three main OpenAI constructor locations
+        monkeypatch.setattr('ai_utilities.providers.openai_provider.OpenAI', lambda **kwargs: mock_client)
+        monkeypatch.setattr('ai_utilities.openai_client.OpenAI', lambda **kwargs: mock_client)
+        monkeypatch.setattr('ai_utilities.client.OpenAI', lambda **kwargs: mock_client)
 
 
 @pytest.fixture
@@ -407,6 +458,76 @@ def reset_global_state():
     except ImportError:
         # Module not available - skip
         pass
+
+
+@pytest.fixture(autouse=True)
+def reset_logging_state():
+    """
+    Reset logging configuration to prevent test pollution.
+    
+    Some tests modify logging configuration which can affect
+    subsequent tests. This fixture ensures clean logging state.
+    """
+    # Capture original logging state
+    root_logger = logging.getLogger()
+    original_level = root_logger.level
+    original_handlers = list(root_logger.handlers)
+    
+    yield
+    
+    # Restore logging state
+    root_logger.setLevel(original_level)
+    
+    # Remove any new handlers
+    current_handlers = list(root_logger.handlers)
+    for handler in current_handlers:
+        if handler not in original_handlers:
+            root_logger.removeHandler(handler)
+    
+    # Restore original handlers
+    for handler in original_handlers:
+        if handler not in root_logger.handlers:
+            root_logger.addHandler(handler)
+
+
+@pytest.fixture
+def frozen_time():
+    """
+    Provide deterministic time for tests that depend on dates/times.
+    
+    This fixture patches time-related functions to return consistent
+    values, preventing flaky tests due to time dependencies.
+    """
+    from datetime import datetime, date
+    import time as time_module
+    
+    # Fixed time for testing
+    fixed_datetime = datetime(2024, 1, 15, 10, 30, 0)
+    fixed_date = date(2024, 1, 15)
+    fixed_timestamp = fixed_datetime.timestamp()
+    
+    # Store original functions
+    original_datetime_now = datetime.now
+    original_date_today = date.today
+    original_time_time = time_module.time
+    
+    def mock_datetime_now(tz=None):
+        return fixed_datetime.replace(tzinfo=tz) if tz else fixed_datetime
+    
+    def mock_time():
+        return fixed_timestamp
+    
+    # Apply patches
+    datetime.now = mock_datetime_now
+    date.today = lambda: fixed_date
+    time_module.time = mock_time
+    
+    yield
+    
+    # Restore original functions
+    datetime.now = original_datetime_now
+    date.today = original_date_today
+    time_module.time = original_time_time
 
 
 @pytest.fixture

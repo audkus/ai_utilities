@@ -21,6 +21,7 @@ class TestKnowledgeIndexer:
         backend.source_exists.return_value = False
         backend.add_source.return_value = None
         backend.add_chunks.return_value = None
+        backend.get_existing_sources.return_value = set()
         backend.get_index_stats.return_value = {
             'total_sources': 0,
             'total_chunks': 0,
@@ -45,16 +46,28 @@ class TestKnowledgeIndexer:
     @pytest.fixture
     def mock_chunker(self):
         """Mock text chunker."""
+        from ai_utilities.knowledge.models import Chunk
+        
         chunker = Mock()
         chunker.chunk_text.return_value = [
-            {
-                'text': 'Test content line 1',
-                'metadata': {'chunk_id': 0, 'start_line': 1}
-            },
-            {
-                'text': 'Test content line 2', 
-                'metadata': {'chunk_id': 1, 'start_line': 2}
-            }
+            Chunk(
+                chunk_id="test_chunk_1",
+                source_id="test_source",
+                text='Test content line 1',
+                metadata={'chunk_id': 0, 'start_line': 1},
+                chunk_index=0,
+                start_char=0,
+                end_char=20
+            ),
+            Chunk(
+                chunk_id="test_chunk_2", 
+                source_id="test_source",
+                text='Test content line 2',
+                metadata={'chunk_id': 1, 'start_line': 2},
+                chunk_index=1,
+                start_char=21,
+                end_char=41
+            )
         ]
         return chunker
     
@@ -62,12 +75,8 @@ class TestKnowledgeIndexer:
     def mock_embedding_client(self):
         """Mock embedding client."""
         client = Mock()
-        # Mock the embedding response structure
-        mock_response = Mock()
-        mock_embedding = Mock()
-        mock_embedding.embedding = [0.1, 0.2, 0.3]
-        mock_response.data = [mock_embedding]
-        client.embeddings.create.return_value = mock_response
+        # Mock the get_embeddings method that the indexer actually uses
+        client.get_embeddings.return_value = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         return client
     
     @pytest.fixture
@@ -148,28 +157,50 @@ class TestKnowledgeIndexer:
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
         
+        # Store original return value to restore later
+        original_source_exists = indexer.backend.source_exists.return_value
+        
         # Mock source_exists to return True (already indexed)
         indexer.backend.source_exists.return_value = True
         
-        result = indexer.index_files([test_file], force_reindex=True)
-        
-        assert result['total_files'] == 1
-        # Should process even though already indexed due to force_reindex
-        assert result['processed_files'] >= 0
+        try:
+            result = indexer.index_files([test_file], force_reindex=True)
+            
+            assert result['total_files'] == 1
+            # Should process even though already indexed due to force_reindex
+            assert result['processed_files'] >= 0
+        finally:
+            # Clean up mock changes to prevent test leakage
+            indexer.backend.source_exists.return_value = original_source_exists
     
     def test_index_files_already_indexed(self, indexer, tmp_path):
         """Test indexing files that are already indexed."""
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
         
+        # Store original return values to restore later
+        original_source_exists = indexer.backend.source_exists.return_value
+        original_existing_sources = indexer.backend.get_existing_sources.return_value
+        original_source_hash = indexer.backend.get_source_hash.return_value
+        
         # Mock source_exists to return True (already indexed)
         indexer.backend.source_exists.return_value = True
+        # Mock get_existing_sources to include the test source
+        indexer.backend.get_existing_sources.return_value = {"test_source_123"}
+        # Mock get_source_hash to return the same hash as the source
+        indexer.backend.get_source_hash.return_value = "abc123"
         
-        result = indexer.index_files([test_file], force_reindex=False)
-        
-        assert result['total_files'] == 1
-        assert result['skipped_files'] == 1
-        assert result['processed_files'] == 0
+        try:
+            result = indexer.index_files([test_file], force_reindex=False)
+            
+            assert result['total_files'] == 1
+            assert result['skipped_files'] == 1
+            assert result['processed_files'] == 0
+        finally:
+            # Clean up mock changes to prevent test leakage
+            indexer.backend.source_exists.return_value = original_source_exists
+            indexer.backend.get_existing_sources.return_value = original_existing_sources
+            indexer.backend.get_source_hash.return_value = original_source_hash
     
     def test_find_files_recursive(self, indexer, tmp_path):
         """Test finding files recursively."""
@@ -215,29 +246,47 @@ class TestKnowledgeIndexer:
     
     def test_index_file_load_error(self, indexer, tmp_path):
         """Test file indexing with load error."""
+        from ai_utilities.knowledge.exceptions import KnowledgeIndexError
+        
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
+        
+        # Store original return value to restore later
+        original_return = indexer.file_loader.load_source.return_value
         
         # Mock file loader to raise exception
         indexer.file_loader.load_source.side_effect = Exception("Load error")
         
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
-        
-        assert result['processed'] is False
-        assert result['error'] is not None
+        try:
+            # Should raise KnowledgeIndexError
+            with pytest.raises(KnowledgeIndexError, match="Failed to index.*Load error"):
+                indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
+        finally:
+            # Clean up side_effect to prevent test leakage
+            indexer.file_loader.load_source.side_effect = None
+            indexer.file_loader.load_source.return_value = original_return
     
     def test_index_file_embedding_error(self, indexer, tmp_path):
         """Test file indexing with embedding error."""
+        from ai_utilities.knowledge.exceptions import KnowledgeIndexError
+        
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
         
+        # Store original return value to restore later
+        original_return = indexer.embedding_client.get_embeddings.return_value
+        
         # Mock embedding client to raise exception
-        indexer.embedding_client.embeddings.create.side_effect = Exception("Embedding error")
+        indexer.embedding_client.get_embeddings.side_effect = Exception("Embedding error")
         
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
-        
-        assert result['processed'] is False
-        assert result['error'] is not None
+        try:
+            # Should raise KnowledgeIndexError
+            with pytest.raises(KnowledgeIndexError, match="Failed to generate embeddings.*Embedding error"):
+                indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
+        finally:
+            # Clean up side_effect to prevent test leakage
+            indexer.embedding_client.get_embeddings.side_effect = None
+            indexer.embedding_client.get_embeddings.return_value = original_return
     
     def test_generate_embeddings(self, indexer):
         """Test embedding generation."""
@@ -247,17 +296,25 @@ class TestKnowledgeIndexer:
         
         assert len(embeddings) == 2
         assert all(len(embedding) == 3 for embedding in embeddings)  # Mock embeddings
-        assert indexer.embedding_client.embeddings.create.called
+        assert indexer.embedding_client.get_embeddings.called
     
     def test_generate_embeddings_error(self, indexer):
         """Test embedding generation with error."""
         chunks = ["chunk1", "chunk2"]
         
-        # Mock embedding client to raise exception
-        indexer.embedding_client.embeddings.create.side_effect = Exception("API error")
+        # Store original return value to restore later
+        original_return = indexer.embedding_client.get_embeddings.return_value
         
-        with pytest.raises(KnowledgeIndexError, match="Failed to generate embeddings"):
-            indexer._generate_embeddings(chunks)
+        # Mock embedding client to raise exception
+        indexer.embedding_client.get_embeddings.side_effect = Exception("API error")
+        
+        try:
+            with pytest.raises(KnowledgeIndexError, match="Failed to generate embeddings"):
+                indexer._generate_embeddings(chunks)
+        finally:
+            # Clean up side_effect to prevent test leakage
+            indexer.embedding_client.get_embeddings.side_effect = None
+            indexer.embedding_client.get_embeddings.return_value = original_return
     
     def test_reindex_changed_files(self, indexer, tmp_path):
         """Test reindexing changed files."""
@@ -276,30 +333,51 @@ class TestKnowledgeIndexer:
     
     def test_remove_source(self, indexer):
         """Test removing a source."""
-        source_id = "test_source_123"
+        from pathlib import Path
         
-        # Add the remove_source method to backend mock
-        indexer.backend.remove_source = Mock()
+        source_path = Path("/test/file.txt")
         
-        indexer.remove_source(source_id)
+        # Mock the file loader and backend methods
+        mock_source = Mock()
+        mock_source.source_id = "test_source_123"
+        indexer.file_loader.load_source.return_value = mock_source
+        indexer.backend.delete_source = Mock()
         
-        indexer.backend.remove_source.assert_called_once_with(source_id)
+        indexer.remove_source(source_path)
+        
+        indexer.file_loader.load_source.assert_called_once_with(source_path)
+        indexer.backend.delete_source.assert_called_once_with("test_source_123")
     
     def test_get_index_stats(self, indexer):
         """Test getting index statistics."""
-        # Mock the get_index_stats method to return proper stats
-        indexer.backend.get_index_stats.return_value = {
+        # Mock the get_stats method to return proper stats
+        indexer.backend.get_stats.return_value = {
             'total_sources': 5,
             'total_chunks': 100,
             'total_embeddings': 100
         }
+        indexer.backend.embedding_dimension = 1536
         
         stats = indexer.get_index_stats()
         
-        assert stats['total_sources'] == 5
-        assert stats['total_chunks'] == 100
-        assert stats['total_embeddings'] == 100
-        indexer.backend.get_index_stats.assert_called_once()
+        # Check the nested structure
+        assert 'backend' in stats
+        assert 'chunker' in stats
+        assert 'embedding' in stats
+        
+        # Check backend stats
+        assert stats['backend']['total_sources'] == 5
+        assert stats['backend']['total_chunks'] == 100
+        assert stats['backend']['total_embeddings'] == 100
+        
+        # Check chunker stats
+        assert 'chunk_size' in stats['chunker']
+        assert 'chunk_overlap' in stats['chunker']
+        assert 'min_chunk_size' in stats['chunker']
+        
+        # Check embedding stats
+        assert stats['embedding']['model'] == "test-model"
+        assert stats['embedding']['dimension'] == 1536
     
     def test_integration_full_workflow(self, indexer, tmp_path):
         """Test full indexing workflow integration."""
@@ -316,6 +394,13 @@ class TestKnowledgeIndexer:
         assert result['total_files'] >= 2
         assert result['processed_files'] >= 0
         
+        # Mock get_stats for the stats check
+        indexer.backend.get_stats.return_value = {
+            'total_sources': 2,
+            'total_chunks': 10,
+            'total_embeddings': 10
+        }
+        
         # Check stats
         stats = indexer.get_index_stats()
-        assert stats['total_sources'] >= 0
+        assert stats['backend']['total_sources'] >= 0

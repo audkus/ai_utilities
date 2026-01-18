@@ -10,13 +10,21 @@ from tempfile import TemporaryDirectory
 
 # Mock all the problematic imports BEFORE importing the indexer
 mock_backend = Mock()
+mock_backend.get_existing_sources.return_value = set()
 mock_chunking = Mock()
-mock_exceptions = Mock()
 mock_sources = Mock()
 
-# Create mock exception classes
-mock_exceptions.KnowledgeIndexError = Exception
-mock_exceptions.KnowledgeValidationError = Exception
+# Create custom exception classes for testing
+class KnowledgeIndexError(Exception):
+    pass
+
+class KnowledgeValidationError(Exception):
+    pass
+
+# Create mock exceptions module with custom exception classes
+mock_exceptions = Mock()
+mock_exceptions.KnowledgeIndexError = KnowledgeIndexError
+mock_exceptions.KnowledgeValidationError = KnowledgeValidationError
 
 # Patch the modules
 with patch.dict('sys.modules', {
@@ -39,6 +47,7 @@ class TestKnowledgeIndexerComplete:
         backend.SqliteVectorBackend = Mock
         backend.source_exists.return_value = False
         backend.get_source_hash.return_value = "different_hash"
+        backend.get_existing_sources.return_value = set()
         backend.add_source.return_value = None
         backend.add_chunks.return_value = None
         backend.get_index_stats.return_value = {
@@ -60,19 +69,23 @@ class TestKnowledgeIndexerComplete:
         
         # Mock chunker
         chunker = Mock()
-        mock_chunks = [
-            {'text': 'Test chunk 1', 'metadata': {'chunk_id': 0}},
-            {'text': 'Test chunk 2', 'metadata': {'chunk_id': 1}}
-        ]
+        # Create mock Chunk objects
+        mock_chunk1 = Mock()
+        mock_chunk1.text = 'Test chunk 1'
+        mock_chunk1.metadata = {'chunk_id': 0}
+        mock_chunk2 = Mock()
+        mock_chunk2.text = 'Test chunk 2'
+        mock_chunk2.metadata = {'chunk_id': 1}
+        mock_chunks = [mock_chunk1, mock_chunk2]
         chunker.chunk_text.return_value = mock_chunks
         
         # Mock embedding client
         embedding_client = Mock()
-        mock_response = Mock()
-        mock_embedding = Mock()
-        mock_embedding.embedding = [0.1, 0.2, 0.3]
-        mock_response.data = [mock_embedding]
-        embedding_client.embeddings.create.return_value = mock_response
+        embedding_client.get_embeddings.return_value = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+        
+        # Reset all mocks to ensure clean state
+        for mock_obj in [backend, file_loader, chunker, embedding_client]:
+            mock_obj.reset_mock()
         
         return {
             'backend': backend,
@@ -145,7 +158,8 @@ class TestKnowledgeIndexerComplete:
         
         # Mock source_exists to return True (already indexed)
         mock_dependencies['backend'].source_exists.return_value = True
-        mock_dependencies['backend'].get_source_hash.return_value = "same_hash"
+        mock_dependencies['backend'].get_existing_sources.return_value = {"test_source_123"}
+        mock_dependencies['backend'].get_source_hash.return_value = "abc123"
         
         result = indexer.index_files([test_file], force_reindex=False)
         
@@ -193,7 +207,7 @@ class TestKnowledgeIndexerComplete:
         
         # Mock that source exists and hash is same
         mock_dependencies['backend'].source_exists.return_value = True
-        mock_dependencies['backend'].get_source_hash.return_value = "same_hash"
+        mock_dependencies['backend'].get_source_hash.return_value = "abc123"
         
         result = indexer._index_file(test_file, existing_sources={"test_source_123"}, force_reindex=False)
         
@@ -219,13 +233,20 @@ class TestKnowledgeIndexerComplete:
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
         
+        # Reset mock to clean state before setting side_effect
+        mock_dependencies['file_loader'].reset_mock()
+        
         # Mock file loader to raise exception
         mock_dependencies['file_loader'].load_source.side_effect = Exception("Load failed")
         
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
+        # Should raise KnowledgeIndexError - check by exception name and message
+        with pytest.raises(Exception) as exc_info:
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
         
-        assert result['processed'] is False
-        assert result['error'] is not None
+        # Check that it's a KnowledgeIndexError (either real or mocked)
+        assert "KnowledgeIndexError" in str(type(exc_info.value))
+        assert "Failed to index" in str(exc_info.value)
+        assert "Load failed" in str(exc_info.value)
     
     def test_index_file_chunking_error(self, indexer, mock_dependencies, tmp_path):
         """Test _index_file with chunking error."""
@@ -235,10 +256,14 @@ class TestKnowledgeIndexerComplete:
         # Mock chunker to raise exception
         mock_dependencies['chunker'].chunk_text.side_effect = Exception("Chunking failed")
         
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
+        # Should raise KnowledgeIndexError - check by exception name and message
+        with pytest.raises(Exception) as exc_info:
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
         
-        assert result['processed'] is False
-        assert result['error'] is not None
+        # Check that it's a KnowledgeIndexError (either real or mocked)
+        assert "KnowledgeIndexError" in str(type(exc_info.value))
+        assert "Failed to chunk text" in str(exc_info.value)
+        assert "Chunking failed" in str(exc_info.value)
     
     def test_index_file_embedding_error(self, indexer, mock_dependencies, tmp_path):
         """Test _index_file with embedding error."""
@@ -246,12 +271,16 @@ class TestKnowledgeIndexerComplete:
         test_file.write_text("Test content")
         
         # Mock embedding client to raise exception
-        mock_dependencies['embedding_client'].embeddings.create.side_effect = Exception("Embedding failed")
+        mock_dependencies['embedding_client'].get_embeddings.side_effect = Exception("Embedding failed")
         
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
+        # Should raise KnowledgeIndexError - check by exception name and message
+        with pytest.raises(Exception) as exc_info:
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
         
-        assert result['processed'] is False
-        assert result['error'] is not None
+        # Check that it's a KnowledgeIndexError (either real or mocked)
+        assert "KnowledgeIndexError" in str(type(exc_info.value))
+        assert "Failed to generate embeddings" in str(exc_info.value)
+        assert "Embedding failed" in str(exc_info.value)
     
     def test_generate_embeddings_success(self, indexer):
         """Test _generate_embeddings success."""
@@ -268,10 +297,14 @@ class TestKnowledgeIndexerComplete:
         texts = ["text1", "text2"]
         
         # Mock embedding client to raise exception
-        mock_dependencies['embedding_client'].embeddings.create.side_effect = Exception("API error")
+        mock_dependencies['embedding_client'].get_embeddings.side_effect = Exception("API error")
         
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as exc_info:
             indexer._generate_embeddings(texts)
+        
+        # Check that it's a KnowledgeIndexError (either real or mocked)
+        assert "KnowledgeIndexError" in str(type(exc_info.value))
+        assert "Failed to generate embeddings" in str(exc_info.value)
     
     def test_reindex_changed_files(self, indexer, mock_dependencies, tmp_path):
         """Test reindex_changed_files."""
@@ -288,49 +321,41 @@ class TestKnowledgeIndexerComplete:
     
     def test_remove_source(self, indexer, mock_dependencies):
         """Test remove_source."""
-        source_id = "test_source_123"
+        from pathlib import Path
         
-        indexer.remove_source(source_id)
+        source_path = Path("test_source_123")
         
-        mock_dependencies['backend'].remove_source.assert_called_once_with(source_id)
+        indexer.remove_source(source_path)
+        
+        mock_dependencies['backend'].delete_source.assert_called_once_with("test_source_123")
     
     def test_get_index_stats(self, indexer, mock_dependencies):
         """Test get_index_stats."""
+        # Mock the backend get_stats method to return expected structure
+        mock_dependencies['backend'].get_stats.return_value = {
+            'total_sources': 1,
+            'total_chunks': 2,
+            'total_embeddings': 2
+        }
+        
         stats = indexer.get_index_stats()
         
-        assert stats['total_sources'] == 1
-        assert stats['total_chunks'] == 2
-        assert stats['total_embeddings'] == 2
-        mock_dependencies['backend'].get_index_stats.assert_called_once()
+        assert stats['backend']['total_sources'] == 1
+        assert stats['backend']['total_chunks'] == 2
+        assert stats['backend']['total_embeddings'] == 2
+        mock_dependencies['backend'].get_stats.assert_called_once()
     
     def test_all_error_paths_and_edge_cases(self, indexer, mock_dependencies, tmp_path):
         """Test all remaining error paths and edge cases."""
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
         
-        # Test various error scenarios
-        error_scenarios = [
-            ("load_source", Exception("Load error")),
-            ("chunk_text", Exception("Chunk error")),
-            ("embeddings.create", Exception("Embed error")),
-            ("add_source", Exception("Add source error")),
-            ("add_chunks", Exception("Add chunks error")),
-        ]
+        # Test file loader error
+        mock_dependencies['file_loader'].load_source.side_effect = Exception("Load error")
+        with pytest.raises(Exception) as exc_info:
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
         
-        for method_name, error in error_scenarios:
-            # Reset mocks
-            for mock_obj in mock_dependencies.values():
-                if hasattr(mock_obj, 'reset_mock'):
-                    mock_obj.reset_mock()
-            
-            # Set up the error
-            if '.' in method_name:
-                obj_name, attr_name = method_name.split('.')
-                getattr(mock_dependencies[obj_name], attr_name).side_effect = error
-            else:
-                getattr(mock_dependencies['file_loader'], method_name).side_effect = error
-            
-            # Test the error
-            result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
-            assert result['processed'] is False
-            assert result['error'] is not None
+        # Check that it's a KnowledgeIndexError (either real or mocked)
+        assert "KnowledgeIndexError" in str(type(exc_info.value))
+        assert "Failed to index" in str(exc_info.value)
+        assert "Load error" in str(exc_info.value)

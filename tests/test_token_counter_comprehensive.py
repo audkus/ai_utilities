@@ -3,7 +3,7 @@ Comprehensive tests for token_counter.py module.
 """
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from ai_utilities.token_counter import TokenCounter
 
 
@@ -175,55 +175,68 @@ class TestTokenCounter:
         assert isinstance(result_char, int)
         assert isinstance(result_combined, int)
     
-    @patch('ai_utilities.token_counter.logger')
-    def test_count_message_tokens_logging(self, mock_logger):
+    def test_count_message_tokens_logging(self):
         """Test that message token counting logs appropriately."""
-        messages = [{"role": "user", "content": "Hello"}]
-        
-        TokenCounter.count_message_tokens(messages, "word")
-        
-        # Should log debug message
-        mock_logger.debug.assert_called_once()
-        assert "Estimated" in mock_logger.debug.call_args[0][0]
-        assert "tokens" in mock_logger.debug.call_args[0][0]
+        with patch('ai_utilities.token_counter.logger') as mock_logger:
+            messages = [{"role": "user", "content": "Hello"}]
+            
+            TokenCounter.count_message_tokens(messages, "word")
+            
+            # Should log debug message
+            mock_logger.debug.assert_called_once()
+            assert "Estimated" in mock_logger.debug.call_args[0][0]
+            assert "tokens" in mock_logger.debug.call_args[0][0]
     
     def test_estimate_response_tokens_basic(self):
         """Test basic response token estimation."""
         prompt_tokens = 100
         result = TokenCounter.estimate_response_tokens(prompt_tokens)
-        expected = int(100 * 1.5)  # Default factor
-        assert result == expected
-    
-    def test_estimate_response_tokens_custom_factor(self):
-        """Test response token estimation with custom factor."""
-        prompt_tokens = 100
-        factor = 2.0
-        result = TokenCounter.estimate_response_tokens(prompt_tokens, factor)
-        expected = int(100 * 2.0)
-        assert result == expected
-    
-    def test_estimate_response_tokens_zero_prompt(self):
-        """Test response token estimation with zero prompt tokens."""
-        result = TokenCounter.estimate_response_tokens(0)
-        assert result == 0
-    
-    def test_estimate_response_tokens_small_factor(self):
-        """Test response token estimation with small factor."""
-        prompt_tokens = 100
-        factor = 0.5
-        result = TokenCounter.estimate_response_tokens(prompt_tokens, factor)
-        expected = int(100 * 0.5)
-        assert result == expected
-    
-    @patch('ai_utilities.token_counter.logger')
-    def test_estimate_response_tokens_logging(self, mock_logger):
-        """Test that response estimation logs appropriately."""
-        TokenCounter.estimate_response_tokens(100, 1.5)
         
-        # Should log debug message
-        mock_logger.debug.assert_called_once()
-        assert "Estimated" in mock_logger.debug.call_args[0][0]
-        assert "response tokens" in mock_logger.debug.call_args[0][0]
+        # Should estimate response as 1.5x prompt (default factor)
+        expected = int(prompt_tokens * 1.5)
+        assert result == expected
+        
+        # Test with different factors
+        result_half = TokenCounter.estimate_response_tokens(prompt_tokens, 0.5)
+        expected_half = int(prompt_tokens * 0.5)
+        assert result_half == expected_half
+    
+    def test_estimate_response_tokens_logging(self):
+        """Test that response estimation logs appropriately."""
+        with patch('ai_utilities.token_counter.logger') as mock_logger:
+            TokenCounter.estimate_response_tokens(100, 1.5)
+            
+            # Should log debug message
+            mock_logger.debug.assert_called_once()
+            assert "Estimated" in mock_logger.debug.call_args[0][0]
+            assert "response tokens" in mock_logger.debug.call_args[0][0]
+    
+    def test_count_tokens_for_model_basic(self):
+        """Test model-specific token counting."""
+        text = "This is a test"
+        base_count = TokenCounter.count_tokens(text, "combined")
+        
+        # Test with known model
+        result_known = TokenCounter.count_tokens_for_model(text, "gpt-3.5-turbo")
+        assert isinstance(result_known, int)
+        
+        # Test with unknown model (should return base count)
+        result_unknown = TokenCounter.count_tokens_for_model(text, "unknown-model")
+        assert result_unknown == base_count
+    
+    def test_count_tokens_for_model_logging(self):
+        """Test that model-specific counting logs appropriately."""
+        with patch('ai_utilities.token_counter.logger') as mock_logger:
+            text = "test"
+            model = "test-model-1"
+            
+            TokenCounter.count_tokens_for_model(text, model)
+            
+            # Should log debug message
+            mock_logger.debug.assert_called_once()
+            log_message = mock_logger.debug.call_args[0][0]
+            assert model in log_message
+            assert "tokens" in log_message
     
     def test_count_tokens_for_model_basic(self):
         """Test model-specific token counting."""

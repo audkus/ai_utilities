@@ -125,6 +125,7 @@ class TestResolvedConfig:
         """Test complete request configuration resolution."""
         settings = AiSettings(_env_file=None)  # Don't load from .env
         settings.openai_api_key = "sk-settings-openai"
+        settings.base_url = None  # Clear environment-derived base URL
         
         config = resolve_request_config(
             settings,
@@ -174,6 +175,7 @@ class TestResolvedConfig:
     def test_resolve_request_config_local_provider_inference(self):
         """Test local provider inference from base URL."""
         settings = AiSettings(_env_file=None, provider=None)  # Don't load from .env, no explicit provider
+        settings.provider = None  # Explicitly clear provider to force inference
         
         config = resolve_request_config(settings)
         

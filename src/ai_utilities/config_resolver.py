@@ -92,7 +92,7 @@ def resolve_provider(
     }
 
     def _validate(name: str) -> str:
-        normalized = name.lower()
+        normalized = name.lower().strip()  # Strip whitespace before validation
         if normalized not in valid_providers:
             raise UnknownProviderError(f"Unknown provider: {normalized}")
         return normalized
@@ -148,7 +148,7 @@ def _infer_provider_from_url(base_url: str) -> str:
         elif port == 8000:
             return "fastchat"
     
-    # Check hostname patterns
+    # Check hostname patterns for known providers
     if "api.openai.com" in hostname:
         return "openai"
     elif "api.groq.com" in hostname:
@@ -158,8 +158,10 @@ def _infer_provider_from_url(base_url: str) -> str:
     elif "openrouter.ai" in hostname:
         return "openrouter"
     
-    # Default to openai-compatible for custom endpoints
-    return "openai_compatible"
+    # Only default to openai-compatible for clearly custom endpoints
+    # Not for OpenAI-compatible endpoints that might be legitimate OpenAI alternatives
+    # This is conservative - we prefer to let explicit provider settings take precedence
+    return "openai"  # Changed from "openai_compatible" to be more conservative
 
 
 def _infer_provider_from_env_base_urls() -> Optional[str]:
@@ -405,8 +407,14 @@ def resolve_model(settings, provider: str) -> str:
         MissingModelError: If no model is configured and provider has no default
     """
     # 1) Settings model takes priority (populated by Pydantic from AI_MODEL/OPENAI_MODEL)
-    if settings.model and settings.model.strip():
-        return settings.model.strip()
+    # Handle both dict and object settings
+    if isinstance(settings, dict):
+        model_value = settings.get("model")
+    else:
+        model_value = getattr(settings, "model", None)
+        
+    if model_value and isinstance(model_value, str) and model_value.strip():
+        return model_value.strip()
     
     # 2) Provider-specific defaults (only for providers with real defaults)
     provider_defaults = {
@@ -465,36 +473,74 @@ def resolve_request_config(
     env_vars = dict(os.environ)
     
     # Resolve provider
+    # Handle both dict and object settings for base URL and provider
+    if isinstance(settings, dict):
+        settings_base_url_for_provider = settings.get("base_url")
+        settings_provider_for_provider = settings.get("provider")
+    else:
+        settings_base_url_for_provider = getattr(settings, "base_url", None)
+        settings_provider_for_provider = getattr(settings, "provider", None)
+        
     resolved_provider = resolve_provider(
         provider=provider,
-        base_url=base_url or settings.base_url,
-        env_provider=getattr(settings, 'provider', None) or env_vars.get('AI_PROVIDER')
+        base_url=base_url or settings_base_url_for_provider,
+        env_provider=settings_provider_for_provider or env_vars.get('AI_PROVIDER')
     )
     
     # Resolve API key
+    # Handle both dict and object settings for API key
+    if isinstance(settings, dict):
+        settings_api_key = settings.get("api_key")
+    else:
+        settings_api_key = getattr(settings, "api_key", None)
+        
     resolved_api_key = resolve_api_key(
         provider=resolved_provider,
         api_key=api_key,
-        settings_api_key=settings.api_key,
+        settings_api_key=settings_api_key,
         settings=settings,
         env_vars=env_vars
     )
     
     # Resolve base URL
     try:
+        # Handle both dict and object settings
+        if isinstance(settings, dict):
+            settings_base_url = settings.get("base_url")
+        else:
+            settings_base_url = getattr(settings, "base_url", None)
+            
         resolved_base_url = resolve_base_url(
             provider=resolved_provider,
             base_url=base_url,
-            settings_base_url=settings.base_url
+            settings_base_url=settings_base_url
         )
     except MissingBaseUrlError as e:
         raise MissingBaseUrlError(str(e))  # Re-raise so provider_factory can catch it 
         
     # Resolve other parameters (per-request wins, then settings, then defaults)
     resolved_model = model or resolve_model(settings, resolved_provider)
-    resolved_temperature = temperature or settings.temperature
-    resolved_max_tokens = max_tokens or getattr(settings, 'max_tokens', None)
-    resolved_timeout = timeout or settings.request_timeout_s or settings.timeout
+    
+    # Handle both dict and object settings for temperature
+    if isinstance(settings, dict):
+        temperature_value = settings.get("temperature")
+    else:
+        temperature_value = getattr(settings, "temperature", None)
+    resolved_temperature = temperature or temperature_value
+    
+    # Handle both dict and object settings for max_tokens
+    if isinstance(settings, dict):
+        max_tokens_value = settings.get("max_tokens")
+    else:
+        max_tokens_value = getattr(settings, "max_tokens", None)
+    resolved_max_tokens = max_tokens or max_tokens_value
+    
+    # Handle both dict and object settings for timeout
+    if isinstance(settings, dict):
+        timeout_value = settings.get("request_timeout_s") or settings.get("timeout")
+    else:
+        timeout_value = getattr(settings, "request_timeout_s", None) or getattr(settings, "timeout", None)
+    resolved_timeout = timeout or timeout_value
     
     # Provider-specific kwargs
     provider_kwargs = kwargs.copy()

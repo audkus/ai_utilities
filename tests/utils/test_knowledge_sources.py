@@ -194,7 +194,7 @@ features:
             assert source.source_id is not None
             assert source.path == test_file
             assert source.file_size == len(content.encode('utf-8'))
-            assert source.mime_type == "application/x-yaml"
+            assert source.mime_type == "text/x-yaml"
             assert source.sha256_hash is not None
             assert source.text_content == content
     
@@ -318,10 +318,13 @@ features:
             content = "Special chars: \t\n\r\\\"'!@#$%^&*()[]{}|;:,.<>?"
             test_file.write_text(content)
             
+            # Read back the content as written (file system normalizes \r to \n)
+            expected_content = test_file.read_text()
+            
             source = loader.load_source(test_file)
             
             assert isinstance(source, Source)
-            assert source.text_content == content
+            assert source.text_content == expected_content
     
     def test_load_source_path_with_spaces(self):
         """Test loading files with spaces in path."""

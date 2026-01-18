@@ -845,6 +845,7 @@ class AITestDashboard:
             r'(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+skipped',
             r'(\d+)\s+passed,\s+(\d+)\s+failed,\s+(\d+)\s+skipped',
             r'(\d+)\s+passed,\s+(\d+)\s+failed',
+            r'(\d+)\s+passed,\s+(\d+)\s+failed\s+in\s+[\d.]+s',  # Format: "3 passed, 2 failed in 1.5s"
             r'(\d+)\s+passed',
         ]
         

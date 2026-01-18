@@ -4,13 +4,14 @@ openai_client.py
 Pure OpenAI API client with single responsibility for API communication.
 """
 
-import logging
-from typing import Any, Dict, Optional
+from __future__ import annotations
 
-from openai import OpenAI
+from typing import Any, Dict, Optional
+import openai
 from openai.types.chat import ChatCompletion
 
-logger = logging.getLogger(__name__)
+# Patchable symbol that tests can target
+OpenAI = openai.OpenAI
 
 
 class OpenAIClient:
@@ -21,7 +22,7 @@ class OpenAIClient:
     It doesn't handle rate limiting, response processing, or configuration.
     """
 
-    def __init__(self, api_key: str, base_url: Optional[str] = None, timeout: int = 30):
+    def __init__(self, api_key: str, base_url: Optional[str] = None, timeout: Optional[float] = None) -> None:
         """
         Initialize the OpenAI client.
         
@@ -30,15 +31,7 @@ class OpenAIClient:
             base_url: Custom base URL (optional)
             timeout: Request timeout in seconds
         """
-        self.api_key = api_key
-        self.base_url = base_url
-        self.timeout = timeout
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=timeout
-        )
-        logger.debug("OpenAIClient initialized")
+        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(
         self,
@@ -64,8 +57,6 @@ class OpenAIClient:
         Raises:
             OpenAI API exceptions for API errors
         """
-        logger.debug(f"Creating chat completion with model: {model}")
-        
         params: Dict[str, Any] = {
             "model": model,
             "messages": messages,
@@ -78,10 +69,7 @@ class OpenAIClient:
         # Add any additional parameters
         params.update(kwargs)
         
-        response = self.client.chat.completions.create(**params)
-        logger.debug("Chat completion created successfully")
-        
-        return response
+        return self.client.chat.completions.create(**params)
 
     def get_models(self):
         """
@@ -93,5 +81,4 @@ class OpenAIClient:
         Raises:
             OpenAI API exceptions for API errors
         """
-        logger.debug("Fetching available models")
         return self.client.models.list()

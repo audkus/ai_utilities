@@ -23,25 +23,17 @@ class TestMain:
         assert hasattr(ai_utilities.__main__, '__name__')
         assert ai_utilities.__main__.__name__ == 'ai_utilities.__main__'
     
-    @patch('ai_utilities.__main__.main')
-    def test_main_execution(self, mock_main):
+    def test_main_execution(self):
         """Test that main is called when __name__ == '__main__'."""
-        # Simulate running as main module
-        mock_main.return_value = None
+        # Test that the main function exists and can be called
+        from ai_utilities.cli import main
         
-        # Set the __name__ attribute to simulate main execution
-        original_name = ai_utilities.__main__.__name__
-        ai_utilities.__main__.__name__ = '__main__'
+        # Test with --help which should call sys.exit(0)
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--help"])
         
-        try:
-            # Execute the module (this should call main())
-            exec("import ai_utilities.__main__")
-        except SystemExit:
-            # main() might call sys.exit(), which is expected
-            pass
-        finally:
-            # Restore original name
-            ai_utilities.__main__.__name__ = original_name
+        # Should exit with code 0 (success)
+        assert exc_info.value.code == 0
     
     def test_cli_import(self):
         """Test that cli.main is imported correctly."""

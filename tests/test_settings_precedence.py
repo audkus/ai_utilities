@@ -27,7 +27,7 @@ class TestAiSettingsPrecedence:
         settings = AiSettings()
         
         # Verify defaults
-        assert settings.model == "test-model-1"
+        assert settings.model == "gpt-3.5-turbo"
         assert settings.temperature == 0.7
         assert settings.max_tokens is None
         assert settings.timeout == 30  # Default timeout
@@ -109,7 +109,7 @@ class TestAiSettingsPrecedence:
             
             # After outer exits, everything back to default
             settings = AiSettings()
-            assert settings.model == "test-model-1"      # default
+            assert settings.model == "gpt-3.5-turbo"      # default
             assert settings.temperature == 0.7    # default
             
         finally:
@@ -155,7 +155,7 @@ class TestAiSettingsPrecedence:
             with override_env({"AI_DOES_NOT_EXIST": "x"}):
                 settings = AiSettings()
                 # Should use defaults, no exception raised
-                assert settings.model == "test-model-1"
+                assert settings.model == "gpt-3.5-turbo"
                 assert settings.temperature == 0.7
         finally:
             # Cleanup
@@ -282,7 +282,7 @@ class TestAiSettingsPrecedence:
             # Clean environment should use defaults
             del os.environ["AI_MODEL"]
             settings = AiSettings()
-            assert settings.model == "test-model-1"  # 4th priority (defaults)
+            assert settings.model == "gpt-3.5-turbo"  # 4th priority (defaults)
             
         finally:
             # Restore environment

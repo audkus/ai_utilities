@@ -70,7 +70,7 @@ class TestProviderSpecificBaseUrls:
     })
     def test_explicit_provider_overrides_env_base_url(self):
         """Test that explicit AI_PROVIDER takes precedence."""
-        provider = resolve_provider()
+        provider = resolve_provider(env_provider=os.getenv("AI_PROVIDER"))
         assert provider == "openai"
 
     @patch.dict(os.environ, {
@@ -161,7 +161,8 @@ class TestClientIntegration:
     })
     def test_client_uses_text_generation_webui_base_url(self):
         """Test that AiClient uses TEXT_GENERATION_WEBUI_BASE_URL."""
-        client = AiClient()
+        settings = AiSettings()  # Create settings with patched environment
+        client = AiClient(settings=settings)  # Pass explicit settings
         # Should infer text-generation-webui provider and use its base URL
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == "http://localhost:5000/v1"
@@ -172,7 +173,8 @@ class TestClientIntegration:
     })
     def test_client_uses_fastchat_base_url(self):
         """Test that AiClient uses FASTCHAT_BASE_URL."""
-        client = AiClient()
+        settings = AiSettings()  # Create settings with patched environment
+        client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "fastchat"
         assert client.settings.base_url == "http://localhost:8000/v1"
 
@@ -183,7 +185,8 @@ class TestClientIntegration:
     })
     def test_explicit_provider_overrides_base_url_inference(self):
         """Test that explicit AI_PROVIDER prevents base URL inference."""
-        client = AiClient()
+        settings = AiSettings()  # Create settings with patched environment
+        client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "openai"
         # Should use OpenAI default, not the text-generation-webui URL
         assert client.settings.base_url == "https://api.openai.com/v1"
@@ -195,7 +198,8 @@ class TestClientIntegration:
     })
     def test_ai_base_url_overrides_provider_specific(self):
         """Test that AI_BASE_URL overrides provider-specific inference."""
-        client = AiClient()
+        settings = AiSettings()  # Create settings with patched environment
+        client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.base_url == "http://custom.com/v1"
 
     @patch.dict(os.environ, {
@@ -203,7 +207,8 @@ class TestClientIntegration:
     })
     def test_provider_base_url_without_api_key_works(self):
         """Test that provider-specific base URL works without API key."""
-        client = AiClient()
+        settings = AiSettings()  # Create settings with patched environment
+        client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == "http://localhost:5000/v1"
         assert client.settings.api_key is None  # Local providers don't need API keys

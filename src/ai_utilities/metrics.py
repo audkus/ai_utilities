@@ -159,6 +159,10 @@ class MetricsCollector:
         with self.lock:
             self.timers[key].append(duration)
     
+    def timer(self, name: str, labels: Optional[Dict[str, str]] = None):
+        """Create a timer context manager."""
+        return Timer(name, labels)
+    
     def _make_key(self, name: str, labels: Dict[str, str]) -> str:
         """Create a unique key from name and labels for internal storage."""
         if not labels:
@@ -435,6 +439,70 @@ class MetricsRegistry:
     def reset(self):
         """Reset all metrics."""
         self.collector.reset()
+    
+    # Generic metric methods for context/metrics integration
+    def increment(self, name: str, value: int = 1, tags: Optional[Dict[str, str]] = None) -> None:
+        """Increment a counter metric."""
+        self.collector.increment_counter(name, value, tags or {})
+    
+    def gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None:
+        """Set a gauge metric value."""
+        self.collector.set_gauge(name, value, tags or {})
+    
+    def histogram(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None:
+        """Record a histogram metric value."""
+        self.collector.observe_histogram(name, value, tags or {})
+    
+    def timer(self, name: str, tags: Optional[Dict[str, str]] = None):
+        """Create a timer context manager."""
+        return self.collector.timer(name, tags or {})
+    
+    def get_metric(self, name: str, tags: Optional[Dict[str, str]] = None) -> Optional[float]:
+        """Get a metric value."""
+        key = self.collector._make_key(name, tags or {})
+        
+        # Check counters
+        if key in self.collector.counters:
+            return self.collector.counters[key]
+        
+        # Check gauges
+        if key in self.collector.gauges:
+            return self.collector.gauges[key]
+        
+        # For histograms and timers, return the latest value or count
+        if key in self.collector.histograms:
+            total_count = sum(bucket.count for bucket in self.collector.histograms[key])
+            return total_count
+        
+        if key in self.collector.timers:
+            if self.collector.timers[key]:
+                return self.collector.timers[key][-1]  # Latest timer value
+        
+        return None
+    
+    def get_all_metrics(self) -> Dict[str, Any]:
+        """Get all metrics as a dictionary."""
+        result = {}
+        
+        # Add counters
+        for key, value in self.collector.counters.items():
+            result[key] = value
+        
+        # Add gauges
+        for key, value in self.collector.gauges.items():
+            result[key] = value
+        
+        # Add histogram counts
+        for key, buckets in self.collector.histograms.items():
+            total_count = sum(bucket.count for bucket in buckets)
+            result[key] = total_count
+        
+        # Add latest timer values
+        for key, values in self.collector.timers.items():
+            if values:
+                result[key] = values[-1]
+        
+        return result
 
 
 # Global metrics instance

@@ -54,6 +54,10 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
     if provider is not None:
         return provider
     
+    # Check if settings is None
+    if settings is None:
+        raise ProviderConfigurationError("Settings cannot be None", "unknown")
+    
     try:
         config = resolve_request_config(settings)
 
@@ -75,6 +79,7 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
                 base_url=config.base_url,
                 timeout=int(config.timeout or 30),
                 extra_headers=settings.extra_headers,
+                model=getattr(settings, 'model', None),
             )
 
         elif config.provider in ["ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]:
@@ -84,6 +89,7 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
                 base_url=config.base_url,
                 timeout=int(config.timeout or 30),
                 extra_headers=settings.extra_headers,
+                model=getattr(settings, 'model', None),
             )
 
         else:

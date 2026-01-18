@@ -30,25 +30,43 @@ class TestNoNetworkScenarios:
         assert "Response: test" in response
     
     def test_imports_work_without_internet(self):
-        """Test that all imports work without internet access."""
-        # These should not trigger any network calls
-        from ai_utilities import AiClient, AiSettings, AskResult
-        from ai_utilities import UploadedFile, JsonParseError, parse_json_from_text
-        from ai_utilities import create_client
-        from ai_utilities.audio import AudioProcessor
-        
-        # Should be able to instantiate classes without network
-        settings = AiSettings(api_key="test-key")
-        assert settings.model == "test-model-1"
-        
-        # Should be able to create result objects
-        result = AskResult(
-            prompt="test",
-            response="response",
-            error=None,
-            duration_s=0.1
-        )
-        assert result.prompt == "test"
+        """Test that imports work without internet connection."""
+        # Mock network requests to simulate offline mode
+        with patch('requests.get') as mock_get, \
+             patch('requests.post') as mock_post, \
+             patch('socket.create_connection') as mock_socket:
+            
+            # Make all network calls fail
+            mock_get.side_effect = Exception("No internet")
+            mock_post.side_effect = Exception("No internet") 
+            mock_socket.side_effect = Exception("No internet")
+            
+            # Clear environment variables that might interfere
+            import os
+            ai_model_backup = os.environ.pop('AI_MODEL', None)
+            
+            try:
+                from ai_utilities import AiClient, AiSettings, AskResult
+                from ai_utilities import UploadedFile, JsonParseError, parse_json_from_text
+                from ai_utilities import create_client
+                from ai_utilities.audio import AudioProcessor
+                
+                # Should be able to instantiate classes without network
+                settings = AiSettings(api_key="test-key")
+                assert settings.model == "gpt-3.5-turbo"  # Default when no env var
+                
+                # Should be able to create result objects
+                result = AskResult(
+                    prompt="test",
+                    response="response", 
+                    error=None,
+                    duration_s=0.1
+                )
+                assert result.prompt == "test"
+            finally:
+                # Restore environment variable
+                if ai_model_backup is not None:
+                    os.environ['AI_MODEL'] = ai_model_backup
     
     def test_settings_validation_without_network(self):
         """Test that settings validation works without network calls."""

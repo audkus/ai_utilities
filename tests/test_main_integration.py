@@ -45,14 +45,16 @@ def test_create_client_vs_aiclient_model_difference():
     """Test the difference between create_client and AiClient for model selection."""
     from ai_utilities import create_client
     from ai_utilities.client import AiSettings
+    import os
     
     # create_client should allow specifying real models
     client_with_real_model = create_client(model="gpt-4", api_key="test-key-for-testing")
     assert client_with_real_model.settings.model == "gpt-4"
     
-    # AiSettings without parameters uses default test model
+    # AiSettings without parameters uses model from environment or default
     settings_default = AiSettings()
-    assert settings_default.model == "test-model-1"
+    expected_model = os.environ.get('AI_MODEL', 'gpt-3.5-turbo')
+    assert settings_default.model == expected_model
     
-    # This demonstrates the issue: default settings use test models
+    # This demonstrates the issue: default settings use environment models
     # but real applications need real OpenAI models

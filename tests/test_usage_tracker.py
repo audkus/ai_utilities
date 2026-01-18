@@ -465,7 +465,10 @@ class TestThreadSafeUsageTracker:
             assert stats.tokens_used_today == 100
             
             # Mock date change to tomorrow
-            tomorrow = date.fromordinal(date.today().toordinal() + 1)
+            from datetime import date
+            original_today = date.today
+            tomorrow = date.fromordinal(original_today().toordinal() + 1)
+            
             with patch('ai_utilities.usage_tracker.date') as mock_date:
                 mock_date.today.return_value = tomorrow
                 mock_date.side_effect = lambda *args, **kw: date(*args, **kw)
