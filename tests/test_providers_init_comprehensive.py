@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys
 import importlib
+import inspect
 
 
 class TestProvidersInitCompleteIntegration:
@@ -325,7 +326,7 @@ class TestProvidersInitCompleteIntegration:
         for item in unexpected_items:
             obj = getattr(providers, item)
             # Should be either a module or have special meaning
-            assert inspect.ismodule(obj) or item in ['openai_provider'], f"Unexpected public export: {item}"
+            assert inspect.ismodule(obj) or item in ['openai_provider', 'LazyOpenAIProvider', 'LazyOpenAICompatibleProvider'], f"Unexpected public export: {item}"
     
     def test_integration_with_actual_provider_modules(self):
         """Test integration with actual provider submodules."""

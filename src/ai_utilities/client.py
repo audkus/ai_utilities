@@ -15,6 +15,11 @@ from configparser import ConfigParser
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from datetime import datetime, timedelta
+
+# OpenAI imports for embeddings functionality - patchable symbols for tests
+import openai
+OpenAI = openai.OpenAI
+
 from .config_models import AiSettings
 from .providers.base_provider import BaseProvider
 from .usage_tracker import UsageScope, UsageStats, create_usage_tracker
@@ -913,7 +918,7 @@ class AiClient:
                 raise ImportError("OpenAI package is required for embeddings. Install with: pip install ai-utilities[openai]")
             
             # Create OpenAI client with current settings
-            openai_client = openai.OpenAI(
+            openai_client = OpenAI(
                 api_key=self.settings.api_key,
                 base_url=self.settings.base_url,
                 timeout=self.settings.timeout
@@ -1604,7 +1609,7 @@ class AiClient:
         seen_texts = set()
         
         for result in results:
-            text = result['text'].strip()
+            text = (result['text'] or '').strip()
             
             # Simple deduplication checks
             is_duplicate = False
@@ -1686,8 +1691,6 @@ class AiClient:
         model = model or self.settings.embedding_model
         
         # Use OpenAI embeddings API
-        from openai import OpenAI
-        
         client = OpenAI(api_key=self.settings.api_key)
         
         # Build parameters
