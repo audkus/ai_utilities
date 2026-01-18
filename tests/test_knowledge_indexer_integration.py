@@ -12,10 +12,19 @@ from tempfile import TemporaryDirectory
 with patch.dict('sys.modules', {
     'ai_utilities.knowledge.backend': Mock(),
     'ai_utilities.knowledge.chunking': Mock(), 
-    'ai_utilities.knowledge.exceptions': Mock(),
     'ai_utilities.knowledge.sources': Mock(),
 }):
-    from ai_utilities.knowledge.indexer import KnowledgeIndexer
+    # Import real exceptions
+    from ai_utilities.knowledge.exceptions import KnowledgeIndexError, KnowledgeValidationError
+    # Mock the exceptions module but return real exceptions
+    exceptions_mock = Mock()
+    exceptions_mock.KnowledgeIndexError = KnowledgeIndexError
+    exceptions_mock.KnowledgeValidationError = KnowledgeValidationError
+    
+    with patch.dict('sys.modules', {
+        'ai_utilities.knowledge.exceptions': exceptions_mock,
+    }):
+        from ai_utilities.knowledge.indexer import KnowledgeIndexer
 
 
 class TestKnowledgeIndexerIntegration:
@@ -40,24 +49,34 @@ class TestKnowledgeIndexerIntegration:
         mock_file_loader.load_source.return_value = mock_source
         
         # Setup mock chunks
-        mock_chunks = [
-            {'text': 'Test chunk 1', 'metadata': {'chunk_id': 0}},
-            {'text': 'Test chunk 2', 'metadata': {'chunk_id': 1}}
-        ]
+        mock_chunk1 = Mock()
+        mock_chunk1.text = 'Test chunk 1'
+        mock_chunk1.metadata = {'chunk_id': 0}
+        mock_chunk2 = Mock()
+        mock_chunk2.text = 'Test chunk 2'
+        mock_chunk2.metadata = {'chunk_id': 1}
+        mock_chunks = [mock_chunk1, mock_chunk2]
         mock_chunker.chunk_text.return_value = mock_chunks
+        mock_chunker.chunk_size = 1000
+        mock_chunker.chunk_overlap = 200
+        mock_chunker.min_chunk_size = 100
         
         # Setup mock embeddings
-        mock_embedding_response = Mock()
-        mock_embedding = Mock()
-        mock_embedding.embedding = [0.1, 0.2, 0.3]
-        mock_embedding_response.data = [mock_embedding]
-        mock_embedding_client.embeddings.create.return_value = mock_embedding_response
+        mock_embedding_client.get_embeddings.return_value = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         
         # Setup backend methods
         mock_backend.source_exists.return_value = False
         mock_backend.get_source_hash.return_value = "different_hash"
+        mock_backend.get_existing_sources.return_value = set()  # Return empty set, not Mock
         mock_backend.add_source.return_value = None
         mock_backend.add_chunks.return_value = None
+        mock_backend.delete_source.return_value = None  # Add delete_source method
+        mock_backend.get_stats.return_value = {  # Add get_stats method
+            'total_sources': 1,
+            'total_chunks': 2,
+            'total_embeddings': 2
+        }
+        mock_backend.embedding_dimension = 1536  # Add embedding dimension
         mock_backend.get_index_stats.return_value = {
             'total_sources': 1,
             'total_chunks': 2,
@@ -141,7 +160,7 @@ class TestKnowledgeIndexerIntegration:
         
         # Mock that source exists and hash is same
         mock_dependencies['backend'].source_exists.return_value = True
-        mock_dependencies['backend'].get_source_hash.return_value = "same_hash"
+        mock_dependencies['backend'].get_source_hash.return_value = "abc123"  # Match the source hash
         
         result = indexer._index_file(test_file, existing_sources={"test_source_123"}, force_reindex=False)
         
@@ -171,21 +190,23 @@ class TestKnowledgeIndexerIntegration:
         assert 'processed_files' in result
         assert 'skipped_files' in result
     
-    def test_remove_source_complete(self, indexer, mock_dependencies):
+    def test_remove_source_complete(self, indexer, mock_dependencies, tmp_path):
         """Test remove_source complete workflow."""
-        source_id = "test_source_123"
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("Test content")
         
-        indexer.remove_source(source_id)
+        indexer.remove_source(test_file)
         
-        mock_dependencies['backend'].remove_source.assert_called_once_with(source_id)
+        mock_dependencies['backend'].delete_source.assert_called_once_with("test_source_123")
     
     def test_get_index_stats_complete(self, indexer, mock_dependencies):
         """Test get_index_stats complete workflow."""
         stats = indexer.get_index_stats()
         
-        assert stats['total_sources'] == 1
-        assert stats['total_chunks'] == 2
-        assert stats['total_embeddings'] == 2
+        # The indexer returns a nested structure with backend stats
+        assert stats['backend']['total_sources'] == 1
+        assert stats['backend']['total_chunks'] == 2
+        assert stats['backend']['total_embeddings'] == 2
     
     def test_error_handling_paths(self, indexer, mock_dependencies, tmp_path):
         """Test various error handling paths."""
@@ -194,18 +215,16 @@ class TestKnowledgeIndexerIntegration:
         
         # Test load_source error
         mock_dependencies['file_loader'].load_source.side_effect = Exception("Load failed")
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
-        assert result['processed'] is False
-        assert result['error'] is not None
+        with pytest.raises(KnowledgeIndexError, match="Failed to index.*Load failed"):
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
         
         # Reset for next test
         mock_dependencies['file_loader'].load_source.side_effect = None
         
         # Test embedding error  
-        mock_dependencies['embedding_client'].embeddings.create.side_effect = Exception("Embedding failed")
-        result = indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
-        assert result['processed'] is False
-        assert result['error'] is not None
+        mock_dependencies['embedding_client'].get_embeddings.side_effect = Exception("Embedding failed")
+        with pytest.raises(KnowledgeIndexError, match="Failed to generate embeddings.*Embedding failed"):
+            indexer._index_file(test_file, existing_sources=set(), force_reindex=True)
     
     def test_find_files_all_scenarios(self, indexer, tmp_path):
         """Test _find_files with all scenarios."""

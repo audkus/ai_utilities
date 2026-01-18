@@ -14,6 +14,10 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# OpenAI imports for validation - patchable symbols for tests
+import openai
+OpenAI = openai.OpenAI
+
 
 class ModelConfig(BaseModel):
     """
@@ -491,24 +495,31 @@ class AiSettings(BaseSettings):
     @classmethod
     def get_provider(cls, v):
         """Get provider from environment with provider-specific base URL inference."""
-        if v is not None:
-            return v
         
-        # Check explicit AI_PROVIDER first
-        ai_provider = os.getenv('AI_PROVIDER')
-        if ai_provider:
-            return ai_provider
-        
-        # Then infer from provider-specific base URLs
-        from .config_resolver import _infer_provider_from_env_base_urls
-        try:
+        # Only do environment inference if no explicit provider was set
+        # Check if v is None (truly unset) before doing inference
+        if v is None:
+            # Check explicit AI_PROVIDER first
+            ai_provider = os.getenv('AI_PROVIDER')
+            if ai_provider:
+                return ai_provider
+            
+            # Then infer from provider-specific base URLs
+            from .config_resolver import _infer_provider_from_env_base_urls
             env_provider = _infer_provider_from_env_base_urls()
             if env_provider:
                 return env_provider
-        except Exception:
-            pass
+            
+            return "openai"  # Default fallback
         
-        return "openai"  # Fallback to OpenAI
+        # For any explicit value (including "openai"), use it as-is
+        if v is not None:
+            # Strip whitespace from provider value
+            if isinstance(v, str):
+                v = v.strip()
+            return v
+        
+        return "openai"  # Final fallback
     
     @field_validator('base_url', mode='before')
     @classmethod  
@@ -523,17 +534,48 @@ class AiSettings(BaseSettings):
             return ai_base_url
         
         # Then check provider-specific base URLs
-        from .config_resolver import _get_provider_specific_base_url
+        from .config_resolver import _get_provider_specific_base_url, _infer_provider_from_env_base_urls
         
-        # Get the resolved provider (this will include provider-specific inference)
-        from .config_resolver import resolve_provider
-        try:
-            provider = resolve_provider()
-            provider_base_url = _get_provider_specific_base_url(provider)
+        # Default base URLs for providers
+        defaults = {
+            "openai": "https://api.openai.com/v1",
+            "groq": "https://api.groq.com/openai/v1",
+            "together": "https://api.together.xyz/v1",
+            "openrouter": "https://openrouter.ai/api/v1",
+            "ollama": "http://localhost:11434/v1",
+            "lmstudio": "http://localhost:1234/v1",
+            "text-generation-webui": "http://localhost:5000/v1",
+            "fastchat": "http://localhost:8000/v1",
+            "anyscale": "https://api.endpoints.anyscale.com/v1",
+            "fireworks": "https://api.fireworks.ai/inference/v1",
+            "replicate": "https://api.replicate.com/v1",
+            "vllm": "http://localhost:8000/v1",
+            "oobabooga": "http://localhost:7860/v1", 
+            "localai": "http://localhost:8080/v1",
+            "azure": "https://{resource}.openai.azure.com",
+            "google-vertex": "https://{region}-aiplatform.googleapis.com",
+            "aws-bedrock": "https://bedrock.{region}.amazonaws.com",
+            "ibm-watsonx": "https://{us-south}.ml.cloud.ibm.com",
+        }
+        
+        # First check explicit AI_PROVIDER (higher precedence)
+        ai_provider = os.getenv('AI_PROVIDER')
+        if ai_provider:
+            provider_base_url = _get_provider_specific_base_url(ai_provider)
             if provider_base_url:
                 return provider_base_url
-        except Exception:
-            pass
+            # If explicit provider is set but has no specific base URL, 
+            # use the default base URL for that provider
+            return defaults.get(ai_provider.lower())
+        
+        # Only if no explicit AI_PROVIDER, try to infer from environment-specific base URLs
+        env_provider = _infer_provider_from_env_base_urls()
+        if env_provider:
+            provider_base_url = _get_provider_specific_base_url(env_provider)
+            if provider_base_url:
+                return provider_base_url
+            # Use default for inferred provider
+            return defaults.get(env_provider)
         
         return None
 
@@ -934,7 +976,6 @@ class AiSettings(BaseSettings):
             return False
             
         try:
-            from openai import OpenAI
             client = OpenAI(api_key=api_key)
             models = client.models.list()
             available_models = {model.id for model in models.data}
@@ -979,7 +1020,6 @@ class AiSettings(BaseSettings):
         
         # Perform actual model check (costs tokens!)
         try:
-            from openai import OpenAI
             client = OpenAI(api_key=api_key)
             
             # Get available models
@@ -1124,3 +1164,30 @@ class AiSettings(BaseSettings):
             return datetime.now() - last_check >= timedelta(days=check_interval_days)
         except (json.JSONDecodeError, ValueError, KeyError):
             return True
+
+    @classmethod
+    def create_isolated(cls, env_overrides: Optional[Dict[str, str]] = None, **kwargs) -> "AiSettings":
+        """
+        Create an isolated AiSettings instance with environment overrides.
+        
+        This method creates an AiSettings instance that uses temporary environment
+        overrides without mutating the global os.environ. This is useful for testing
+        and for creating isolated configuration contexts.
+        
+        Args:
+            env_overrides: Dictionary of environment variable overrides
+            **kwargs: Additional AiSettings parameters
+            
+        Returns:
+            AiSettings instance with isolated environment
+        """
+        if env_overrides is None:
+            env_overrides = {}
+        
+        # Import here to avoid circular imports
+        from ai_utilities.env_overrides import override_env
+        
+        # Create a context with environment overrides
+        with override_env(env_overrides):
+            # Create settings within the overridden environment context
+            return cls(**kwargs)

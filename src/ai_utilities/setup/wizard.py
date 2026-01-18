@@ -93,6 +93,9 @@ class SetupWizard:
     
     def _prompt_choice(self, message: str, choices: List[str], default: Optional[str] = None) -> str:
         """Prompt user to choose from a list."""
+        if not choices:
+            raise ValueError("Choices list cannot be empty")
+        
         print(f"\n{message}")
         for i, choice in enumerate(choices, 1):
             marker = " (default)" if choice == default else ""

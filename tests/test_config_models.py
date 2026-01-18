@@ -233,19 +233,19 @@ class TestAIConfig:
         from ai_utilities.env_overrides import override_env
         
         with override_env({
-            'AI_TEST_MODEL_1_RPM': '2000',
-            'AI_TEST_MODEL_1_TPM': '200000',
-            'AI_TEST_MODEL_1_TPD': '2000000'
+            'AI_GPT_4_RPM': '2000',
+            'AI_GPT_4_TPM': '200000',
+            'AI_GPT_4_TPD': '2000000'
         }):
             config = AIConfig()
             
-            gpt4_config = config.models['test-model-1']
+            gpt4_config = config.models['gpt-4']
             assert gpt4_config.requests_per_minute == 2000
             assert gpt4_config.tokens_per_minute == 200000
             assert gpt4_config.tokens_per_day == 2000000
             
             # Other models should have default values
-            gpt35_config = config.models['test-model-2']
+            gpt35_config = config.models['gpt-3.5-turbo']
             assert gpt35_config.requests_per_minute == 5000  # Default
     
     def test_invalid_environment_variables(self):
@@ -268,7 +268,7 @@ class TestAIConfig:
         config = AIConfig()
         
         # Existing model
-        gpt4_config = config.get_model_config('test-model-1')
+        gpt4_config = config.get_model_config('gpt-4')
         assert isinstance(gpt4_config, ModelConfig)
         assert gpt4_config.requests_per_minute == 5000
         
@@ -319,20 +319,20 @@ class TestConfigIntegration:
         
         # Test with environment variable overrides
         with override_env({
-            'AI_MODEL': 'test-model-2',
+            'AI_MODEL': 'gpt-4',
             'AI_TEMPERATURE': '0.5',
-            'AI_TEST_MODEL_2_RPM': '3000'
+            'AI_GPT_4_TURBO_RPM': '3000'
         }):
             # Create configuration
             config = AIConfig()
             
             # Verify all settings applied
-            assert config.openai.model == 'test-model-2'
+            assert config.openai.model == 'gpt-4'
             assert config.openai.temperature == 0.5
-            assert config.models['test-model-2'].requests_per_minute == 3000
+            assert config.models['gpt-4-turbo'].requests_per_minute == 3000
             
             # Get specific model config
-            model_config = config.get_model_config('test-model-2')
+            model_config = config.get_model_config('gpt-4-turbo')
             assert model_config.requests_per_minute == 3000
     
     @pytest.mark.hanging
@@ -364,15 +364,15 @@ class TestConfigIntegration:
             
             with override_env({
                 'AI_MODEL_RPM': '1000',  # Global
-                'AI_TEST_MODEL_1_RPM': '2000'   # Specific
+                'AI_GPT_4_RPM': '2000'   # Specific
             }):
                 config = AIConfig()
                 
-                # Specific should override global for test-model-1
-                assert config.models['test-model-1'].requests_per_minute == 2000
+                # Specific should override global for gpt-4
+                assert config.models['gpt-4'].requests_per_minute == 2000
                 
-                # test-model-2 uses global AI_MODEL_RPM when no specific override
-                assert config.models['test-model-2'].requests_per_minute == 1000
+                # gpt-3.5-turbo uses global AI_MODEL_RPM when no specific override
+                assert config.models['gpt-3.5-turbo'].requests_per_minute == 1000
         
         finally:
             # Restore original environment variables

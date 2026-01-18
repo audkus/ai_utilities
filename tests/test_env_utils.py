@@ -181,14 +181,25 @@ class TestValidateAiEnvVars:
     
     def test_validate_ai_env_vars_with_no_known_variables(self):
         """Test when no known AI variables exist."""
-        os.environ['AI_UNKNOWN'] = 'unknown'
+        # Clear all known AI environment variables first
+        ai_vars_to_clear = ['AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL', 'AI_TEMPERATURE', 'AI_MAX_TOKENS', 'AI_TIMEOUT']
+        cleared_vars = {}
+        
+        for var in ai_vars_to_clear:
+            if var in os.environ:
+                cleared_vars[var] = os.environ[var]
+                del os.environ[var]
         
         try:
+            os.environ['AI_UNKNOWN'] = 'unknown'
             result = validate_ai_env_vars()
             assert result == {}
         finally:
             if 'AI_UNKNOWN' in os.environ:
                 del os.environ['AI_UNKNOWN']
+            # Restore cleared variables
+            for var, value in cleared_vars.items():
+                os.environ[var] = value
 
 
 class TestIsolatedEnvContext:
@@ -196,6 +207,13 @@ class TestIsolatedEnvContext:
     
     def test_isolated_env_context_sets_and_restores_variables(self):
         """Test that variables are set and properly restored."""
+        # Check for pre-existing AI variables
+        pre_existing_vars = {}
+        ai_vars = ['AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL', 'AI_TEMPERATURE', 'AI_MAX_TOKENS', 'AI_TIMEOUT']
+        for var in ai_vars:
+            if var in os.environ:
+                pre_existing_vars[var] = os.environ[var]
+        
         # Set initial state
         os.environ['EXISTING_VAR'] = 'original-value'
         
@@ -214,13 +232,22 @@ class TestIsolatedEnvContext:
             
             # Variables should be restored after context
             assert os.environ['EXISTING_VAR'] == 'original-value'
-            assert 'AI_API_KEY' not in os.environ
+            
+            # AI_API_KEY should be restored to its original state (or removed if it didn't exist)
+            if 'AI_API_KEY' in pre_existing_vars:
+                assert os.environ['AI_API_KEY'] == pre_existing_vars['AI_API_KEY']
+            else:
+                assert 'AI_API_KEY' not in os.environ
+                
             assert 'NEW_VAR' not in os.environ
         finally:
             # Clean up any remaining variables
-            for var in ['AI_API_KEY', 'EXISTING_VAR', 'NEW_VAR']:
-                if var in os.environ and var != 'EXISTING_VAR':
+            for var in ['NEW_VAR']:
+                if var in os.environ:
                     del os.environ[var]
+            # Restore pre-existing variables
+            for var, value in pre_existing_vars.items():
+                os.environ[var] = value
     
     def test_isolated_env_context_with_no_variables(self):
         """Test context manager with no variables."""
@@ -235,6 +262,13 @@ class TestIsolatedEnvContext:
     
     def test_isolated_env_context_restores_on_exception(self):
         """Test that environment is restored even if exception occurs."""
+        # Check for pre-existing AI variables
+        pre_existing_vars = {}
+        ai_vars = ['AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL', 'AI_TEMPERATURE', 'AI_MAX_TOKENS', 'AI_TIMEOUT']
+        for var in ai_vars:
+            if var in os.environ:
+                pre_existing_vars[var] = os.environ[var]
+        
         os.environ['EXISTING_VAR'] = 'original-value'
         
         env_vars = {'AI_API_KEY': 'test-key'}
@@ -247,10 +281,16 @@ class TestIsolatedEnvContext:
             
             # Environment should still be restored
             assert os.environ['EXISTING_VAR'] == 'original-value'
-            assert 'AI_API_KEY' not in os.environ
+            
+            # AI_API_KEY should be restored to its original state (or removed if it didn't exist)
+            if 'AI_API_KEY' in pre_existing_vars:
+                assert os.environ['AI_API_KEY'] == pre_existing_vars['AI_API_KEY']
+            else:
+                assert 'AI_API_KEY' not in os.environ
         finally:
-            if 'AI_API_KEY' in os.environ:
-                del os.environ['AI_API_KEY']
+            # Restore pre-existing variables
+            for var, value in pre_existing_vars.items():
+                os.environ[var] = value
     
     def test_isolated_env_context_nested(self):
         """Test nested context managers."""
@@ -310,6 +350,18 @@ class TestIntegration:
     
     def test_validate_and_isolated_context_interaction(self):
         """Test interaction between validation and isolated context."""
+        # Check for pre-existing AI variables
+        pre_existing_vars = {}
+        ai_vars = ['AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL', 'AI_TEMPERATURE', 'AI_MAX_TOKENS', 'AI_TIMEOUT']
+        for var in ai_vars:
+            if var in os.environ:
+                pre_existing_vars[var] = os.environ[var]
+        
+        # Clear all AI variables for clean test start
+        for var in ai_vars:
+            if var in os.environ:
+                del os.environ[var]
+        
         os.environ['AI_API_KEY'] = 'original-key'
         os.environ['AI_UNKNOWN'] = 'unknown-value'
         
@@ -332,5 +384,6 @@ class TestIntegration:
             assert 'AI_MODEL' not in result
         finally:
             cleanup_ai_env_vars()
-            if 'AI_API_KEY' in os.environ:
-                del os.environ['AI_API_KEY']
+            # Restore pre-existing variables
+            for var, value in pre_existing_vars.items():
+                os.environ[var] = value

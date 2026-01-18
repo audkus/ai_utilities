@@ -54,7 +54,7 @@ class TestDefaultNamespace:
         """Test default namespace format."""
         result = _default_namespace()
         assert result.startswith("proj_")
-        assert len(result) == 4 + 12  # "proj_" + 12 char hash
+        assert len(result) == 4 + 1 + 12  # "proj_" + "_" + 12 char hash
         assert result.replace("_", "").replace("proj", "").isalnum()
 
 
@@ -87,10 +87,19 @@ class TestAiClientBasic:
     
     def test_client_initialization_default(self):
         """Test client initialization with default settings."""
-        with patch('ai_utilities.client.AiSettings') as mock_settings_class:
+        with patch('ai_utilities.client.AiSettings') as mock_settings_class, \
+             patch('ai_utilities.client.Path') as mock_path:
+            # Mock Path.exists() to return False so it doesn't try to load from .env
+            mock_path.return_value.exists.return_value = False
+            
             mock_settings = Mock()
             mock_settings.api_key = "default_key"
             mock_settings.model = "gpt-3.5-turbo"
+            mock_settings.provider = "openai"
+            mock_settings.base_url = "https://api.openai.com/v1"
+            mock_settings.temperature = 0.7
+            mock_settings.max_tokens = 1000
+            mock_settings.timeout = 30
             mock_settings_class.return_value = mock_settings
             
             client = AiClient()
@@ -109,7 +118,7 @@ class TestAiClientBasic:
     
     def test_ask_with_json_format(self, mock_provider):
         """Test asking with JSON format."""
-        mock_provider.ask.return_value = '{"result": "json response"}'
+        mock_provider.ask.return_value = {"result": "json response"}
         
         client = AiClient(provider=mock_provider)
         
@@ -119,7 +128,7 @@ class TestAiClientBasic:
     
     def test_ask_multiple_prompts(self, mock_provider):
         """Test asking multiple prompts."""
-        mock_provider.ask.return_value = "Response"
+        mock_provider.ask_many.return_value = ["Response", "Response"]
         
         client = AiClient(provider=mock_provider)
         

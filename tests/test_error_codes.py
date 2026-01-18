@@ -161,7 +161,7 @@ class TestAIUtilitiesError:
         """Test basic AIUtilitiesError initialization."""
         error = AIUtilitiesError("Test error")
         
-        assert str(error) == "[E9999] Test error"
+        assert str(error) == "[ErrorCode.UNKNOWN_ERROR] Test error"
         assert error.error_info.code == ErrorCode.UNKNOWN_ERROR
         assert error.error_info.message == "Test error"
     
@@ -177,7 +177,7 @@ class TestAIUtilitiesError:
             user_action="Fix config"
         )
         
-        assert str(error) == "[E1001] Full error"
+        assert str(error) == "[ErrorCode.CONFIG_MISSING_API_KEY] Full error"
         assert error.error_info.code == ErrorCode.CONFIG_MISSING_API_KEY
         assert error.error_info.details == {"config": "test"}
         assert error.error_info.cause is cause
@@ -579,7 +579,7 @@ class TestEdgeCases:
             code=ErrorCode.CONFIG_MISSING_API_KEY
         )
         
-        assert str(error) == "[E1001] Configuration failed"
+        assert str(error) == "[ErrorCode.CONFIG_MISSING_API_KEY] Configuration failed"
     
     def test_error_repr(self):
         """Test error repr representation."""

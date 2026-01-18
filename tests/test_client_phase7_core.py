@@ -61,7 +61,7 @@ def test_client_with_explicit_provider():
     mock_provider = MagicMock(spec=BaseProvider)
     settings = AiSettings(api_key="test-key", _env_file=None)
     
-    with patch('ai_utilities.providers.create_provider', return_value=mock_provider):
+    with patch('ai_utilities.providers.provider_factory.create_provider', return_value=mock_provider):
         client = AiClient(settings=settings)
         assert client.provider is mock_provider
 

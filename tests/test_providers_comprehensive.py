@@ -274,7 +274,7 @@ class TestProviderFactoryEdgeCases:
     
     def test_provider_factory_with_none_settings(self):
         """Test provider factory with None settings."""
-        with pytest.raises((TypeError, ValueError)):
+        with pytest.raises((TypeError, ValueError, ProviderConfigurationError)):
             create_provider(None)
     
     def test_provider_factory_with_minimal_settings(self, isolated_env):

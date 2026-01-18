@@ -5,7 +5,7 @@ Tests for setup/wizard.py module.
 import os
 import tempfile
 import pytest
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open, call, MagicMock
 from pathlib import Path
 
 from ai_utilities.setup.wizard import (
@@ -168,7 +168,7 @@ class TestSetupWizard:
     def test_select_provider_enhanced_mode(self):
         """Test provider selection in enhanced mode."""
         with patch.object(self.wizard, '_is_interactive', return_value=True):
-            with patch.object(self.wizard, '_prompt_choice', return_value="groq"):
+            with patch.object(self.wizard, '_prompt_choice', return_value="Groq - Fast inference with Groq API"):
                 result = self.wizard._select_provider(SetupMode.ENHANCED)
                 assert result == "groq"
     
@@ -216,18 +216,21 @@ class TestSetupWizard:
     
     def test_run_wizard_dry_run(self):
         """Test running wizard in dry run mode."""
-        with patch('builtins.print') as mock_print:
-            with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-                result = self.wizard.run_wizard(
-                    mode=SetupMode.NORMAL,
-                    non_interactive=True,
-                    dry_run=True
-                )
-                
-                # Should print dry run content
-                mock_print.assert_any_call("=== Dry Run: .env content ===")
-                # Should not write file
-                assert not os.path.exists(".env")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            dotenv_path = os.path.join(temp_dir, ".env")
+            with patch('builtins.print') as mock_print:
+                with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
+                    result = self.wizard.run_wizard(
+                        mode=SetupMode.NORMAL,
+                        non_interactive=True,
+                        dry_run=True,
+                        dotenv_path=dotenv_path
+                    )
+                    
+                    # Should print dry run content
+                    mock_print.assert_any_call("\n=== Dry Run: .env content ===")
+                    # Should not write file
+                    assert not os.path.exists(dotenv_path)
     
     def test_run_wizard_write_dotenv(self):
         """Test running wizard and writing .env file."""
@@ -257,8 +260,13 @@ class TestSetupWizard:
         
         self.wizard._write_dotenv(dotenv_path, lines)
         
-        mock_file.assert_called_once_with('w')
-        mock_file().write.assert_called_once_with('KEY=value\nOTHER=test\n')
+        mock_file.assert_called_once_with(dotenv_path, 'w')
+        # Each line is written separately with newline
+        expected_calls = [
+            call('KEY=value\n'),
+            call('OTHER=test\n')
+        ]
+        mock_file().write.assert_has_calls(expected_calls)
     
     def test_build_dotenv_content_openai(self):
         """Test building .env content for OpenAI."""

@@ -2,6 +2,9 @@
 """
 Automated testing configuration for AI Utilities.
 
+IMPORTANT: This is a TEST UTILITY/ORCHESTRATION tool, NOT a test file.
+This file should NOT be executed by pytest as part of regular test runs.
+
 This script sets up and runs automated testing for all test files,
 including the newly added script tests and integration tests.
 """
@@ -291,7 +294,7 @@ class AutomatedTestRunner:
         print("✅ Automated testing pipeline configured")
 
 
-class TestConfigurationManager:
+class AutomatedTestConfigurationManager:
     """Manage test configurations and environments."""
     
     def __init__(self):
@@ -454,7 +457,7 @@ def main():
     
     # Set up environment if requested
     if args.setup:
-        config_manager = TestConfigurationManager()
+        config_manager = AutomatedTestConfigurationManager()
         config_manager.setup_test_environment()
         config_manager.create_test_config_files()
         config_manager.create_github_actions_workflow()

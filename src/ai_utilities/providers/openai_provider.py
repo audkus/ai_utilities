@@ -8,8 +8,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from openai import OpenAI
+import openai
 from openai.types.chat import ChatCompletion
+
+# Patchable symbol for tests
+OpenAI = openai.OpenAI
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -127,14 +130,13 @@ class OpenAIProvider(BaseProvider):
     
     def _extract_json(self, text: str) -> Dict[str, Any]:
         """Extract JSON from response text."""
-        # Try to find JSON in the response
-        json_match = re.search(r'\{.*\}', text, re.DOTALL)
-        if json_match:
+        # Try to find JSON in the response (non-greedy to get first valid JSON)
+        for json_match in re.finditer(r'\{.*?\}', text, re.DOTALL):
             try:
                 # Validate it's valid JSON and return as dict
                 return json.loads(json_match.group())
             except json.JSONDecodeError:
-                pass
+                continue
         
         # If no valid JSON found, return original text wrapped in a dict
         return {"response": text}
@@ -192,7 +194,10 @@ class OpenAIProvider(BaseProvider):
                 )
             )
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and ("File does not exist" in str(e) or "Path is not a file" in str(e)):
+                raise
             raise FileTransferError("upload", "openai", e) from e
     
     def download_file(self, file_id: str) -> bytes:
@@ -217,7 +222,10 @@ class OpenAIProvider(BaseProvider):
             # Return the content as bytes
             return response.content
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and "file_id cannot be empty" in str(e):
+                raise
             raise FileTransferError("download", "openai", e) from e
     
     def generate_image(
@@ -258,5 +266,8 @@ class OpenAIProvider(BaseProvider):
             image_urls = [image.url for image in response.data]
             return image_urls
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and ("prompt cannot be empty" in str(e) or "n must be between 1 and 10" in str(e)):
+                raise
             raise FileTransferError("image generation", "openai", e) from e

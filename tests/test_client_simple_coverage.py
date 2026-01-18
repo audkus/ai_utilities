@@ -287,7 +287,7 @@ class TestAiClientEdgeCases:
         """Test client with usage tracking enabled."""
         mock_settings = Mock()
         mock_settings.cache_enabled = False
-        mock_settings.usage_scope = "project"
+        mock_settings.usage_scope = "per_client"  # Fixed: use valid enum value
         mock_settings.usage_client_id = "test_client"
         
         with patch('ai_utilities.providers.provider_factory.create_provider') as mock_create, \
@@ -345,15 +345,18 @@ class TestAiClientEdgeCases:
         """Test client reconfiguration."""
         mock_settings = Mock()
         mock_settings.cache_enabled = False
+        mock_settings.provider = "openai"  # Set valid provider
+        mock_settings.api_key = "test-key"  # Set valid API key
+        mock_settings.base_url = "https://api.openai.com/v1"  # Set valid base URL
         
-        with patch('ai_utilities.providers.provider_factory.create_provider') as mock_create, \
+        with patch('ai_utilities.providers.openai_provider.OpenAIProvider') as mock_openai_provider, \
              patch('ai_utilities.client.AiSettings.interactive_setup') as mock_setup:
             
             mock_new_settings = Mock()
             mock_new_settings.base_url = "https://new.url"
             mock_setup.return_value = mock_new_settings
             mock_new_provider = Mock()
-            mock_create.return_value = mock_new_provider
+            mock_openai_provider.return_value = mock_new_provider
             
             client = AiClient(settings=mock_settings)
             client.reconfigure()

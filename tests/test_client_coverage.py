@@ -240,6 +240,7 @@ class TestClientIntegrationCoverage:
                 mock_settings.api_key = "test-key"
                 mock_settings.model = "gpt-4"
                 mock_settings.provider = "openai"
+                mock_settings.base_url = "https://api.openai.com/v1"  # Set proper base_url string
                 mock_settings.namespace = "test namespace"
                 mock_settings_class.return_value = mock_settings
                 

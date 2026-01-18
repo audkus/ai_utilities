@@ -81,16 +81,42 @@ class ConfigurationContext:
         Returns:
             AiSettings instance
         """
+        # If kwargs are provided, always create new settings (don't use cache)
+        if kwargs:
+            # Get environment variables from the environment provider
+            env_vars = self.environment_provider.get_all()
+            
+            # Map environment variables to AiSettings constructor arguments
+            ai_settings_kwargs = {}
+            for key, value in env_vars.items():
+                if key.startswith('AI_'):
+                    setting_key = key[3:].lower()
+                    ai_settings_kwargs[setting_key] = value
+            
+            # Add kwargs (these take precedence)
+            ai_settings_kwargs.update(kwargs)
+            
+            # Create new AiSettings without caching
+            return AiSettings(_env_file=None, **ai_settings_kwargs)
+        
+        # No kwargs - use cached settings if available
         if self.ai_settings is not None:
-            # Use cached settings if available
             return self.ai_settings
         
-        # Create AiSettings using environment provider and overrides
-        # Note: This is a simplified implementation that works with the current
-        # AiSettings interface without requiring changes to AIConfigManager
-        settings = AiSettings(**kwargs)
+        # Get environment variables from the environment provider
+        env_vars = self.environment_provider.get_all()
         
-        # Cache for future use
+        # Map environment variables to AiSettings constructor arguments
+        ai_settings_kwargs = {}
+        for key, value in env_vars.items():
+            if key.startswith('AI_'):
+                setting_key = key[3:].lower()
+                ai_settings_kwargs[setting_key] = value
+        
+        # Create AiSettings using the environment provider's variables
+        settings = AiSettings(_env_file=None, **ai_settings_kwargs)
+        
+        # Cache for future use (only when no kwargs)
         self.ai_settings = settings
         return settings
     

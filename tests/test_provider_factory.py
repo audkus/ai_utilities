@@ -121,7 +121,7 @@ class TestProviderFactory:
 class TestOpenAICompatibleProvider:
     """Test the OpenAI-compatible provider functionality."""
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_initialization_with_base_url(self, mock_openai):
         """Test provider initialization requires base_url."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -139,7 +139,7 @@ class TestOpenAICompatibleProvider:
         assert provider.base_url == "http://localhost:11434/v1"
         mock_openai.assert_called_once()
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_initialization_with_extra_headers(self, mock_openai):
         """Test provider initialization with extra headers."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -153,7 +153,7 @@ class TestOpenAICompatibleProvider:
         assert provider.extra_headers == extra_headers
         mock_openai.assert_called_once()
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_ask_text_mode(self, mock_openai):
         """Test asking in text mode."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -171,7 +171,7 @@ class TestOpenAICompatibleProvider:
         response = provider.ask("Test prompt")
         assert response == "Test response"
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_ask_json_mode_with_warning(self, mock_openai):
         """Test asking in JSON mode shows warning for compatible providers."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -189,7 +189,7 @@ class TestOpenAICompatibleProvider:
         response = provider.ask("Test prompt", return_format="json")
         assert response == {"key": "value"}
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_ask_json_mode_parse_error(self, mock_openai):
         """Test ask method handles JSON parse errors gracefully."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -212,7 +212,7 @@ class TestOpenAICompatibleProvider:
         
         assert response == "Invalid JSON {"
     
-    @patch('ai_utilities.openai_client.OpenAI')
+    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
     def test_ask_many(self, mock_openai):
         """Test ask_many method."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider

@@ -22,7 +22,7 @@ class TestConfigurationIntegrity:
     @pytest.fixture
     def project_root(self) -> Path:
         """Get the project root directory."""
-        return Path(__file__).parent.parent
+        return Path(__file__).parent.parent.parent
 
     @pytest.fixture
     def pyproject_toml_path(self, project_root: Path) -> Path:
@@ -45,14 +45,17 @@ class TestConfigurationIntegrity:
             f"Remove {setup_py_path}"
         )
 
-    def test_no_pytest_ini_exists(self, project_root: Path):
-        """Ensure pytest.ini does not exist (single source of truth)."""
+    def test_pytest_ini_exists(self, project_root: Path):
+        """Ensure pytest.ini exists and is the primary pytest configuration."""
         pytest_ini_path = project_root / "pytest.ini"
         
-        assert not pytest_ini_path.exists(), (
-            "pytest.ini should not exist. "
-            "Use [tool.pytest.ini_options] in pyproject.toml as single source of truth. "
-            f"Remove {pytest_ini_path}"
+        assert pytest_ini_path.exists(), (
+            "pytest.ini should exist as the primary pytest configuration. "
+            f"Create {pytest_ini_path} with proper pytest settings"
+        )
+        
+        assert pytest_ini_path.is_file(), (
+            "pytest.ini must be a file"
         )
 
     def test_pyproject_toml_exists(self, project_root: Path):
@@ -96,30 +99,19 @@ class TestConfigurationIntegrity:
                 f"[project] must have '{field}' field"
             )
 
-    def test_pyproject_toml_pytest_configuration(self, pyproject_config: Dict[str, Any]):
-        """Ensure pyproject.toml has proper pytest configuration."""
+    def test_pyproject_toml_no_pytest_configuration(self, pyproject_config: Dict[str, Any]):
+        """Ensure pyproject.toml does NOT have pytest configuration (use pytest.ini instead)."""
         assert "tool" in pyproject_config, (
             "pyproject.toml must have [tool] section"
         )
         
         tool = pyproject_config["tool"]
-        assert "pytest" in tool or "pytest.ini_options" in tool, (
-            "pyproject.toml must have [tool.pytest.ini_options] section for pytest configuration"
+        # Ensure pytest configuration is NOT in pyproject.toml
+        assert "pytest" not in tool, (
+            "pyproject.toml should NOT have [tool.pytest] section - use pytest.ini instead"
         )
-        
-        # Handle both possible pytest configuration locations
-        pytest_config = tool.get("pytest", {})
-        if "ini_options" in pytest_config:
-            pytest_config = pytest_config["ini_options"]
-        elif "pytest.ini_options" in tool:
-            pytest_config = tool["pytest.ini_options"]
-        
-        # Check essential pytest configuration
-        assert "testpaths" in pytest_config, (
-            "[tool.pytest.ini_options] must have 'testpaths' field"
-        )
-        assert pytest_config["testpaths"] == ["tests"], (
-            "testpaths should be ['tests'] to restrict test discovery"
+        assert "pytest.ini_options" not in tool, (
+            "pyproject.toml should NOT have [tool.pytest.ini_options] section - use pytest.ini instead"
         )
 
     def test_pyproject_toml_consistent_naming(self, pyproject_config: Dict[str, Any]):
@@ -235,7 +227,7 @@ class TestConfigurationBestPractices:
     @pytest.fixture
     def project_root(self) -> Path:
         """Get the project root directory."""
-        return Path(__file__).parent.parent
+        return Path(__file__).parent.parent.parent
 
     def test_pyproject_toml_well_structured(self, project_root: Path):
         """Ensure pyproject.toml is well-structured and readable."""
@@ -254,8 +246,27 @@ class TestConfigurationBestPractices:
         assert '[project]' in content, (
             "Missing [project] section"
         )
-        assert '[tool.pytest.ini_options]' in content, (
-            "Missing [tool.pytest.ini_options] section"
+        # Ensure pytest configuration is NOT in pyproject.toml
+        assert '[tool.pytest.ini_options]' not in content, (
+            "pytest.ini_options should not be in pyproject.toml - use pytest.ini instead"
+        )
+
+    def test_pytest_ini_well_structured(self, project_root: Path):
+        """Ensure pytest.ini is well-structured and has proper configuration."""
+        pytest_ini_path = project_root / "pytest.ini"
+        
+        with open(pytest_ini_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Check for essential pytest configuration
+        assert '[tool:pytest]' in content, (
+            "Missing [tool:pytest] section in pytest.ini"
+        )
+        assert 'testpaths = tests' in content, (
+            "pytest.ini should have 'testpaths = tests' to restrict test discovery"
+        )
+        assert 'pythonpath = src' in content, (
+            "pytest.ini should have 'pythonpath = src' for proper imports"
         )
 
     def test_gitignore_prevents_committing_bad_files(self, project_root: Path):

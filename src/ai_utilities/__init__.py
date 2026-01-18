@@ -43,7 +43,47 @@ Example Usage:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import importlib
+from types import ModuleType
+from typing import TYPE_CHECKING, Any
+
+# Lazy submodule support for patching in tests
+_LAZY_SUBMODULES: dict[str, str] = {
+    # submodule attribute -> real module path
+    "_test_reset": "ai_utilities._test_reset",
+    "ai_config_manager": "ai_utilities.ai_config_manager", 
+    "api_key_resolver": "ai_utilities.api_key_resolver",
+    "async_client": "ai_utilities.async_client",
+    "audio": "ai_utilities.audio",
+    "cache": "ai_utilities.cache",
+    "cli": "ai_utilities.cli",
+    "client": "ai_utilities.client",
+    "config_models": "ai_utilities.config_models",
+    "config_resolver": "ai_utilities.config_resolver",
+    "context": "ai_utilities.context",
+    "di": "ai_utilities.di",
+    "env_detection": "ai_utilities.env_detection",
+    "env_overrides": "ai_utilities.env_overrides",
+    "env_utils": "ai_utilities.env_utils",
+    "error_codes": "ai_utilities.error_codes",
+    "exceptions": "ai_utilities.exceptions",
+    "file_models": "ai_utilities.file_models",
+    "json_parsing": "ai_utilities.json_parsing",
+    "knowledge": "ai_utilities.knowledge",
+    "metrics": "ai_utilities.metrics",
+    "models": "ai_utilities.models",
+    "openai_client": "ai_utilities.openai_client",
+    "openai_model": "ai_utilities.openai_model",
+    "progress_indicator": "ai_utilities.progress_indicator",
+    "providers": "ai_utilities.providers",
+    "rate_limit_fetcher": "ai_utilities.rate_limit_fetcher",
+    "rate_limiter": "ai_utilities.rate_limiter",
+    "response_processor": "ai_utilities.response_processor",
+    "setup": "ai_utilities.setup",
+    "ssl_check": "ai_utilities.ssl_check",
+    "token_counter": "ai_utilities.token_counter",
+    "usage_tracker": "ai_utilities.usage_tracker",
+}
 
 # Core imports - these are lightweight and essential
 from .async_client import AsyncAiClient
@@ -89,8 +129,15 @@ if TYPE_CHECKING:
     )
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy import heavy modules to avoid import-time side effects."""
+    
+    # Handle lazy submodules first (for test patching)
+    if name in _LAZY_SUBMODULES:
+        module: ModuleType = importlib.import_module(_LAZY_SUBMODULES[name])
+        globals()[name] = module  # Cache for future access
+        return module
+    
     # Audio processing
     if name in {
         'AudioProcessor', 'load_audio_file', 'save_audio_file', 
@@ -222,3 +269,8 @@ try:
 except ImportError:
     # Fallback for older Python versions or when package is not installed
     __version__ = "1.0.0b2"  # Should match pyproject.toml version
+
+# SSL Backend Compatibility Check
+# This checks for LibreSSL compatibility issues and provides clear user feedback
+from .ssl_check import require_ssl_backend
+require_ssl_backend()

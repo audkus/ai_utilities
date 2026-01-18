@@ -12,7 +12,11 @@ def test_minimal_import_without_openai():
         try:
             # Backup original modules
             import sys
+            import os
             original_import = __builtins__['__import__']
+            
+            # Clear AI_PROVIDER from environment to avoid override
+            ai_provider_backup = os.environ.pop('AI_PROVIDER', None)
             
             # Mock import to raise ImportError for openai
             def mock_import(name, *args, **kwargs):
@@ -39,3 +43,6 @@ def test_minimal_import_without_openai():
         finally:
             # Restore original import
             __builtins__['__import__'] = original_import
+            # Restore environment variable
+            if ai_provider_backup is not None:
+                os.environ['AI_PROVIDER'] = ai_provider_backup

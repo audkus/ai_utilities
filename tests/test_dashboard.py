@@ -154,16 +154,19 @@ tests/test_integration.py::test_list SKIPPED
         assert result.passed == 5
         assert result.failed == 0
     
-    @patch('scripts.dashboard.subprocess.run')
-    def test_run_test_suite_with_failures(self, mock_run):
+    @patch('scripts.dashboard.subprocess.Popen')
+    def test_run_test_suite_with_failures(self, mock_popen):
         """Test running a test suite with failures."""
         dashboard = AITestDashboard()
         
         # Mock pytest run with failures
-        mock_run.return_value = MagicMock(
-            stdout="============================== 3 passed, 2 failed in 1.5s ==============================\n",
-            returncode=1
-        )
+        mock_process = MagicMock()
+        mock_process.stdout = [
+            "============================== 3 passed, 2 failed in 1.5s ==============================\n"
+        ]
+        mock_process.returncode = 1
+        mock_process.poll.return_value = 1  # Process has finished
+        mock_popen.return_value = mock_process
         
         dashboard._run_test_suite("Test Category", ["pytest", "test_file.py"], verbose=False)
         
@@ -174,13 +177,13 @@ tests/test_integration.py::test_list SKIPPED
         assert result.passed == 3
         assert result.failed == 2
     
-    @patch('scripts.dashboard.subprocess.run')
-    def test_run_test_suite_error(self, mock_run):
+    @patch('scripts.dashboard.subprocess.Popen')
+    def test_run_test_suite_error(self, mock_popen):
         """Test running a test suite with an error."""
         dashboard = AITestDashboard()
         
         # Mock pytest run that raises an exception
-        mock_run.side_effect = Exception("Test execution failed")
+        mock_popen.side_effect = Exception("Test execution failed")
         
         dashboard._run_test_suite("Test Category", ["pytest", "test_file.py"], verbose=False)
         
@@ -256,15 +259,16 @@ tests/test_integration.py::test_list SKIPPED
         """Test dashboard in full suite mode."""
         dashboard = AITestDashboard()
         
-        with patch.object(dashboard, '_run_test_suite') as mock_run:
+        with patch.object(dashboard, '_run_chunked_test_suite') as mock_chunked:
             with patch.object(dashboard, '_test_core_functionality'):
                 with patch.object(dashboard, '_test_async_operations'):
                     with patch.object(dashboard, '_generate_module_support_matrix'):
                         dashboard.run_tests(full_suite=True)
         
-        # Should call run_test_suite for complete unit tests
-        calls = [call[0][0] for call in mock_run.call_args_list]
-        assert any("Complete Unit Tests" in call for call in calls)
+        # Should call _run_chunked_test_suite for complete unit tests
+        mock_chunked.assert_called_once()
+        call_args = mock_chunked.call_args[0]
+        assert "Complete Unit Tests (All Tests)" in call_args[0]
     
     def test_files_api_focus_mode(self):
         """Test dashboard in Files API focus mode."""

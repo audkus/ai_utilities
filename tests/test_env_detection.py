@@ -15,6 +15,9 @@ from ai_utilities.env_detection import (
     log_environment_info
 )
 
+# Import the module directly for patching
+import ai_utilities.env_detection
+
 
 class TestInteractiveEnvironment:
     """Test interactive environment detection."""
@@ -163,22 +166,22 @@ class TestEnvironmentType:
     
     def test_non_interactive_environment_type(self):
         """Test non-interactive environment type classification."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=False):
-            with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
+            with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
                 assert get_environment_type() == "Non-Interactive"
     
     def test_development_environment_type(self):
         """Test development environment type classification."""
-        with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
-            with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-                with patch('ai_utilities.env_detection.is_development_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
+            with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+                with patch.object(ai_utilities.env_detection, 'is_development_environment', return_value=True):
                     assert get_environment_type() == "Development"
     
     def test_interactive_environment_type(self):
         """Test interactive environment type classification."""
-        with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
-            with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-                with patch('ai_utilities.env_detection.is_development_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
+            with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+                with patch.object(ai_utilities.env_detection, 'is_development_environment', return_value=False):
                     assert get_environment_type() == "Interactive"
 
 
@@ -187,34 +190,34 @@ class TestSafeInput:
     
     def test_safe_input_non_interactive_returns_default(self):
         """Test that non-interactive environment returns default."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
             result = safe_input("Enter value: ", "default_value")
             assert result == "default_value"
     
     def test_safe_input_interactive_gets_input(self):
         """Test that interactive environment gets user input."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
             with patch('builtins.input', return_value="user_input"):
                 result = safe_input("Enter value: ", "default_value")
                 assert result == "user_input"
     
     def test_safe_input_eof_error_returns_default(self):
         """Test that EOFError returns default."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
             with patch('builtins.input', side_effect=EOFError):
                 result = safe_input("Enter value: ", "default_value")
                 assert result == "default_value"
     
     def test_safe_input_keyboard_interrupt_returns_default(self):
         """Test that KeyboardInterrupt returns default."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
             with patch('builtins.input', side_effect=KeyboardInterrupt):
                 result = safe_input("Enter value: ", "default_value")
                 assert result == "default_value"
     
     def test_safe_input_empty_default(self):
         """Test safe input with empty default."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
             result = safe_input("Enter value: ")
             assert result == ""
 
@@ -224,19 +227,19 @@ class TestShouldPromptForReconfigure:
     
     def test_should_prompt_interactive_non_ci(self):
         """Test that interactive non-CI environment should prompt."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-            with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+            with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
                 assert should_prompt_for_reconfigure() is True
     
     def test_should_not_prompt_non_interactive(self):
         """Test that non-interactive environment should not prompt."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
             assert should_prompt_for_reconfigure() is False
     
     def test_should_not_prompt_ci(self):
         """Test that CI environment should not prompt."""
-        with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-            with patch('ai_utilities.env_detection.is_ci_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+            with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=True):
                 assert should_prompt_for_reconfigure() is False
 
 
@@ -245,9 +248,9 @@ class TestLogEnvironmentInfo:
     
     def test_log_environment_info_ci(self):
         """Test logging CI environment info."""
-        with patch('ai_utilities.env_detection.get_environment_type', return_value="CI/CD"):
-            with patch('ai_utilities.env_detection.is_interactive_environment', return_value=False):
-                with patch('ai_utilities.env_detection.is_ci_environment', return_value=True):
+        with patch.object(ai_utilities.env_detection, 'get_environment_type', return_value="CI/CD"):
+            with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
+                with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=True):
                     with patch('builtins.print') as mock_print:
                         log_environment_info()
                         
@@ -259,9 +262,9 @@ class TestLogEnvironmentInfo:
     
     def test_log_environment_info_development(self):
         """Test logging development environment info."""
-        with patch('ai_utilities.env_detection.get_environment_type', return_value="Development"):
-            with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-                with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'get_environment_type', return_value="Development"):
+            with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+                with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
                     with patch('builtins.print') as mock_print:
                         log_environment_info()
                         
@@ -271,9 +274,9 @@ class TestLogEnvironmentInfo:
     
     def test_log_environment_info_interactive(self):
         """Test logging interactive environment info."""
-        with patch('ai_utilities.env_detection.get_environment_type', return_value="Interactive"):
-            with patch('ai_utilities.env_detection.is_interactive_environment', return_value=True):
-                with patch('ai_utilities.env_detection.is_ci_environment', return_value=False):
+        with patch.object(ai_utilities.env_detection, 'get_environment_type', return_value="Interactive"):
+            with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=True):
+                with patch.object(ai_utilities.env_detection, 'is_ci_environment', return_value=False):
                     with patch('builtins.print') as mock_print:
                         log_environment_info()
                         

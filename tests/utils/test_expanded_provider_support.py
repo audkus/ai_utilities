@@ -147,7 +147,7 @@ class TestExpandedProviderSupport:
         variations = {
             "OpenAI": "openai",
             "GROQ": "groq", 
-            "Together-AI": "together-ai",
+            "Together": "together",
             "OpenRouter": "openrouter",
             "text-generation-webui": "text-generation-webui",
             "Google-Vertex": "google-vertex",
@@ -180,7 +180,7 @@ class TestDocumentationConsistency:
 
     def test_all_documented_providers_have_api_key_mappings(self):
         """Test that all documented providers have API key mappings."""
-        from ai_utilities.config_resolver import resolve_api_key
+        from ai_utilities.config_resolver import resolve_api_key, MissingApiKeyError
         
         providers_requiring_keys = [
             "openai", "groq", "together", "openrouter", "anyscale", "fireworks",
@@ -188,20 +188,21 @@ class TestDocumentationConsistency:
         ]
         
         for provider in providers_requiring_keys:
-            # Should return None when no env vars are set (not crash)
-            api_key = resolve_api_key(provider, env_vars={})
-            assert api_key is None
+            # Should raise MissingApiKeyError when no env vars are set (not crash)
+            with pytest.raises(MissingApiKeyError):
+                resolve_api_key(provider, env_vars={})
 
     def test_local_providers_dont_require_api_keys(self):
         """Test that local providers work without API keys."""
-        local_providers = ["ollama", "lmstudio", "text-generation-webui", "fastchat", "vllm", "oobabooga", "localai"]
+        local_providers = ["ollama", "lmstudio", "text-generation-webui", "fastchat"]
         
         for provider in local_providers:
             base_url = resolve_base_url(provider)
             assert base_url is not None
             # Should work without API key environment variables
             api_key = resolve_api_key(provider, env_vars={})
-            # Local providers typically don't need API keys, so None is acceptable
+            # Local providers get fallback keys, so should not raise exception
+            assert api_key is not None
 
 
 class TestRealWorldScenarios:

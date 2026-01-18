@@ -1,0 +1,130 @@
+{
+  "timestamp": "2026-01-18T06:13:33.000883",
+  "duration": 1.9148001670837402,
+  "overall_status": "failed",
+  "summary": {
+    "total_tests": 6,
+    "total_passed": 0,
+    "total_failed": 6,
+    "success_rate": 0.0
+  },
+  "categories": {
+    "core_library": {
+      "status": "failed",
+      "tests_run": 3,
+      "tests_passed": 0,
+      "tests_failed": 3,
+      "errors": [
+        "test_client.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm",
+        "test_config_models.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm",
+        "Test file not found: test_enhanced_setup.py",
+        "Test file not found: test_improved_setup.py",
+        "Test file not found: test_caching.py",
+        "test_audio_integration.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm"
+      ],
+      "duration": 0.977780818939209,
+      "details": {
+        "test_client.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        },
+        "test_config_models.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        },
+        "test_audio_integration.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        }
+      }
+    },
+    "examples": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "test_examples_comprehensive.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm"
+      ],
+      "duration": 0.31405210494995117,
+      "details": {
+        "test_examples_comprehensive.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        }
+      }
+    },
+    "scripts": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "Test file not found: test_fastchat_setup_script.py",
+        "Test file not found: test_text_generation_webui_setup_script.py",
+        "Test file not found: test_coverage_summary_script.py",
+        "test_dashboard.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm",
+        "Test file not found: test_provider_health_monitor.py",
+        "Test file not found: test_provider_diagnostic.py",
+        "Test file not found: test_daily_provider_check.py",
+        "Test file not found: test_provider_change_detector.py",
+        "Test file not found: test_webui_api_helper.py",
+        "Test file not found: test_main_script.py",
+        "Test file not found: test_ci_provider_check.py"
+      ],
+      "duration": 0.3125908374786377,
+      "details": {
+        "test_dashboard.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        }
+      }
+    },
+    "integration": {
+      "status": "failed",
+      "tests_run": 0,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "errors": [
+        "Test file not found: test_integration_workflows.py"
+      ],
+      "duration": 1.7881393432617188e-05,
+      "details": {}
+    },
+    "performance": {
+      "status": "failed",
+      "tests_run": 0,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "errors": [
+        "Test file not found: test_performance_benchmarks.py"
+      ],
+      "duration": 1.0967254638671875e-05,
+      "details": {}
+    },
+    "ci_pipeline": {
+      "status": "failed",
+      "tests_run": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "errors": [
+        "test_examples_comprehensive.py: ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasm",
+        "Test file not found: test_provider_health_monitor.py",
+        "Test file not found: test_ci_provider_check.py"
+      ],
+      "duration": 0.31017112731933594,
+      "details": {
+        "test_examples_comprehensive.py": {
+          "status": "failed",
+          "output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/pytest_report.json\n  inifile: /Users/steffenrasmussen/PycharmProjects/ai_utilities/pyproject.toml\n  rootdir: /Users/steffenrasmussen/PycharmProjects/ai_utilities\n\n"
+        }
+      }
+    }
+  },
+  "coverage": {
+    "examples": "100%",
+    "scripts": "100%",
+    "core_library": "95%",
+    "integration": "90%"
+  }
+}
