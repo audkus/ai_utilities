@@ -6,6 +6,10 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
+# OpenAI imports for OpenAI-compatible API - patchable symbols for tests
+import openai
+OpenAI = openai.OpenAI
+
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
 from .provider_capabilities import ProviderCapabilities
@@ -27,6 +31,7 @@ class OpenAICompatibleProvider(BaseProvider):
         base_url: Optional[str] = None,
         timeout: int = 30,
         extra_headers: Optional[Dict[str, str]] = None,
+        model: Optional[str] = None,
         **kwargs
     ):
         """Initialize OpenAI-compatible provider.
@@ -36,6 +41,7 @@ class OpenAICompatibleProvider(BaseProvider):
             base_url: Base URL for the OpenAI-compatible endpoint (required)
             timeout: Request timeout in seconds
             extra_headers: Additional headers to send with requests
+            model: Model name to use (optional)
             **kwargs: Additional initialization parameters
             
         Raises:
@@ -52,6 +58,15 @@ class OpenAICompatibleProvider(BaseProvider):
         self.extra_headers = extra_headers or {}
         self.capabilities = ProviderCapabilities.openai_compatible()
         
+        # Store settings for configuration access
+        self.settings = type('Settings', (), {
+            'base_url': self.base_url,
+            'api_key': api_key,
+            'timeout': timeout,
+            'extra_headers': self.extra_headers,
+            'model': model  # Use the provided model parameter
+        })()
+        
         # Initialize OpenAI client with custom base_url
         client_kwargs = {
             "api_key": api_key or "dummy-key",  # OpenAI SDK requires API key
@@ -62,14 +77,6 @@ class OpenAICompatibleProvider(BaseProvider):
         # Add extra headers if provided
         if self.extra_headers:
             client_kwargs["default_headers"] = self.extra_headers
-            
-        # Lazy import OpenAI to avoid dependency issues
-        try:
-            from ..openai_client import OpenAI
-        except ImportError as e:
-            raise MissingOptionalDependencyError(
-                "OpenAI-compatible provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
-            ) from e
             
         self.client = OpenAI(**client_kwargs)
         
@@ -199,7 +206,7 @@ class OpenAICompatibleProvider(BaseProvider):
                 **({} if return_format == "text" else {"response_format": {"type": "json_object"}})
             )
             
-            content = response.choices[0].message.content
+            content = response.choices[0].message.content or ""
             
             if return_format == "json" and content:
                 try:
