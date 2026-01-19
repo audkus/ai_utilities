@@ -1,19 +1,19 @@
 """
 pytest configuration and fixtures for ai_utilities tests.
 
-This module provides common fixtures and configuration for all tests.
+This module provides common fixtures and test configuration for the ai_utilities test suite.
 """
 
 import os
 import sys
-import tempfile
-import shutil
+import pytest
+import warnings
 import logging
 import socket
+from unittest.mock import MagicMock
+from typing import Tuple
 from pathlib import Path
 from typing import Dict, Any, Iterator, Optional
-import warnings
-import pytest
 
 # Add src directory to Python path for imports
 # This ensures tests import from the local src directory, not any installed version
@@ -143,9 +143,8 @@ def patch_openai_constructors(monkeypatch, request):
         mock_client_instance.files.retrieve.return_value = mock_file_response
         mock_client_instance.files.content.return_value = b"test content"
         
-        # Only patch client and provider modules, not openai_client (handled by its own fixture)
+        # Only patch client module, provider and openai_client are handled by their own fixtures
         monkeypatch.setattr('ai_utilities.client.OpenAI', lambda **kwargs: mock_client_instance)
-        monkeypatch.setattr('ai_utilities.providers.openai_provider.OpenAI', lambda **kwargs: mock_client_instance)
 
 
 @pytest.fixture
@@ -159,6 +158,33 @@ def network_allowed():
     # This fixture intentionally does nothing - the presence of this fixture
     # signals that the test allows network access
     pass
+
+
+@pytest.fixture(autouse=True)
+def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
+    """
+    Function-scoped fixture that provides deterministic OpenAI mocking.
+    
+    This fixture uses autouse=True to ensure it runs for every test and
+    overrides any other patches that might interfere.
+    
+    Returns:
+        Tuple of (constructor_mock, client_mock) where:
+        - constructor_mock: Mock for ai_utilities.openai_client.OpenAI constructor
+        - client_mock: Mock instance returned by the constructor
+    """
+    import ai_utilities.openai_client
+    
+    # Create constructor mock and client mock
+    constructor_mock = MagicMock(name="OpenAI_ctor")
+    client_mock = MagicMock(name="OpenAI_client")
+    constructor_mock.return_value = client_mock
+    
+    # Force patch even if already patched - this ensures our fixture wins
+    # Using raising=False to avoid errors if the attribute doesn't exist
+    monkeypatch.setattr(ai_utilities.openai_client, 'OpenAI', constructor_mock, raising=False)
+    
+    return constructor_mock, client_mock
 
 
 @pytest.fixture(scope="session", autouse=True)

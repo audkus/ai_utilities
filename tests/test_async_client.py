@@ -164,8 +164,13 @@ class TestAsyncAiClient:
         assert client.show_progress is True
     
     @pytest.mark.asyncio
-    async def test_client_initialization_defaults(self):
+    @patch('ai_utilities.providers.openai_provider.OpenAI')
+    async def test_client_initialization_defaults(self, mock_openai):
         """Test AsyncAiClient initialization with defaults."""
+        # Mock the OpenAI client
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+        
         client = AsyncAiClient()
         
         assert client.settings is not None

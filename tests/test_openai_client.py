@@ -7,29 +7,6 @@ from typing import Tuple
 from ai_utilities.openai_client import OpenAIClient
 
 
-@pytest.fixture
-def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
-    """
-    Function-scoped fixture that provides deterministic OpenAI mocking.
-    
-    Returns:
-        Tuple of (constructor_mock, client_mock) where:
-        - constructor_mock: Mock for ai_utilities.openai_client.OpenAI constructor
-        - client_mock: Mock instance returned by the constructor
-    """
-    import ai_utilities.openai_client
-    
-    # Create constructor mock and client mock
-    constructor_mock = MagicMock(name="OpenAI_ctor")
-    client_mock = MagicMock(name="OpenAI_client")
-    constructor_mock.return_value = client_mock
-    
-    # Patch the exact symbol used by production code
-    monkeypatch.setattr(ai_utilities.openai_client, 'OpenAI', constructor_mock)
-    
-    return constructor_mock, client_mock
-
-
 class TestOpenAIClient:
     """Test OpenAIClient class."""
     

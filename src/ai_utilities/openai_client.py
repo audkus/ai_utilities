@@ -31,6 +31,9 @@ class OpenAIClient:
             base_url: Custom base URL (optional)
             timeout: Request timeout in seconds
         """
+        self.api_key = api_key
+        self.base_url = base_url
+        self.timeout = timeout
         self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(

@@ -143,10 +143,19 @@ class TestProviderFactoryWrapping:
     def test_missing_base_url_wrapped_as_provider_configuration_error(self, monkeypatch):
         """Test that MissingBaseUrlError is wrapped as ProviderConfigurationError."""
         # Clear any environment variables that might provide base_url
-        for key in ["AI_BASE_URL", "OPENAI_BASE_URL", "BASE_URL"]:
+        for key in ["AI_BASE_URL", "OPENAI_BASE_URL", "BASE_URL", "TEXT_GENERATION_WEBUI_BASE_URL", "FASTCHAT_BASE_URL"]:
             monkeypatch.delenv(key, raising=False)
         
+        # Explicitly clear any provider-specific environment variables
+        for key in ["AI_PROVIDER", "OPENAI_API_KEY", "AI_API_KEY"]:
+            monkeypatch.delenv(key, raising=False)
+        
+        # Create settings with explicit None values to ensure no fallback
         settings = AiSettings(provider="openai_compatible", base_url=None, _env_file=None)
+        
+        # Debug: verify the settings are what we expect
+        assert settings.provider == "openai_compatible"
+        assert settings.base_url is None
         
         with pytest.raises(ProviderConfigurationError) as exc_info:
             create_provider(settings)
@@ -155,20 +164,20 @@ class TestProviderFactoryWrapping:
         assert exc_info.value.provider == "openai_compatible"
     
     def test_missing_api_key_for_openai_wrapped_correctly(self, monkeypatch):
-        """Test that OpenAI provider creation succeeds with api_key=None (actual behavior)."""
+        """Test that OpenAI provider creation fails with missing API key."""
         # Clear environment variables to ensure test isolation
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("AI_API_KEY", raising=False)
         
         settings = AiSettings(provider="openai", api_key=None, _env_file=None)
         
-        # OpenAI provider creation should succeed even with api_key=None
-        # API key validation likely happens during actual API calls, not provider creation
-        provider = create_provider(settings)
+        # OpenAI provider creation should fail with missing API key
+        with pytest.raises(ProviderConfigurationError) as exc_info:
+            create_provider(settings)
         
-        # Verify provider was created successfully
-        assert provider is not None
-        assert hasattr(provider, 'client')  # OpenAIProvider has a client attribute
+        # Verify the error message and provider
+        assert "API key is required" in str(exc_info.value)
+        assert exc_info.value.provider == "openai"
     
     def test_unknown_provider_wrapped_as_provider_configuration_error(self):
         """Test that UnknownProviderError is wrapped as ProviderConfigurationError."""

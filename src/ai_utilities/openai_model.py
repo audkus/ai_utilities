@@ -117,3 +117,34 @@ class OpenAIModel:
         )
         
         return formatted_response
+
+    @staticmethod
+    def clean_response(response: str) -> str:
+        """
+        Clean and format response text (deprecated).
+        
+        This method is deprecated and will be removed in a future version.
+        Use ResponseProcessor.extract_json() instead.
+        
+        Args:
+            response: Raw response string
+            
+        Returns:
+            Cleaned response string
+        """
+        import warnings
+        warnings.warn(
+            "OpenAIModel.clean_response() is deprecated. Use ResponseProcessor.extract_json() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
+        # Also log the deprecation for test capture
+        logger.warning("OpenAIModel.clean_response() is deprecated. Use ResponseProcessor.extract_json() instead.")
+        
+        # Use ResponseProcessor for backward compatibility
+        try:
+            return ResponseProcessor.extract_json(response)
+        except Exception:
+            # If JSON extraction fails, return cleaned text
+            return response.strip()
