@@ -2,38 +2,56 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
+from typing import Tuple
 
 from ai_utilities.openai_client import OpenAIClient
+
+
+@pytest.fixture
+def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
+    """
+    Function-scoped fixture that provides deterministic OpenAI mocking.
+    
+    Returns:
+        Tuple of (constructor_mock, client_mock) where:
+        - constructor_mock: Mock for ai_utilities.openai_client.OpenAI constructor
+        - client_mock: Mock instance returned by the constructor
+    """
+    import ai_utilities.openai_client
+    
+    # Create constructor mock and client mock
+    constructor_mock = MagicMock(name="OpenAI_ctor")
+    client_mock = MagicMock(name="OpenAI_client")
+    constructor_mock.return_value = client_mock
+    
+    # Patch the exact symbol used by production code
+    monkeypatch.setattr(ai_utilities.openai_client, 'OpenAI', constructor_mock)
+    
+    return constructor_mock, client_mock
 
 
 class TestOpenAIClient:
     """Test OpenAIClient class."""
     
-    def test_initialization_default(self, request):
+    def test_initialization_default(self, openai_mocks):
         """Test client initialization with default parameters."""
-        # Get the global mocks from conftest
-        mock_openai = request.config._openai_mock_constructor
-        mock_client_instance = request.config._openai_mock_client
-        
-        # Reset the mock before the test
-        mock_openai.reset_mock()
+        constructor_mock, client_mock = openai_mocks
         
         client = OpenAIClient(api_key="test-key")
         
-        assert client.client is mock_client_instance
+        # Verify client has the mock instance
+        assert client.client is client_mock
         
-        # Verify OpenAI was called with correct parameters (defaults are None)
-        mock_openai.assert_called_once_with(
+        # Verify OpenAI constructor called with correct parameters (defaults are None)
+        constructor_mock.assert_called_once_with(
             api_key="test-key",
             base_url=None,
             timeout=None
         )
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_initialization_custom_params(self, mock_openai):
+    def test_initialization_custom_params(self, openai_mocks):
         """Test client initialization with custom parameters."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
         
         client = OpenAIClient(
             api_key="custom-key",
@@ -41,34 +59,32 @@ class TestOpenAIClient:
             timeout=60
         )
         
-        assert client.client == mock_client_instance
+        # Verify client has the mock instance
+        assert client.client is client_mock
         
-        # Verify OpenAI was called with correct parameters
-        mock_openai.assert_called_once_with(
+        # Verify OpenAI constructor called with custom parameters
+        constructor_mock.assert_called_once_with(
             api_key="custom-key",
             base_url="https://custom.openai.com",
             timeout=60
         )
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_initialization_logging(self, mock_openai):
+    def test_initialization_logging(self, openai_mocks):
         """Test that initialization works without errors."""
-        mock_openai.return_value = MagicMock()
+        constructor_mock, client_mock = openai_mocks
         
         # Just test that initialization doesn't raise errors
         client = OpenAIClient(api_key="test-key")
         assert client is not None
-        assert client.client is not None
+        assert client.client is client_mock
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion_basic(self, mock_openai):
+    def test_create_chat_completion_basic(self, openai_mocks):
         """Test basic chat completion creation."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
         
         # Mock the chat completion response
         mock_response = MagicMock()
-        mock_client_instance.chat.completions.create.return_value = mock_response
+        client_mock.chat.completions.create.return_value = mock_response
         
         client = OpenAIClient(api_key="test-key")
         
@@ -91,16 +107,14 @@ class TestOpenAIClient:
             "messages": messages,
             "temperature": 0.7,
         }
-        mock_client_instance.chat.completions.create.assert_called_once_with(**expected_params)
+        client_mock.chat.completions.create.assert_called_once_with(**expected_params)
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion_with_max_tokens(self, mock_openai):
+    def test_create_chat_completion_with_max_tokens(self, openai_mocks):
         """Test chat completion with max_tokens parameter."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
         
         mock_response = MagicMock()
-        mock_client_instance.chat.completions.create.return_value = mock_response
+        client_mock.chat.completions.create.return_value = mock_response
         
         client = OpenAIClient(api_key="test-key")
         
@@ -121,16 +135,15 @@ class TestOpenAIClient:
             "temperature": 0.5,
             "max_tokens": 100,
         }
-        mock_client_instance.chat.completions.create.assert_called_once_with(**expected_params)
+        client_mock.chat.completions.create.assert_called_once_with(**expected_params)
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion_with_kwargs(self, mock_openai):
+    def test_create_chat_completion_with_kwargs(self, openai_mocks):
         """Test chat completion with additional kwargs."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         mock_response = MagicMock()
-        mock_client_instance.chat.completions.create.return_value = mock_response
+        client_mock.chat.completions.create.return_value = mock_response
         
         client = OpenAIClient(api_key="test-key")
         
@@ -147,7 +160,7 @@ class TestOpenAIClient:
         assert result == mock_response
         
         # Verify all parameters were passed
-        call_args = mock_client_instance.chat.completions.create.call_args
+        call_args = client_mock.chat.completions.create.call_args
         params = call_args[1]  # kwargs
         
         assert params["model"] == "gpt-3.5-turbo"
@@ -157,14 +170,13 @@ class TestOpenAIClient:
         assert params["frequency_penalty"] == 0.5
         assert params["presence_penalty"] == 0.5
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion_logging(self, mock_openai):
+    def test_create_chat_completion_logging(self, openai_mocks):
         """Test that chat completion logs debug messages."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         mock_response = MagicMock()
-        mock_client_instance.chat.completions.create.return_value = mock_response
+        client_mock.chat.completions.create.return_value = mock_response
         
         client = OpenAIClient(api_key="test-key")
         
@@ -174,17 +186,16 @@ class TestOpenAIClient:
         )
         
         # Just verify the call was made without errors
-        mock_client_instance.chat.completions.create.assert_called_once()
+        client_mock.chat.completions.create.assert_called_once()
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion_api_exception(self, mock_openai):
+    def test_create_chat_completion_api_exception(self, openai_mocks):
         """Test handling of OpenAI API exceptions."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         # Mock API exception
         from openai import OpenAIError
-        mock_client_instance.chat.completions.create.side_effect = OpenAIError("API Error")
+        client_mock.chat.completions.create.side_effect = OpenAIError("API Error")
         
         client = OpenAIClient(api_key="test-key")
         
@@ -194,45 +205,42 @@ class TestOpenAIClient:
                 messages=[{"role": "user", "content": "Test"}]
             )
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_get_models(self, mock_openai):
+    def test_get_models(self, openai_mocks):
         """Test getting available models."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         # Mock models response
         mock_models = MagicMock()
-        mock_client_instance.models.list.return_value = mock_models
+        client_mock.models.list.return_value = mock_models
         
         client = OpenAIClient(api_key="test-key")
         
         result = client.get_models()
         
         assert result == mock_models
-        mock_client_instance.models.list.assert_called_once()
+        client_mock.models.list.assert_called_once()
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_get_models_logging(self, mock_openai):
+    def test_get_models_logging(self, openai_mocks):
         """Test that get_models logs debug message."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
-        mock_client_instance.models.list.return_value = MagicMock()
+        client_mock.models.list.return_value = MagicMock()
         
         client = OpenAIClient(api_key="test-key")
         client.get_models()
         
         # Just verify the call was made without errors
-        mock_client_instance.models.list.assert_called_once()
+        client_mock.models.list.assert_called_once()
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_get_models_api_exception(self, mock_openai):
+    def test_get_models_api_exception(self, openai_mocks):
         """Test handling of API exceptions in get_models."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         from openai import OpenAIError
-        mock_client_instance.models.list.side_effect = OpenAIError("Models API Error")
+        client_mock.models.list.side_effect = OpenAIError("Models API Error")
         
         client = OpenAIClient(api_key="test-key")
         
@@ -243,44 +251,39 @@ class TestOpenAIClient:
 class TestOpenAIClientIntegration:
     """Integration tests for OpenAIClient."""
     
-    def test_single_responsibility_principle(self):
+    def test_single_responsibility_principle(self, openai_mocks):
         """Test that client only handles API communication."""
-        # Use patch.object with new_callable for more robust patching
-        import ai_utilities.openai_client
-        with patch.object(ai_utilities.openai_client, 'OpenAI', new_callable=MagicMock) as mock_openai:
-            mock_client_instance = MagicMock()
-            mock_openai.return_value = mock_client_instance
-            
-            mock_response = MagicMock()
-            mock_client_instance.chat.completions.create.return_value = mock_response
-            
-            client = OpenAIClient(api_key="test-key")
-            
-            # Client should not handle rate limiting, response processing, etc.
-            # It should just pass through to the underlying OpenAI client
-            messages = [{"role": "user", "content": "Test"}]
-            
-            result = client.create_chat_completion(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=100,
-                top_p=0.9
-            )
+        constructor_mock, client_mock = openai_mocks
+        
+        mock_response = MagicMock()
+        client_mock.chat.completions.create.return_value = mock_response
+        
+        client = OpenAIClient(api_key="test-key")
+        
+        # Client should not handle rate limiting, response processing, etc.
+        # It should just pass through to the underlying OpenAI client
+        messages = [{"role": "user", "content": "Test"}]
+        
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=100,
+            top_p=0.9
+        )
         
         # Should return exactly what the OpenAI client returns
         assert result is mock_response
         
         # Should pass all parameters through without modification
-        call_kwargs = mock_client_instance.chat.completions.create.call_args[1]
+        call_kwargs = client_mock.chat.completions.create.call_args[1]
         assert call_kwargs["messages"] == messages
         assert call_kwargs["max_tokens"] == 100
         assert call_kwargs["top_p"] == 0.9
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_parameter_validation_delegation(self, mock_openai):
+    def test_parameter_validation_delegation(self, openai_mocks):
         """Test that parameter validation is delegated to OpenAI client."""
-        mock_client_instance = MagicMock()
-        mock_openai.return_value = mock_client_instance
+        constructor_mock, client_mock = openai_mocks
+        # Mock setup handled by fixture
         
         client = OpenAIClient(api_key="test-key")
         
@@ -294,7 +297,7 @@ class TestOpenAIClientIntegration:
         )
         
         # Should pass all parameters to OpenAI without validation
-        call_kwargs = mock_client_instance.chat.completions.create.call_args[1]
+        call_kwargs = client_mock.chat.completions.create.call_args[1]
         assert call_kwargs["temperature"] == 5.0
         assert call_kwargs["invalid_param"] == "should_pass_through"
 
@@ -302,100 +305,94 @@ class TestOpenAIClientIntegration:
 class TestOpenAIClientEdgeCases:
     """Test edge cases for OpenAIClient."""
     
-    def test_empty_messages_list(self):
+    def test_empty_messages_list(self, openai_mocks):
         """Test with empty messages list."""
-        # Use patch.object with new_callable for more robust patching
-        import ai_utilities.openai_client
-        with patch.object(ai_utilities.openai_client, 'OpenAI', new_callable=MagicMock) as mock_openai:
-            mock_client_instance = MagicMock()
-            mock_openai.return_value = mock_client_instance
-            
-            mock_response = MagicMock()
-            mock_client_instance.chat.completions.create.return_value = mock_response
-            
-            client = OpenAIClient(api_key="test-key")
-            
-            result = client.create_chat_completion(
-                model="gpt-3.5-turbo",
-                messages=[]
-            )
-            
-            assert result == mock_response
-            mock_client_instance.chat.completions.create.assert_called_once()
+        constructor_mock, client_mock = openai_mocks
+        
+        mock_response = MagicMock()
+        client_mock.chat.completions.create.return_value = mock_response
+        
+        client = OpenAIClient(api_key="test-key")
+        
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=[]
+        )
+        
+        assert result == mock_response
+        client_mock.chat.completions.create.assert_called_once()
     
-    def test_zero_max_tokens(self):
+    def test_zero_max_tokens(self, openai_mocks):
         """Test with max_tokens=0 (should be filtered out as falsy)."""
-        # Use patch.object to ensure we patch the exact module attribute
-        import ai_utilities.openai_client
-        with patch.object(ai_utilities.openai_client, 'OpenAI') as mock_openai:
-            mock_client_instance = MagicMock()
-            mock_openai.return_value = mock_client_instance
-            
-            mock_response = MagicMock()
-            mock_client_instance.chat.completions.create.return_value = mock_response
-            
-            client = OpenAIClient(api_key="test-key")
-            
-            result = client.create_chat_completion(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Test"}],
-                max_tokens=0
-            )
-            
-            assert result == mock_response
-            call_kwargs = mock_client_instance.chat.completions.create.call_args[1]
-            # When max_tokens=0, it's falsy so not included in params
-            assert "max_tokens" not in call_kwargs
+        constructor_mock, client_mock = openai_mocks
+        
+        mock_response = MagicMock()
+        client_mock.chat.completions.create.return_value = mock_response
+        
+        client = OpenAIClient(api_key="test-key")
+        
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Test"}],
+            max_tokens=0
+        )
+        
+        assert result == mock_response
+        call_kwargs = client_mock.chat.completions.create.call_args[1]
+        # When max_tokens=0, it's falsy so not included in params
+        assert "max_tokens" not in call_kwargs
     
-    def test_none_max_tokens(self):
+    def test_none_max_tokens(self, openai_mocks):
         """Test with max_tokens=None (should not be included)."""
-        # Use patch.object to ensure we patch the exact module attribute
-        import ai_utilities.openai_client
-        with patch.object(ai_utilities.openai_client, 'OpenAI') as mock_openai:
-            mock_client_instance = MagicMock()
-            mock_openai.return_value = mock_client_instance
-            
-            mock_response = MagicMock()
-            mock_client_instance.chat.completions.create.return_value = mock_response
-            
-            client = OpenAIClient(api_key="test-key")
-            
-            result = client.create_chat_completion(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Test"}],
-                max_tokens=None
-            )
-            
-            assert result == mock_response
-            call_kwargs = mock_client_instance.chat.completions.create.call_args[1]
-            assert "max_tokens" not in call_kwargs
+        constructor_mock, client_mock = openai_mocks
+        
+        mock_response = MagicMock()
+        client_mock.chat.completions.create.return_value = mock_response
+        
+        client = OpenAIClient(api_key="test-key")
+        
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Test"}],
+            max_tokens=None
+        )
+        
+        assert result == mock_response
+        call_kwargs = client_mock.chat.completions.create.call_args[1]
+        assert "max_tokens" not in call_kwargs
     
-    def test_large_number_of_kwargs(self):
+    def test_large_number_of_kwargs(self, openai_mocks):
         """Test with many additional kwargs (should pass through)."""
-        # Use patch.object to ensure we patch the exact module attribute
-        import ai_utilities.openai_client
-        with patch.object(ai_utilities.openai_client, 'OpenAI') as mock_openai:
-            mock_client_instance = MagicMock()
-            mock_openai.return_value = mock_client_instance
-            
-            mock_response = MagicMock()
-            mock_client_instance.chat.completions.create.return_value = mock_response
-            
-            client = OpenAIClient(api_key="test-key")
-            
-            result = client.create_chat_completion(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Test"}],
-                temperature=0.5,
-                max_tokens=100,
-                top_p=0.9,
-                frequency_penalty=0.1,
-                presence_penalty=0.1,
-                stop=["\n"],
-                stream=False,
-                logprobs=False,
-                top_logprobs=1
-            )
-            
-            assert result == mock_response
-            mock_client_instance.chat.completions.create.assert_called_once()
+        constructor_mock, client_mock = openai_mocks
+        
+        mock_response = MagicMock()
+        client_mock.chat.completions.create.return_value = mock_response
+        
+        client = OpenAIClient(api_key="test-key")
+        
+        # Test with many kwargs
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Test"}],
+            temperature=0.5,
+            top_p=0.9,
+            frequency_penalty=0.1,
+            presence_penalty=0.1,
+            max_tokens=100,
+            stream=False,
+            logprobs=None,
+            echo=False
+        )
+        
+        assert result == mock_response
+        
+        # Verify all kwargs were passed through
+        call_kwargs = client_mock.chat.completions.create.call_args[1]
+        assert call_kwargs["temperature"] == 0.5
+        assert call_kwargs["top_p"] == 0.9
+        assert call_kwargs["frequency_penalty"] == 0.1
+        assert call_kwargs["presence_penalty"] == 0.1
+        assert call_kwargs["max_tokens"] == 100
+        assert call_kwargs["stream"] is False
+        assert call_kwargs["logprobs"] is None
+        assert call_kwargs["echo"] is False

@@ -7,10 +7,34 @@ from unittest.mock import Mock, patch, MagicMock, mock_open
 from pathlib import Path
 from datetime import datetime
 import json
+from typing import Tuple
 
 from ai_utilities.providers.openai_provider import OpenAIProvider
 from ai_utilities.file_models import UploadedFile
 from ai_utilities.providers.provider_exceptions import FileTransferError
+
+
+@pytest.fixture
+def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
+    """
+    Function-scoped fixture that provides deterministic OpenAI mocking.
+    
+    Returns:
+        Tuple of (constructor_mock, client_mock) where:
+        - constructor_mock: Mock for ai_utilities.providers.openai_provider.OpenAI constructor
+        - client_mock: Mock instance returned by the constructor
+    """
+    import ai_utilities.providers.openai_provider
+    
+    # Create constructor mock and client mock
+    constructor_mock = MagicMock(name="OpenAI_ctor")
+    client_mock = MagicMock(name="OpenAI_client")
+    constructor_mock.return_value = client_mock
+    
+    # Patch the exact symbol used by production code
+    monkeypatch.setattr(ai_utilities.providers.openai_provider, 'OpenAI', constructor_mock)
+    
+    return constructor_mock, client_mock
 
 
 class TestOpenAIProviderComplete:
@@ -26,19 +50,14 @@ class TestOpenAIProviderComplete:
         self.mock_settings.temperature = 0.7
         self.mock_settings.max_tokens = 1000
     
-    def test_initialization_success(self, request):
+    def test_initialization_success(self, openai_mocks):
         """Test successful initialization of OpenAIProvider."""
-        # Get the global mock from conftest
-        mock_openai = request.config._openai_mock_constructor
-        mock_client_instance = request.config._openai_mock_client
-        
-        # Reset the mock before the test
-        mock_openai.reset_mock()
+        constructor_mock, client_mock = openai_mocks
         
         provider = OpenAIProvider(self.mock_settings)
         
         # Verify OpenAI client is initialized with correct parameters
-        mock_openai.assert_called_once_with(
+        constructor_mock.assert_called_once_with(
             api_key="test-api-key",
             base_url="https://api.openai.com/v1",
             timeout=30
