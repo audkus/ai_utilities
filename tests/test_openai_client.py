@@ -3,16 +3,52 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from typing import Tuple
+import sys
 
 from ai_utilities.openai_client import OpenAIClient
+
+
+@pytest.fixture
+def openai_mocks_override(monkeypatch) -> Tuple[MagicMock, MagicMock]:
+    """
+    Fixture that provides deterministic OpenAI mocking for OpenAI client tests.
+    
+    This fixture ensures clean mocking regardless of other test interference
+    by patching at the module level and re-patching aggressively.
+    """
+    # Create constructor mock and client mock
+    constructor_mock = MagicMock(name="OpenAI_ctor")
+    client_mock = MagicMock(name="OpenAI_client")
+    constructor_mock.return_value = client_mock
+    
+    # Patch multiple levels to ensure our mock wins
+    import ai_utilities.openai_client
+    monkeypatch.setattr(ai_utilities.openai_client, 'OpenAI', constructor_mock, raising=False)
+    
+    # Also patch the module in sys.modules to prevent import interference
+    if 'ai_utilities.openai_client' in sys.modules:
+        sys.modules['ai_utilities.openai_client'].OpenAI = constructor_mock
+    
+    return constructor_mock, client_mock
 
 
 class TestOpenAIClient:
     """Test OpenAIClient class."""
     
-    def test_initialization_default(self, openai_mocks):
+    @pytest.fixture(autouse=True)
+    def setup_openai_mocks(self, openai_mocks_override):
+        """Auto-use fixture to ensure mocks are set up for each test."""
+        # Re-apply patch to ensure it wins over any other patches
+        import ai_utilities.openai_client
+        self.constructor_mock, self.client_mock = openai_mocks_override
+        
+        # Force re-patch in case other tests interfered
+        import ai_utilities.openai_client
+        ai_utilities.openai_client.OpenAI = self.constructor_mock
+    
+    def test_initialization_default(self):
         """Test client initialization with default parameters."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         client = OpenAIClient(api_key="test-key")
         
@@ -26,9 +62,9 @@ class TestOpenAIClient:
             timeout=None
         )
     
-    def test_initialization_custom_params(self, openai_mocks):
+    def test_initialization_custom_params(self):
         """Test client initialization with custom parameters."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         client = OpenAIClient(
             api_key="custom-key",
@@ -46,18 +82,18 @@ class TestOpenAIClient:
             timeout=60
         )
     
-    def test_initialization_logging(self, openai_mocks):
+    def test_initialization_logging(self):
         """Test that initialization works without errors."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         # Just test that initialization doesn't raise errors
         client = OpenAIClient(api_key="test-key")
         assert client is not None
         assert client.client is client_mock
     
-    def test_create_chat_completion_basic(self, openai_mocks):
+    def test_create_chat_completion_basic(self):
         """Test basic chat completion creation."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         # Mock the chat completion response
         mock_response = MagicMock()
@@ -86,9 +122,9 @@ class TestOpenAIClient:
         }
         client_mock.chat.completions.create.assert_called_once_with(**expected_params)
     
-    def test_create_chat_completion_with_max_tokens(self, openai_mocks):
+    def test_create_chat_completion_with_max_tokens(self):
         """Test chat completion with max_tokens parameter."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
@@ -114,9 +150,9 @@ class TestOpenAIClient:
         }
         client_mock.chat.completions.create.assert_called_once_with(**expected_params)
     
-    def test_create_chat_completion_with_kwargs(self, openai_mocks):
+    def test_create_chat_completion_with_kwargs(self):
         """Test chat completion with additional kwargs."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         mock_response = MagicMock()
@@ -147,9 +183,9 @@ class TestOpenAIClient:
         assert params["frequency_penalty"] == 0.5
         assert params["presence_penalty"] == 0.5
     
-    def test_create_chat_completion_logging(self, openai_mocks):
+    def test_create_chat_completion_logging(self):
         """Test that chat completion logs debug messages."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         mock_response = MagicMock()
@@ -165,9 +201,9 @@ class TestOpenAIClient:
         # Just verify the call was made without errors
         client_mock.chat.completions.create.assert_called_once()
     
-    def test_create_chat_completion_api_exception(self, openai_mocks):
+    def test_create_chat_completion_api_exception(self):
         """Test handling of OpenAI API exceptions."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         # Mock API exception
@@ -182,9 +218,9 @@ class TestOpenAIClient:
                 messages=[{"role": "user", "content": "Test"}]
             )
     
-    def test_get_models(self, openai_mocks):
+    def test_get_models(self):
         """Test getting available models."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         # Mock models response
@@ -198,9 +234,9 @@ class TestOpenAIClient:
         assert result == mock_models
         client_mock.models.list.assert_called_once()
     
-    def test_get_models_logging(self, openai_mocks):
+    def test_get_models_logging(self):
         """Test that get_models logs debug message."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         client_mock.models.list.return_value = MagicMock()
@@ -211,9 +247,9 @@ class TestOpenAIClient:
         # Just verify the call was made without errors
         client_mock.models.list.assert_called_once()
     
-    def test_get_models_api_exception(self, openai_mocks):
+    def test_get_models_api_exception(self):
         """Test handling of API exceptions in get_models."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         from openai import OpenAIError
@@ -228,9 +264,20 @@ class TestOpenAIClient:
 class TestOpenAIClientIntegration:
     """Integration tests for OpenAIClient."""
     
-    def test_single_responsibility_principle(self, openai_mocks):
+    @pytest.fixture(autouse=True)
+    def setup_openai_mocks(self, openai_mocks_override):
+        """Auto-use fixture to ensure mocks are set up for each test."""
+        # Re-apply patch to ensure it wins over any other patches
+        import ai_utilities.openai_client
+        self.constructor_mock, self.client_mock = openai_mocks_override
+        
+        # Force re-patch in case other tests interfered
+        import ai_utilities.openai_client
+        ai_utilities.openai_client.OpenAI = self.constructor_mock
+    
+    def test_single_responsibility_principle(self):
         """Test that client only handles API communication."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
@@ -257,9 +304,9 @@ class TestOpenAIClientIntegration:
         assert call_kwargs["max_tokens"] == 100
         assert call_kwargs["top_p"] == 0.9
     
-    def test_parameter_validation_delegation(self, openai_mocks):
+    def test_parameter_validation_delegation(self):
         """Test that parameter validation is delegated to OpenAI client."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         # Mock setup handled by fixture
         
         client = OpenAIClient(api_key="test-key")
@@ -282,9 +329,20 @@ class TestOpenAIClientIntegration:
 class TestOpenAIClientEdgeCases:
     """Test edge cases for OpenAIClient."""
     
-    def test_empty_messages_list(self, openai_mocks):
+    @pytest.fixture(autouse=True)
+    def setup_openai_mocks(self, openai_mocks_override):
+        """Auto-use fixture to ensure mocks are set up for each test."""
+        # Re-apply patch to ensure it wins over any other patches
+        import ai_utilities.openai_client
+        self.constructor_mock, self.client_mock = openai_mocks_override
+        
+        # Force re-patch in case other tests interfered
+        import ai_utilities.openai_client
+        ai_utilities.openai_client.OpenAI = self.constructor_mock
+    
+    def test_empty_messages_list(self):
         """Test with empty messages list."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
@@ -299,9 +357,9 @@ class TestOpenAIClientEdgeCases:
         assert result == mock_response
         client_mock.chat.completions.create.assert_called_once()
     
-    def test_zero_max_tokens(self, openai_mocks):
+    def test_zero_max_tokens(self):
         """Test with max_tokens=0 (should be filtered out as falsy)."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
@@ -319,9 +377,9 @@ class TestOpenAIClientEdgeCases:
         # When max_tokens=0, it's falsy so not included in params
         assert "max_tokens" not in call_kwargs
     
-    def test_none_max_tokens(self, openai_mocks):
+    def test_none_max_tokens(self):
         """Test with max_tokens=None (should not be included)."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
@@ -338,9 +396,9 @@ class TestOpenAIClientEdgeCases:
         call_kwargs = client_mock.chat.completions.create.call_args[1]
         assert "max_tokens" not in call_kwargs
     
-    def test_large_number_of_kwargs(self, openai_mocks):
+    def test_large_number_of_kwargs(self):
         """Test with many additional kwargs (should pass through)."""
-        constructor_mock, client_mock = openai_mocks
+        constructor_mock, client_mock = self.constructor_mock, self.client_mock
         
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response

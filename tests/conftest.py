@@ -160,13 +160,13 @@ def network_allowed():
     pass
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
     """
     Function-scoped fixture that provides deterministic OpenAI mocking.
     
-    This fixture uses autouse=True to ensure it runs for every test and
-    overrides any other patches that might interfere.
+    This fixture provides consistent mocking for tests that use it,
+    without interfering with tests that use other patching strategies.
     
     Returns:
         Tuple of (constructor_mock, client_mock) where:
