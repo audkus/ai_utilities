@@ -46,8 +46,26 @@ class TestProviderResolution:
     
     def test_resolve_provider_default(self):
         """Test default provider is OpenAI."""
-        result = resolve_provider()
-        assert result == "openai"
+        # Clear any environment variables that might interfere
+        import os
+        env_vars_to_clear = [
+            'AI_PROVIDER', 'TEXT_GENERATION_WEBUI_BASE_URL', 'FASTCHAT_BASE_URL', 
+            'OLLAMA_BASE_URL', 'LMSTUDIO_BASE_URL'
+        ]
+        original_values = {}
+        for var in env_vars_to_clear:
+            original_values[var] = os.environ.get(var)
+            if var in os.environ:
+                del os.environ[var]
+        
+        try:
+            result = resolve_provider(env_provider=None)
+            assert result == "openai"
+        finally:
+            # Restore environment
+            for var, value in original_values.items():
+                if value is not None:
+                    os.environ[var] = value
 
 
 class TestApiKeyResolution:

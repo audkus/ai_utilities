@@ -384,7 +384,7 @@ class TestClientEmbeddingsIntegration:
         mock_settings.model_dump.return_value = {}
         
         with patch('ai_utilities.providers.provider_factory.create_provider') as mock_create_provider, \
-             patch('openai.OpenAI') as mock_openai:
+             patch('ai_utilities.client.OpenAI') as mock_openai:
             
             mock_provider = Mock()
             mock_create_provider.return_value = mock_provider

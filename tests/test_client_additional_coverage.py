@@ -663,7 +663,7 @@ class TestAiClientEmbeddings:
         with pytest.raises(ValueError, match="API key is required for embeddings"):
             self.client.get_embeddings(["test"])
     
-    @patch('openai.OpenAI')
+    @patch('ai_utilities.client.OpenAI')
     def test_get_embeddings_success(self, mock_openai):
         """Test successful embeddings generation."""
         mock_client = Mock()
@@ -682,7 +682,7 @@ class TestAiClientEmbeddings:
             input=["test text"]
         )
     
-    @patch('openai.OpenAI')
+    @patch('ai_utilities.client.OpenAI')
     def test_get_embeddings_with_dimensions(self, mock_openai):
         """Test embeddings generation with dimensions."""
         mock_client = Mock()
@@ -702,7 +702,7 @@ class TestAiClientEmbeddings:
             dimensions=512
         )
     
-    @patch('openai.OpenAI')
+    @patch('ai_utilities.client.OpenAI')
     def test_get_embeddings_with_custom_model(self, mock_openai):
         """Test embeddings generation with custom model."""
         mock_client = Mock()
