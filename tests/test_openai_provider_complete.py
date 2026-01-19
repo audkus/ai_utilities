@@ -26,9 +26,15 @@ class TestOpenAIProviderComplete:
         self.mock_settings.temperature = 0.7
         self.mock_settings.max_tokens = 1000
     
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_initialization_success(self, mock_openai):
+    def test_initialization_success(self, request):
         """Test successful initialization of OpenAIProvider."""
+        # Get the global mock from conftest
+        mock_openai = request.config._openai_mock_constructor
+        mock_client_instance = request.config._openai_mock_client
+        
+        # Reset the mock before the test
+        mock_openai.reset_mock()
+        
         provider = OpenAIProvider(self.mock_settings)
         
         # Verify OpenAI client is initialized with correct parameters
@@ -41,24 +47,26 @@ class TestOpenAIProviderComplete:
         assert provider.settings == self.mock_settings
         assert provider.client is not None
     
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_initialization_with_custom_settings(self, mock_openai):
+    def test_initialization_with_custom_settings(self):
         """Test initialization with custom settings."""
-        custom_settings = Mock()
-        custom_settings.api_key = "custom-key"
-        custom_settings.base_url = "https://custom.base.url"
-        custom_settings.timeout = 60
-        custom_settings.model = "gpt-4"
-        custom_settings.temperature = 0.5
-        custom_settings.max_tokens = 2000
-        
-        provider = OpenAIProvider(custom_settings)
-        
-        mock_openai.assert_called_once_with(
-            api_key="custom-key",
-            base_url="https://custom.base.url",
-            timeout=60
-        )
+        # Use patch.object to ensure we patch the exact module attribute
+        import ai_utilities.providers.openai_provider
+        with patch.object(ai_utilities.providers.openai_provider, 'OpenAI') as mock_openai:
+            custom_settings = Mock()
+            custom_settings.api_key = "custom-key"
+            custom_settings.base_url = "https://custom.base.url"
+            custom_settings.timeout = 60
+            custom_settings.model = "gpt-4"
+            custom_settings.temperature = 0.5
+            custom_settings.max_tokens = 2000
+            
+            provider = OpenAIProvider(custom_settings)
+            
+            mock_openai.assert_called_once_with(
+                api_key="custom-key",
+                base_url="https://custom.base.url",
+                timeout=60
+            )
         
         assert provider.settings == custom_settings
     
