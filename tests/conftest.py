@@ -121,11 +121,6 @@ def patch_openai_constructors(monkeypatch, request):
     if not allow_real_openai:
         from unittest.mock import MagicMock
         
-        # Create mock OpenAI constructor that returns consistent instances
-        mock_openai_constructor = MagicMock()
-        mock_client_instance = MagicMock()
-        mock_openai_constructor.return_value = mock_client_instance
-        
         # Create mock response with realistic structure
         mock_chat_response = MagicMock()
         mock_choice = MagicMock()
@@ -141,20 +136,16 @@ def patch_openai_constructors(monkeypatch, request):
         mock_file_response.purpose = "assistants"
         mock_file_response.created_at = 1640995200
         
-        # Configure the mock client instance
+        # Create mock client instance for general use
+        mock_client_instance = MagicMock()
         mock_client_instance.chat.completions.create.return_value = mock_chat_response
         mock_client_instance.files.create.return_value = mock_file_response
         mock_client_instance.files.retrieve.return_value = mock_file_response
         mock_client_instance.files.content.return_value = b"test content"
         
-        # Store the mocks in a way tests can access them
-        request.config._openai_mock_constructor = mock_openai_constructor
-        request.config._openai_mock_client = mock_client_instance
-        
-        # Patch the main OpenAI constructor locations
-        monkeypatch.setattr('ai_utilities.openai_client.OpenAI', mock_openai_constructor)
-        monkeypatch.setattr('ai_utilities.client.OpenAI', mock_openai_constructor)
-        monkeypatch.setattr('ai_utilities.providers.openai_provider.OpenAI', mock_openai_constructor)
+        # Only patch client and provider modules, not openai_client (handled by its own fixture)
+        monkeypatch.setattr('ai_utilities.client.OpenAI', lambda **kwargs: mock_client_instance)
+        monkeypatch.setattr('ai_utilities.providers.openai_provider.OpenAI', lambda **kwargs: mock_client_instance)
 
 
 @pytest.fixture
