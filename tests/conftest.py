@@ -161,12 +161,12 @@ def network_allowed():
 
 
 @pytest.fixture
-def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
+def openai_mocks(monkeypatch, reset_global_state, reset_contextvars, reset_logging_state) -> Tuple[MagicMock, MagicMock]:
     """
     Function-scoped fixture that provides deterministic OpenAI mocking.
     
-    This fixture provides consistent mocking for tests that use it,
-    without interfering with tests that use other patching strategies.
+    This fixture depends on all global reset fixtures to ensure patching
+    occurs AFTER any global state resets, preventing interference.
     
     Returns:
         Tuple of (constructor_mock, client_mock) where:
@@ -180,11 +180,38 @@ def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
     client_mock = MagicMock(name="OpenAI_client")
     constructor_mock.return_value = client_mock
     
-    # Force patch even if already patched - this ensures our fixture wins
-    # Using raising=False to avoid errors if the attribute doesn't exist
+    # Patch the exact symbol used by production code
+    # This happens AFTER all reset fixtures have run
     monkeypatch.setattr(ai_utilities.openai_client, 'OpenAI', constructor_mock, raising=False)
     
     return constructor_mock, client_mock
+
+
+@pytest.fixture(autouse=True)
+def _patch_openai_ctor_globally(reset_global_state, reset_contextvars, reset_logging_state, request):
+    """
+    Global autouse fixture that prevents any test from creating real OpenAI clients.
+    
+    This fixture depends on reset fixtures to ensure it runs after global state resets.
+    It patches OpenAI at the module level to provide maximum protection against
+    accidental real client creation.
+    
+    Can be opted out with pytest.mark.skip_openai_global_patch if needed.
+    """
+    # Check if test has opted out using the request fixture
+    if request.node.get_closest_marker('skip_openai_global_patch'):
+        return
+    
+    import ai_utilities.openai_client
+    
+    # Create a global mock that's always available
+    constructor_mock = MagicMock(name="Global_OpenAI_ctor")
+    client_mock = MagicMock(name="Global_OpenAI_client")
+    constructor_mock.return_value = client_mock
+    
+    # Patch at the module level to prevent any real OpenAI usage
+    import ai_utilities.openai_client
+    ai_utilities.openai_client.OpenAI = constructor_mock
 
 
 @pytest.fixture(scope="session", autouse=True)

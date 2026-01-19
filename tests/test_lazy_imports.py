@@ -47,6 +47,7 @@ def test_lazy_imports_not_loaded_initially():
     # This is acceptable since it's part of the core client functionality
 
 
+@pytest.mark.skip_openai_global_patch
 def test_lazy_imports_work_on_demand():
     """Test that lazy imports work when accessed."""
     import ai_utilities
