@@ -50,6 +50,18 @@ def openai_provider_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType
     return importlib.import_module("ai_utilities.providers.openai_provider")
 
 
+@pytest.fixture
+def OpenAIClient(openai_client_mod: ModuleType):
+    """Return the OpenAIClient class from freshly imported module."""
+    return openai_client_mod.OpenAIClient
+
+
+@pytest.fixture
+def OpenAIProvider(openai_provider_mod: ModuleType):
+    """Return the OpenAIProvider class from freshly imported module."""
+    return openai_provider_mod.OpenAIProvider
+
+
 def pytest_addoption(parser):
     """Add custom command line options for test guardrails."""
     parser.addoption(

@@ -130,23 +130,18 @@ class TestCoverageImprovements:
             assert str(error) == "Logging failed"
             mock_log.assert_called_once_with("LoggingError: Logging failed")
 
-    def test_openai_client_methods(self):
+    def test_openai_client_methods(self, openai_mocks, OpenAIClient):
         """Test OpenAI client methods to improve coverage."""
-        from ai_utilities.openai_client import OpenAIClient
+        constructor_mock, client_mock = openai_mocks
         
-        # Mock the OpenAI client
-        mock_openai_client = MagicMock()
+        # Test get_models method (lines 96-97)
+        mock_models = MagicMock()
+        client_mock.models.list.return_value = mock_models
         
-        with patch('ai_utilities.openai_client.OpenAI', return_value=mock_openai_client):
-            client = OpenAIClient(api_key="test-key")
-            
-            # Test get_models method (lines 96-97)
-            mock_models = MagicMock()
-            mock_openai_client.models.list.return_value = mock_models
-            
-            result = client.get_models()
-            assert result is mock_models
-            mock_openai_client.models.list.assert_called_once()
+        client = OpenAIClient(api_key="test-key")
+        result = client.get_models()
+        assert result is mock_models
+        client_mock.models.list.assert_called_once()
 
 
 class TestVersionImportFallback:
