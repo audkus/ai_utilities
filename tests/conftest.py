@@ -174,47 +174,34 @@ def openai_mocks(
     reset_contextvars: None,
     reset_logging_state: None,
 ) -> Tuple[MagicMock, MagicMock]:
-    """Per-test OpenAI ctor/client mocks; overrides session patch deterministically."""
-    setattr(request.node, "_uses_openai_mocks", True)
-
+    """Per-test OpenAI ctor/client mocks. No reload hacks."""
     ctor: MagicMock = MagicMock(name="OpenAI_ctor_local")
     client: MagicMock = MagicMock(name="OpenAI_client_local")
     ctor.return_value = client
 
-    # CRITICAL: Patch upstream first, then rebind module alias
+    # Patch upstream openai module (best effort)
     try:
         import openai
         monkeypatch.setattr(openai, "OpenAI", ctor, raising=False)
         monkeypatch.setattr(openai, "AsyncOpenAI", ctor, raising=False)
     except ImportError:
         pass
-    
-    # Force reload and rebind of the module-level alias
-    import importlib
+
+    # Patch the exact alias used by OpenAIClient: ai_utilities.openai_client.OpenAI
     import ai_utilities.openai_client as openai_client_mod
-    
-    # Remove from sys.modules to force fresh import
-    if 'ai_utilities.openai_client' in sys.modules:
-        del sys.modules['ai_utilities.openai_client']
-    
-    # Re-import the module which will now use our patched openai.OpenAI
-    importlib.reload(openai_client_mod)
-    
-    # Ensure the alias is bound to our mock
-    openai_client_mod.OpenAI = ctor
     monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
 
-    # Patch other internal modules that may hold their own OpenAI binding
+    # Patch other internal modules that may have their own alias
     try:
         import ai_utilities.providers.openai_provider as provider_mod
         monkeypatch.setattr(provider_mod, "OpenAI", ctor, raising=False)
-    except Exception:
+    except ImportError:
         pass
 
     try:
         import ai_utilities.async_client as async_client_mod
         monkeypatch.setattr(async_client_mod, "OpenAI", ctor, raising=False)
-    except Exception:
+    except ImportError:
         pass
 
     return ctor, client
