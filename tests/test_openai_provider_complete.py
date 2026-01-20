@@ -16,16 +16,6 @@ from ai_utilities.file_models import UploadedFile
 from ai_utilities.providers.provider_exceptions import FileTransferError
 
 
-@pytest.fixture
-def openai_provider_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:
-    """
-    Import OpenAI provider module AFTER openai_mocks has patched constructors.
-    This prevents stale 'OpenAI = ...' alias bindings from earlier imports.
-    """
-    sys.modules.pop("ai_utilities.providers.openai_provider", None)
-    return importlib.import_module("ai_utilities.providers.openai_provider")
-
-
 class TestOpenAIProviderComplete:
     """Comprehensive test suite for OpenAIProvider."""
     
