@@ -4,17 +4,17 @@ import pytest
 from unittest.mock import MagicMock, patch
 from typing import Tuple
 
-from ai_utilities.openai_client import OpenAIClient
+import ai_utilities.openai_client as openai_client_mod
 
 
 class TestOpenAIClient:
-    """Test OpenAIClient class."""
+    """Test OpenAI client class."""
     
     def test_initialization_default(self, openai_mocks):
         """Test client initialization with default parameters."""
         constructor_mock, client_mock = openai_mocks
 
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         # Verify client has the mock instance
         assert client.client is client_mock
@@ -30,7 +30,7 @@ class TestOpenAIClient:
         """Test client initialization with custom parameters."""
         constructor_mock, client_mock = openai_mocks
         
-        client = OpenAIClient(
+        client = openai_client_mod.OpenAIClient(
             api_key="custom-key",
             base_url="https://custom.openai.com",
             timeout=60
@@ -51,7 +51,7 @@ class TestOpenAIClient:
         constructor_mock, client_mock = openai_mocks
         
         # Just test that initialization doesn't raise errors
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         assert client is not None
         assert client.client is client_mock
     
@@ -63,7 +63,7 @@ class TestOpenAIClient:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         messages = [
             {"role": "system", "content": "You are a helpful assistant."},
@@ -93,7 +93,7 @@ class TestOpenAIClient:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         messages = [{"role": "user", "content": "Test"}]
         
@@ -122,7 +122,7 @@ class TestOpenAIClient:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         messages = [{"role": "user", "content": "Test"}]
         
@@ -155,7 +155,7 @@ class TestOpenAIClient:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         client.create_chat_completion(
             model="gpt-3.5-turbo",
@@ -174,7 +174,7 @@ class TestOpenAIClient:
         from openai import OpenAIError
         client_mock.chat.completions.create.side_effect = OpenAIError("API Error")
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         with pytest.raises(OpenAIError, match="API Error"):
             client.create_chat_completion(
@@ -191,7 +191,7 @@ class TestOpenAIClient:
         mock_models = MagicMock()
         client_mock.models.list.return_value = mock_models
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         result = client.get_models()
         
@@ -205,7 +205,7 @@ class TestOpenAIClient:
         
         client_mock.models.list.return_value = MagicMock()
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         client.get_models()
         
         # Just verify the call was made without errors
@@ -219,7 +219,7 @@ class TestOpenAIClient:
         from openai import OpenAIError
         client_mock.models.list.side_effect = OpenAIError("Models API Error")
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         with pytest.raises(OpenAIError, match="Models API Error"):
             client.get_models()
@@ -235,7 +235,7 @@ class TestOpenAIClientIntegration:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         # Client should not handle rate limiting, response processing, etc.
         # It should just pass through to the underlying OpenAI client
@@ -262,7 +262,7 @@ class TestOpenAIClientIntegration:
         constructor_mock, client_mock = openai_mocks
         # Mock setup handled by fixture
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         # Client should not validate parameters - let OpenAI handle it
         # This includes things like temperature range, message format, etc.
@@ -289,7 +289,7 @@ class TestOpenAIClientEdgeCases:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         result = client.create_chat_completion(
             model="gpt-3.5-turbo",
@@ -306,7 +306,7 @@ class TestOpenAIClientEdgeCases:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         result = client.create_chat_completion(
             model="gpt-3.5-turbo",
@@ -326,7 +326,7 @@ class TestOpenAIClientEdgeCases:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         result = client.create_chat_completion(
             model="gpt-3.5-turbo",
@@ -345,7 +345,7 @@ class TestOpenAIClientEdgeCases:
         mock_response = MagicMock()
         client_mock.chat.completions.create.return_value = mock_response
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         # Test with many kwargs
         result = client.create_chat_completion(
