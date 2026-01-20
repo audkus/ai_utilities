@@ -2,6 +2,7 @@
 Comprehensive tests for OpenAIProvider to achieve 100% coverage.
 """
 
+from __future__ import annotations
 import pytest
 from unittest.mock import Mock, patch, MagicMock, mock_open
 from pathlib import Path
@@ -15,25 +16,32 @@ from ai_utilities.providers.provider_exceptions import FileTransferError
 
 
 @pytest.fixture
-def openai_mocks(monkeypatch) -> Tuple[MagicMock, MagicMock]:
-    """
-    Function-scoped fixture that provides deterministic OpenAI mocking.
-    
-    Returns:
-        Tuple of (constructor_mock, client_mock) where:
-        - constructor_mock: Mock for ai_utilities.providers.openai_provider.OpenAI constructor
-        - client_mock: Mock instance returned by the constructor
-    """
-    import ai_utilities.providers.openai_provider
-    
-    # Create constructor mock and client mock
-    constructor_mock = MagicMock(name="OpenAI_ctor")
-    client_mock = MagicMock(name="OpenAI_client")
+def openai_mocks(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> Tuple[MagicMock, MagicMock]:
+    """Provide per-test OpenAI constructor + client mocks and patch the correct symbols."""
+    # Flag so the global autouse fixture can reliably defer
+    setattr(request.node, "_uses_openai_mocks", True)
+
+    constructor_mock: MagicMock = MagicMock(name="OpenAI_ctor_local")
+    client_mock: MagicMock = MagicMock(name="OpenAI_client_local")
     constructor_mock.return_value = client_mock
-    
-    # Patch the exact symbol used by production code
-    monkeypatch.setattr(ai_utilities.providers.openai_provider, 'OpenAI', constructor_mock)
-    
+
+    # Patch the symbols actually used in code
+    modules_to_patch = [
+        "ai_utilities.openai_client",              # OpenAIClient uses this
+        "ai_utilities.providers.openai_provider",  # Provider uses this
+        "ai_utilities.async_client",               # If async path uses OpenAI directly
+    ]
+
+    for module_name in modules_to_patch:
+        try:
+            module = __import__(module_name, fromlist=["*"])
+            monkeypatch.setattr(module, "OpenAI", constructor_mock, raising=False)
+        except ImportError:
+            pass
+
     return constructor_mock, client_mock
 
 
