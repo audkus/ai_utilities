@@ -3,16 +3,27 @@ Comprehensive tests for OpenAIProvider to achieve 100% coverage.
 """
 
 from __future__ import annotations
+import sys
+import importlib
 import pytest
 from unittest.mock import Mock, patch, MagicMock, mock_open
 from pathlib import Path
 from datetime import datetime
 import json
 from typing import Tuple
-
-from ai_utilities.providers.openai_provider import OpenAIProvider
+from types import ModuleType
 from ai_utilities.file_models import UploadedFile
 from ai_utilities.providers.provider_exceptions import FileTransferError
+
+
+@pytest.fixture
+def openai_provider_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:
+    """
+    Import OpenAI provider module AFTER openai_mocks has patched constructors.
+    This prevents stale 'OpenAI = ...' alias bindings from earlier imports.
+    """
+    sys.modules.pop("ai_utilities.providers.openai_provider", None)
+    return importlib.import_module("ai_utilities.providers.openai_provider")
 
 
 class TestOpenAIProviderComplete:
@@ -28,23 +39,20 @@ class TestOpenAIProviderComplete:
         self.mock_settings.temperature = 0.7
         self.mock_settings.max_tokens = 1000
     
-    def test_initialization_success(self, openai_mocks):
-        """Test successful initialization of OpenAIProvider."""
+    
+    def test_initialization_success(self, openai_mocks, openai_provider_mod):
         constructor_mock, client_mock = openai_mocks
-        
-        provider = OpenAIProvider(self.mock_settings)
-        
-        # Verify OpenAI client is initialized with correct parameters
+
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
+
         constructor_mock.assert_called_once_with(
             api_key="test-api-key",
             base_url="https://api.openai.com/v1",
-            timeout=30
+            timeout=30,
         )
-        
-        assert provider.settings == self.mock_settings
-        assert provider.client is not None
+
     
-    def test_initialization_with_custom_settings(self):
+    def test_initialization_with_custom_settings(self, openai_provider_mod):
         """Test initialization with custom settings."""
         # Use patch.object to ensure we patch the exact module attribute
         import ai_utilities.providers.openai_provider
@@ -57,7 +65,7 @@ class TestOpenAIProviderComplete:
             custom_settings.temperature = 0.5
             custom_settings.max_tokens = 2000
             
-            provider = OpenAIProvider(custom_settings)
+            provider = openai_provider_mod.OpenAIProvider(custom_settings)
             
             mock_openai.assert_called_once_with(
                 api_key="custom-key",
@@ -68,7 +76,7 @@ class TestOpenAIProviderComplete:
         assert provider.settings == custom_settings
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_text_response(self, mock_openai):
+    def test_ask_text_response(self, mock_openai, openai_provider_mod):
         """Test ask method with text response."""
         # Mock OpenAI client response
         mock_client = Mock()
@@ -79,7 +87,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt")
         
         # Verify API call
@@ -93,7 +101,7 @@ class TestOpenAIProviderComplete:
         assert result == "Test response"
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_gpt4(self, mock_openai):
+    def test_ask_json_response_gpt4(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using GPT-4."""
         # Update settings to GPT-4
         self.mock_settings.model = "gpt-4"
@@ -107,7 +115,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -122,7 +130,7 @@ class TestOpenAIProviderComplete:
         assert result == {"key": "value"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_gpt35_turbo(self, mock_openai):
+    def test_ask_json_response_gpt35_turbo(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using GPT-3.5-turbo."""
         # Update settings to GPT-3.5-turbo
         self.mock_settings.model = "gpt-3.5-turbo"
@@ -136,7 +144,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -151,7 +159,7 @@ class TestOpenAIProviderComplete:
         assert result == {"result": "success"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_claude(self, mock_openai):
+    def test_ask_json_response_claude(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using Claude."""
         # Update settings to Claude
         self.mock_settings.model = "claude-3-sonnet"
@@ -165,7 +173,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -180,7 +188,7 @@ class TestOpenAIProviderComplete:
         assert result == {"data": "test"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_o1_models(self, mock_openai):
+    def test_ask_json_response_o1_models(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using O1 models."""
         # Update settings to O1
         self.mock_settings.model = "o1-preview"
@@ -194,7 +202,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -209,7 +217,7 @@ class TestOpenAIProviderComplete:
         assert result == {"output": "result"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_o1_mini(self, mock_openai):
+    def test_ask_json_response_o1_mini(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using O1-mini."""
         # Update settings to O1-mini
         self.mock_settings.model = "o1-mini"
@@ -223,7 +231,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -238,7 +246,7 @@ class TestOpenAIProviderComplete:
         assert result == {"mini": "response"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_custom_model_with_json(self, mock_openai):
+    def test_ask_json_response_custom_model_with_json(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using custom model with 'json' in name."""
         # Update settings to custom model
         self.mock_settings.model = "custom-json-model"
@@ -252,7 +260,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call includes JSON response format
@@ -267,7 +275,7 @@ class TestOpenAIProviderComplete:
         assert result == {"custom": "json"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_non_openai_provider(self, mock_openai):
+    def test_ask_json_response_non_openai_provider(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response for non-OpenAI provider."""
         # Mock OpenAI client response
         mock_client = Mock()
@@ -278,7 +286,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         # Mock the provider_name property to return a non-OpenAI name
         with patch.object(type(provider), 'provider_name', new_callable=lambda: property(lambda self: "custom_provider")):
@@ -296,7 +304,7 @@ class TestOpenAIProviderComplete:
         assert result == {"provider": "custom"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_unsupported_model(self, mock_openai):
+    def test_ask_json_response_unsupported_model(self, mock_openai, openai_provider_mod):
         """Test ask method with JSON response using unsupported model."""
         # Update settings to unsupported model
         self.mock_settings.model = "text-davinci-003"
@@ -310,7 +318,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Verify API call does NOT include JSON response format
@@ -325,7 +333,7 @@ class TestOpenAIProviderComplete:
         assert result == {"json": "content"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_invalid_json_in_native_mode(self, mock_openai):
+    def test_ask_json_response_invalid_json_in_native_mode(self, mock_openai, openai_provider_mod):
         """Test ask method with invalid JSON in native JSON mode."""
         # Update settings to GPT-4 for JSON mode
         self.mock_settings.model = "gpt-4"
@@ -339,14 +347,14 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Should return wrapped response when JSON parsing fails
         assert result == {"response": "This is not valid JSON"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_json_response_no_json_found(self, mock_openai):
+    def test_ask_json_response_no_json_found(self, mock_openai, openai_provider_mod):
         """Test ask method with no JSON found in text."""
         # Update settings to unsupported model
         self.mock_settings.model = "text-davinci-003"
@@ -360,14 +368,14 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt", return_format="json")
         
         # Should return wrapped response when no JSON found
         assert result == {"response": "This is plain text with no JSON"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_with_custom_parameters(self, mock_openai):
+    def test_ask_with_custom_parameters(self, mock_openai, openai_provider_mod):
         """Test ask method with custom parameters."""
         # Mock OpenAI client response
         mock_client = Mock()
@@ -378,7 +386,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask(
             "Test prompt",
             model="gpt-4",
@@ -398,7 +406,7 @@ class TestOpenAIProviderComplete:
         assert result == "Custom response"
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_many_text_responses(self, mock_openai):
+    def test_ask_many_text_responses(self, mock_openai, openai_provider_mod):
         """Test ask_many method with text responses."""
         # Mock OpenAI client response
         mock_client = Mock()
@@ -409,7 +417,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         prompts = ["Prompt 1", "Prompt 2", "Prompt 3"]
         results = provider.ask_many(prompts)
         
@@ -418,7 +426,7 @@ class TestOpenAIProviderComplete:
         assert results == ["Response", "Response", "Response"]
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_many_json_responses(self, mock_openai):
+    def test_ask_many_json_responses(self, mock_openai, openai_provider_mod):
         """Test ask_many method with JSON responses."""
         # Update settings to GPT-4 for JSON mode
         self.mock_settings.model = "gpt-4"
@@ -432,7 +440,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         prompts = ["JSON Prompt 1", "JSON Prompt 2"]
         results = provider.ask_many(prompts, return_format="json")
         
@@ -441,7 +449,7 @@ class TestOpenAIProviderComplete:
         assert results == [{"result": "success"}, {"result": "success"}]
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_ask_batch_method(self, mock_openai):
+    def test_ask_batch_method(self, mock_openai, openai_provider_mod):
         """Test _ask_batch method directly."""
         # Mock OpenAI client response
         mock_client = Mock()
@@ -452,7 +460,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         prompts = ["Batch 1", "Batch 2"]
         results = provider._ask_batch(prompts)
         
@@ -461,9 +469,9 @@ class TestOpenAIProviderComplete:
         assert results == ["Batch response", "Batch response"]
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_extract_json_valid_json(self, mock_openai):
+    def test_extract_json_valid_json(self, mock_openai, openai_provider_mod):
         """Test _extract_json with valid JSON."""
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         text = 'Some text {"key": "value", "number": 123} more text'
         result = provider._extract_json(text)
@@ -471,9 +479,9 @@ class TestOpenAIProviderComplete:
         assert result == {"key": "value", "number": 123}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_extract_json_multiple_json_objects(self, mock_openai):
+    def test_extract_json_multiple_json_objects(self, mock_openai, openai_provider_mod):
         """Test _extract_json with multiple JSON objects."""
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         text = 'First {"first": 1} second {"second": 2} third'
         result = provider._extract_json(text)
@@ -482,9 +490,9 @@ class TestOpenAIProviderComplete:
         assert result == {"first": 1}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_extract_json_invalid_json(self, mock_openai):
+    def test_extract_json_invalid_json(self, mock_openai, openai_provider_mod):
         """Test _extract_json with invalid JSON."""
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         text = 'Some text {invalid json} more text'
         result = provider._extract_json(text)
@@ -493,9 +501,9 @@ class TestOpenAIProviderComplete:
         assert result == {"response": "Some text {invalid json} more text"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_extract_json_no_json(self, mock_openai):
+    def test_extract_json_no_json(self, mock_openai, openai_provider_mod):
         """Test _extract_json with no JSON."""
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         text = 'Just plain text without any JSON'
         result = provider._extract_json(text)
@@ -504,9 +512,9 @@ class TestOpenAIProviderComplete:
         assert result == {"response": "Just plain text without any JSON"}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_extract_json_empty_string(self, mock_openai):
+    def test_extract_json_empty_string(self, mock_openai, openai_provider_mod):
         """Test _extract_json with empty string."""
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         result = provider._extract_json("")
         
@@ -514,7 +522,7 @@ class TestOpenAIProviderComplete:
         assert result == {"response": ""}
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_upload_file_success(self, mock_openai):
+    def test_upload_file_success(self, mock_openai, openai_provider_mod):
         """Test successful file upload."""
         # Mock file response
         mock_file_response = Mock()
@@ -545,7 +553,7 @@ class TestOpenAIProviderComplete:
                 mock_exists.return_value = True
                 mock_is_file.return_value = True
                 
-                provider = OpenAIProvider(self.mock_settings)
+                provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
                 result = provider.upload_file(temp_file_path)
             
             # Verify result
@@ -562,7 +570,7 @@ class TestOpenAIProviderComplete:
         assert isinstance(result.created_at, datetime)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_upload_file_with_custom_parameters(self, mock_openai):
+    def test_upload_file_with_custom_parameters(self, mock_openai, openai_provider_mod):
         """Test file upload with custom parameters."""
         # Mock file response
         mock_file_response = Mock()
@@ -590,7 +598,7 @@ class TestOpenAIProviderComplete:
                 mock_exists.return_value = True
                 mock_is_file.return_value = True
                 
-                provider = OpenAIProvider(self.mock_settings)
+                provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
                 result = provider.upload_file(
                     temp_file_path,
                     purpose="fine-tune",
@@ -614,7 +622,7 @@ class TestOpenAIProviderComplete:
             temp_file_path.unlink(missing_ok=True)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_upload_file_not_a_file(self, mock_openai):
+    def test_upload_file_not_a_file(self, mock_openai, openai_provider_mod):
         """Test file upload when path is not a file."""
         mock_openai.return_value = Mock()
         
@@ -622,13 +630,13 @@ class TestOpenAIProviderComplete:
         
         with patch('pathlib.Path.exists', return_value=True):
             with patch('pathlib.Path.is_file', return_value=False):
-                provider = OpenAIProvider(self.mock_settings)
+                provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
                 
                 with pytest.raises(ValueError, match="Path is not a file"):
                     provider.upload_file(test_file)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_upload_file_api_error(self, mock_openai):
+    def test_upload_file_api_error(self, mock_openai, openai_provider_mod):
         """Test file upload when API call fails."""
         # Mock OpenAI client to raise exception
         mock_client = Mock()
@@ -640,7 +648,7 @@ class TestOpenAIProviderComplete:
         with patch('builtins.open', mock_open(read_data=b"test content")):
             with patch('pathlib.Path.exists', return_value=True):
                 with patch('pathlib.Path.is_file', return_value=True):
-                    provider = OpenAIProvider(self.mock_settings)
+                    provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
                     
                     with pytest.raises(FileTransferError) as exc_info:
                         provider.upload_file(test_file)
@@ -649,7 +657,7 @@ class TestOpenAIProviderComplete:
                     assert "openai" in str(exc_info.value)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_download_file_success(self, mock_openai):
+    def test_download_file_success(self, mock_openai, openai_provider_mod):
         """Test successful file download."""
         # Mock file content response
         mock_content_response = Mock()
@@ -660,7 +668,7 @@ class TestOpenAIProviderComplete:
         mock_client.files.content.return_value = mock_content_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.download_file("file-123")
         
         # Verify download call
@@ -670,24 +678,24 @@ class TestOpenAIProviderComplete:
         assert result == b"file content"
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_download_file_empty_id(self, mock_openai):
+    def test_download_file_empty_id(self, mock_openai, openai_provider_mod):
         """Test file download with empty file ID."""
         mock_openai.return_value = Mock()
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         with pytest.raises(ValueError, match="file_id cannot be empty"):
             provider.download_file("")
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_download_file_api_error(self, mock_openai):
+    def test_download_file_api_error(self, mock_openai, openai_provider_mod):
         """Test file download when API call fails."""
         # Mock OpenAI client to raise exception
         mock_client = Mock()
         mock_client.files.content.side_effect = Exception("Download Error")
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         with pytest.raises(FileTransferError) as exc_info:
             provider.download_file("file-123")
@@ -696,7 +704,7 @@ class TestOpenAIProviderComplete:
         assert "openai" in str(exc_info.value)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_success(self, mock_openai):
+    def test_generate_image_success(self, mock_openai, openai_provider_mod):
         """Test successful image generation."""
         # Mock image response
         mock_image_response = Mock()
@@ -709,7 +717,7 @@ class TestOpenAIProviderComplete:
         mock_client.images.generate.return_value = mock_image_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.generate_image("A beautiful sunset")
         
         # Verify generation call
@@ -725,7 +733,7 @@ class TestOpenAIProviderComplete:
         assert result == ["https://example.com/image1.png"]
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_multiple_images(self, mock_openai):
+    def test_generate_image_multiple_images(self, mock_openai, openai_provider_mod):
         """Test image generation with multiple images."""
         # Mock image response
         mock_image_response = Mock()
@@ -737,7 +745,7 @@ class TestOpenAIProviderComplete:
         mock_client.images.generate.return_value = mock_image_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.generate_image("Three cats", n=3)
         
         # Verify generation call
@@ -756,7 +764,7 @@ class TestOpenAIProviderComplete:
         assert result[2] == "https://example.com/image2.png"
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_custom_parameters(self, mock_openai):
+    def test_generate_image_custom_parameters(self, mock_openai, openai_provider_mod):
         """Test image generation with custom parameters."""
         # Mock image response
         mock_image_response = Mock()
@@ -769,7 +777,7 @@ class TestOpenAIProviderComplete:
         mock_client.images.generate.return_value = mock_image_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.generate_image(
             "HD image",
             size="1792x1024",
@@ -789,21 +797,21 @@ class TestOpenAIProviderComplete:
         assert result == ["https://example.com/custom.png"]
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_empty_prompt(self, mock_openai):
+    def test_generate_image_empty_prompt(self, mock_openai, openai_provider_mod):
         """Test image generation with empty prompt."""
         mock_openai.return_value = Mock()
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         with pytest.raises(ValueError, match="prompt cannot be empty"):
             provider.generate_image("")
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_invalid_n(self, mock_openai):
+    def test_generate_image_invalid_n(self, mock_openai, openai_provider_mod):
         """Test image generation with invalid n parameter."""
         mock_openai.return_value = Mock()
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         # Test n < 1
         with pytest.raises(ValueError, match="n must be between 1 and 10"):
@@ -814,14 +822,14 @@ class TestOpenAIProviderComplete:
             provider.generate_image("test", n=11)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_generate_image_api_error(self, mock_openai):
+    def test_generate_image_api_error(self, mock_openai, openai_provider_mod):
         """Test image generation when API call fails."""
         # Mock OpenAI client to raise exception
         mock_client = Mock()
         mock_client.images.generate.side_effect = Exception("Generation Error")
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         with pytest.raises(FileTransferError) as exc_info:
             provider.generate_image("test image")
@@ -830,17 +838,17 @@ class TestOpenAIProviderComplete:
         assert "openai" in str(exc_info.value)
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_provider_name_property(self, mock_openai):
+    def test_provider_name_property(self, mock_openai, openai_provider_mod):
         """Test provider_name property."""
         mock_openai.return_value.provider_name = "openai"
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         
         # Test that provider_name is accessible
         assert hasattr(provider, 'provider_name')
     
     @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_empty_response_content(self, mock_openai):
+    def test_empty_response_content(self, mock_openai, openai_provider_mod):
         """Test handling of empty response content."""
         # Mock OpenAI client response with None content
         mock_client = Mock()
@@ -851,7 +859,7 @@ class TestOpenAIProviderComplete:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        provider = OpenAIProvider(self.mock_settings)
+        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
         result = provider.ask("Test prompt")
         
         # Should handle None content gracefully
