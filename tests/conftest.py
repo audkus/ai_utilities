@@ -12,10 +12,13 @@ import warnings
 import logging
 import socket
 import tempfile
-from unittest.mock import MagicMock
-from typing import Tuple
+from unittest.mock import MagicMock, patch
+from typing import Tuple, List
 from pathlib import Path
 from typing import Dict, Any, Iterator, Optional
+
+
+_OPENAI_SESSION_PATCHES: List[patch] = []
 
 
 # Add src directory to Python path for imports
@@ -47,8 +50,10 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
-    """Configure pytest with custom markers and settings."""
+def pytest_configure(config: pytest.Config) -> None:
+    """Configure pytest with custom markers and session-level OpenAI patching."""
+    global _OPENAI_SESSION_PATCHES
+
     # Add marker for order dependence tests
     config.addinivalue_line(
         "markers", "order_dependent: marks tests that verify order independence"
@@ -58,6 +63,37 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: marks tests as integration tests that require real network/API calls"
     )
+
+    # Session-level OpenAI patching to prevent real network calls
+    allow_real = (
+        config.getoption("--run-integration")
+        or config.getoption("--allow-network")
+        or os.getenv("AIU_RUN_INTEGRATION") == "1"
+    )
+    if allow_real:
+        return
+
+    try:
+        import openai  # noqa: F401
+    except Exception:
+        return
+
+    ctor = MagicMock(name="Session_OpenAI_ctor")
+    client = MagicMock(name="Session_OpenAI_client")
+    ctor.return_value = client
+
+    for target in ("openai.OpenAI", "openai.AsyncOpenAI"):
+        p = patch(target, new=ctor)
+        p.start()
+        _OPENAI_SESSION_PATCHES.append(p)
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    """Stop session-level OpenAI patches."""
+    global _OPENAI_SESSION_PATCHES
+    for p in reversed(_OPENAI_SESSION_PATCHES):
+        p.stop()
+    _OPENAI_SESSION_PATCHES = []
 
 
 def pytest_collection_modifyitems(config, items):
@@ -105,54 +141,6 @@ def block_network(monkeypatch, request):
         monkeypatch.setattr(socket.socket, "connect", blocked_connect)
 
 
-@pytest.fixture(autouse=True)
-def patch_openai_constructors(monkeypatch, request):
-    """
-    Patch OpenAI constructors globally to prevent real network calls.
-    
-    This fixture runs for all tests and patches OpenAI constructors
-    unless integration tests are enabled OR network is explicitly allowed.
-    """
-    # Check if we should allow real OpenAI calls
-    integration_enabled = request.config.getoption("--run-integration")
-    network_allowed = request.config.getoption("--allow-network")
-    env_integration = os.getenv("AIU_RUN_INTEGRATION") == "1"
-    is_integration_test = "integration" in request.node.keywords
-    
-    allow_real_openai = integration_enabled or network_allowed or env_integration or is_integration_test
-    
-    if not allow_real_openai:
-        from unittest.mock import MagicMock
-        
-        # Create mock response with realistic structure
-        mock_chat_response = MagicMock()
-        mock_choice = MagicMock()
-        mock_message = MagicMock()
-        mock_message.content = "ok"
-        mock_choice.message = mock_message
-        mock_chat_response.choices = [mock_choice]
-        
-        mock_file_response = MagicMock()
-        mock_file_response.id = "file-123"
-        mock_file_response.filename = "test.txt"
-        mock_file_response.bytes = 1024
-        mock_file_response.purpose = "assistants"
-        mock_file_response.created_at = 1640995200
-        
-        # Create mock client instance for general use
-        mock_client_instance = MagicMock()
-        mock_client_instance.chat.completions.create.return_value = mock_chat_response
-        mock_client_instance.files.create.return_value = mock_file_response
-        mock_client_instance.files.retrieve.return_value = mock_file_response
-        mock_client_instance.files.content.return_value = b"test content"
-        
-        # Only patch client module, provider and openai_client are handled by their own fixtures
-        monkeypatch.setattr('ai_utilities.client.OpenAI', lambda **kwargs: mock_client_instance)
-        
-        # Also patch the openai module itself to prevent any real imports
-        monkeypatch.setattr('openai.OpenAI', lambda **kwargs: mock_client_instance)
-
-
 @pytest.fixture
 def network_allowed():
     """
@@ -170,86 +158,46 @@ def network_allowed():
 def openai_mocks(
     monkeypatch: pytest.MonkeyPatch,
     request: pytest.FixtureRequest,
-) -> Tuple[MagicMock, MagicMock]:
-    """
-    Function-scoped fixture that provides deterministic OpenAI mocking.
-
-    IMPORTANT:
-    - Sets a per-test flag on request.node so the global OpenAI patch fixture will not
-      override these mocks even if fixture ordering changes.
-    - Patches the exact symbols used by production code (and commonly imported variants).
-
-    Returns:
-        Tuple[MagicMock, MagicMock]:
-            (constructor_mock, client_mock)
-    """
-    # Flag this test as using the local OpenAI mocks (prevents global override)
-    setattr(request.node, "_uses_openai_mocks", True)
-
-    constructor_mock: MagicMock = MagicMock(name="OpenAI_ctor_local")
-    client_mock: MagicMock = MagicMock(name="OpenAI_client_local")
-    constructor_mock.return_value = client_mock
-
-    # Patch modules that may reference OpenAI in different parts of the codebase
-    modules_to_patch = [
-        "ai_utilities.openai_client",
-        "ai_utilities.providers.openai_provider",
-        "ai_utilities.async_client",
-    ]
-
-    for module_name in modules_to_patch:
-        try:
-            module = __import__(module_name, fromlist=["*"])
-            monkeypatch.setattr(module, "OpenAI", constructor_mock, raising=False)
-        except ImportError:
-            # Module might not exist in some test environments
-            pass
-
-    return constructor_mock, client_mock
-
-
-@pytest.fixture(autouse=True)
-def _patch_openai_ctor_globally(
     reset_global_state: None,
     reset_contextvars: None,
     reset_logging_state: None,
-    request: pytest.FixtureRequest,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Global autouse fixture that prevents any test from creating real OpenAI clients.
+) -> Tuple[MagicMock, MagicMock]:
+    """Per-test OpenAI ctor/client mocks; overrides session patch deterministically."""
+    setattr(request.node, "_uses_openai_mocks", True)
 
-    Rules:
-    - Runs after reset fixtures (due to explicit dependencies).
-    - Can be opted out with: pytest.mark.skip_openai_global_patch
-    - Will NEVER override the local openai_mocks fixture, even if fixture ordering changes,
-      because openai_mocks sets request.node._uses_openai_mocks = True.
-    """
-    # Explicit opt-out marker
-    if request.node.get_closest_marker("skip_openai_global_patch"):
-        return
+    ctor: MagicMock = MagicMock(name="OpenAI_ctor_local")
+    client: MagicMock = MagicMock(name="OpenAI_client_local")
+    ctor.return_value = client
 
-    # If the local openai_mocks fixture is used in this test, do nothing.
-    # (This is deterministic even if the autouse fixture executes first or last.)
-    if getattr(request.node, "_uses_openai_mocks", False):
-        return
+    # CRITICAL: Patch the exact symbol OpenAIClient uses (line 14: OpenAI = openai.OpenAI)
+    import ai_utilities.openai_client as openai_client_mod
+    
+    # Force rebind of the module-level alias to override session patch binding
+    openai_client_mod.OpenAI = ctor
+    monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
+    
+    # Also patch upstream to handle any "from openai import OpenAI" done after this point
+    try:
+        import openai
+        monkeypatch.setattr(openai, "OpenAI", ctor, raising=False)
+        monkeypatch.setattr(openai, "AsyncOpenAI", ctor, raising=False)
+    except Exception:
+        pass
 
-    constructor_mock: MagicMock = MagicMock(name="Global_OpenAI_ctor")
-    client_mock: MagicMock = MagicMock(name="Global_OpenAI_client")
-    constructor_mock.return_value = client_mock
+    # Patch other internal modules that may hold their own OpenAI binding
+    try:
+        import ai_utilities.providers.openai_provider as provider_mod
+        monkeypatch.setattr(provider_mod, "OpenAI", ctor, raising=False)
+    except Exception:
+        pass
 
-    modules_to_patch = [
-        "ai_utilities.openai_client",
-        "ai_utilities.providers.openai_provider",
-        "ai_utilities.async_client",
-    ]
+    try:
+        import ai_utilities.async_client as async_client_mod
+        monkeypatch.setattr(async_client_mod, "OpenAI", ctor, raising=False)
+    except Exception:
+        pass
 
-    for module_name in modules_to_patch:
-        try:
-            module = __import__(module_name, fromlist=["*"])
-            monkeypatch.setattr(module, "OpenAI", constructor_mock, raising=False)
-        except ImportError:
-            pass
+    return ctor, client
 
 
 @pytest.fixture(scope="session", autouse=True)
