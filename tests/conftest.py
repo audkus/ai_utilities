@@ -18,9 +18,6 @@ from pathlib import Path
 from typing import Dict, Any, Iterator, Optional
 
 
-_OPENAI_SESSION_PATCHES: List[patch] = []
-
-
 # Add src directory to Python path for imports
 # This ensures tests import from the local src directory, not any installed version
 src_path = str(Path(__file__).parent.parent / "src")
@@ -34,13 +31,13 @@ def pytest_addoption(parser):
         "--run-integration",
         action="store_true",
         default=False,
-        help="Run integration tests that require real network/API calls"
+        help="Run integration tests that require network access"
     )
     parser.addoption(
         "--allow-network",
         action="store_true", 
         default=False,
-        help="Allow outbound network connections in tests"
+        help="Allow network connections during tests"
     )
     parser.addoption(
         "--run-slow",
@@ -51,49 +48,20 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Configure pytest with custom markers and session-level OpenAI patching."""
-    global _OPENAI_SESSION_PATCHES
-
-    # Add marker for order dependence tests
-    config.addinivalue_line(
-        "markers", "order_dependent: marks tests that verify order independence"
-    )
-    
-    # Register integration marker
+    """Configure pytest with custom markers."""
+    # Register custom markers
     config.addinivalue_line(
         "markers", "integration: marks tests as integration tests that require real network/API calls"
     )
-
-    # Session-level OpenAI patching to prevent real network calls
-    allow_real = (
-        config.getoption("--run-integration")
-        or config.getoption("--allow-network")
-        or os.getenv("AIU_RUN_INTEGRATION") == "1"
+    config.addinivalue_line(
+        "markers", "skip_openai_global_patch: marks tests that should skip global OpenAI patching"
     )
-    if allow_real:
-        return
-
-    try:
-        import openai  # noqa: F401
-    except Exception:
-        return
-
-    ctor = MagicMock(name="Session_OpenAI_ctor")
-    client = MagicMock(name="Session_OpenAI_client")
-    ctor.return_value = client
-
-    for target in ("openai.OpenAI", "openai.AsyncOpenAI"):
-        p = patch(target, new=ctor)
-        p.start()
-        _OPENAI_SESSION_PATCHES.append(p)
-
-
-def pytest_unconfigure(config: pytest.Config) -> None:
-    """Stop session-level OpenAI patches."""
-    global _OPENAI_SESSION_PATCHES
-    for p in reversed(_OPENAI_SESSION_PATCHES):
-        p.stop()
-    _OPENAI_SESSION_PATCHES = []
+    config.addinivalue_line(
+        "markers", "order_dependent: marks tests that verify order independence"
+    )
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow running"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -154,6 +122,50 @@ def network_allowed():
     pass
 
 
+@pytest.fixture(autouse=True)
+def patch_openai_aliases(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Autouse fixture that patches OpenAI constructors for tests that don't use openai_mocks.
+    
+    This provides a safety net to prevent real network calls while allowing
+    per-test openai_mocks fixture to override for strict identity assertions.
+    """
+    # Early return if test explicitly uses openai_mocks fixture
+    if "openai_mocks" in request.fixturenames:
+        return
+    
+    # Early return if test has opt-out marker
+    if request.node.get_closest_marker("skip_openai_global_patch"):
+        return
+    
+    # Early return if integration/network access is allowed
+    integration_enabled = request.config.getoption("--run-integration")
+    network_allowed = request.config.getoption("--allow-network") 
+    env_integration = os.getenv("AIU_RUN_INTEGRATION") == "1"
+    if integration_enabled or network_allowed or env_integration:
+        return
+    
+    # Create callable MagicMock for constructor
+    ctor: MagicMock = MagicMock(name="Global_OpenAI_ctor")
+    client: MagicMock = MagicMock(name="Global_OpenAI_client")
+    ctor.return_value = client
+    
+    # Patch the critical module alias used by OpenAIClient
+    try:
+        import ai_utilities.openai_client as openai_client_mod
+        monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
+    except ImportError:
+        pass
+    
+    # Best-effort patch of upstream OpenAI module
+    try:
+        import openai
+        monkeypatch.setattr(openai, "OpenAI", ctor, raising=False)
+        monkeypatch.setattr(openai, "AsyncOpenAI", ctor, raising=False)
+    except ImportError:
+        pass
+
+
 @pytest.fixture
 def openai_mocks(
     monkeypatch: pytest.MonkeyPatch,
@@ -169,20 +181,28 @@ def openai_mocks(
     client: MagicMock = MagicMock(name="OpenAI_client_local")
     ctor.return_value = client
 
-    # CRITICAL: Patch the exact symbol OpenAIClient uses (line 14: OpenAI = openai.OpenAI)
-    import ai_utilities.openai_client as openai_client_mod
-    
-    # Force rebind of the module-level alias to override session patch binding
-    openai_client_mod.OpenAI = ctor
-    monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
-    
-    # Also patch upstream to handle any "from openai import OpenAI" done after this point
+    # CRITICAL: Patch upstream first, then rebind module alias
     try:
         import openai
         monkeypatch.setattr(openai, "OpenAI", ctor, raising=False)
         monkeypatch.setattr(openai, "AsyncOpenAI", ctor, raising=False)
-    except Exception:
+    except ImportError:
         pass
+    
+    # Force reload and rebind of the module-level alias
+    import importlib
+    import ai_utilities.openai_client as openai_client_mod
+    
+    # Remove from sys.modules to force fresh import
+    if 'ai_utilities.openai_client' in sys.modules:
+        del sys.modules['ai_utilities.openai_client']
+    
+    # Re-import the module which will now use our patched openai.OpenAI
+    importlib.reload(openai_client_mod)
+    
+    # Ensure the alias is bound to our mock
+    openai_client_mod.OpenAI = ctor
+    monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
 
     # Patch other internal modules that may hold their own OpenAI binding
     try:

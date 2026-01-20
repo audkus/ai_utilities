@@ -13,7 +13,7 @@ class TestOpenAIClient:
     def test_initialization_default(self, openai_mocks):
         """Test client initialization with default parameters."""
         constructor_mock, client_mock = openai_mocks
-        
+
         client = OpenAIClient(api_key="test-key")
         
         # Verify client has the mock instance
