@@ -174,7 +174,7 @@ def openai_mocks(
     reset_contextvars: None,
     reset_logging_state: None,
 ) -> Tuple[MagicMock, MagicMock]:
-    """Per-test OpenAI ctor/client mocks. No reload hacks."""
+    """Per-test OpenAI ctor/client mocks; patch the exact loaded module objects."""
     ctor: MagicMock = MagicMock(name="OpenAI_ctor_local")
     client: MagicMock = MagicMock(name="OpenAI_client_local")
     ctor.return_value = client
@@ -187,22 +187,24 @@ def openai_mocks(
     except ImportError:
         pass
 
-    # Patch the exact alias used by OpenAIClient: ai_utilities.openai_client.OpenAI
-    import ai_utilities.openai_client as openai_client_mod
-    monkeypatch.setattr(openai_client_mod, "OpenAI", ctor, raising=False)
+    # Patch *the exact module objects currently loaded* (avoid importing fresh copies)
+    import sys
 
-    # Patch other internal modules that may have their own alias
-    try:
-        import ai_utilities.providers.openai_provider as provider_mod
-        monkeypatch.setattr(provider_mod, "OpenAI", ctor, raising=False)
-    except ImportError:
-        pass
-
-    try:
-        import ai_utilities.async_client as async_client_mod
-        monkeypatch.setattr(async_client_mod, "OpenAI", ctor, raising=False)
-    except ImportError:
-        pass
+    for modname in (
+        "ai_utilities.openai_client",
+        "ai_utilities.providers.openai_provider",
+        "ai_utilities.async_client",
+    ):
+        mod = sys.modules.get(modname)
+        if mod is not None:
+            monkeypatch.setattr(mod, "OpenAI", ctor, raising=False)
+        else:
+            # Debug: Module not loaded yet, try importing it
+            try:
+                imported_mod = __import__(modname, fromlist=["*"])
+                monkeypatch.setattr(imported_mod, "OpenAI", ctor, raising=False)
+            except ImportError:
+                pass
 
     return ctor, client
 
