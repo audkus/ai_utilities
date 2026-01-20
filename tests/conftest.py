@@ -16,6 +16,9 @@ from unittest.mock import MagicMock, patch
 from typing import Tuple, List
 from pathlib import Path
 from typing import Dict, Any, Iterator, Optional
+import importlib
+from types import ModuleType
+from typing import Tuple
 
 
 # Add src directory to Python path for imports
@@ -23,6 +26,17 @@ from typing import Dict, Any, Iterator, Optional
 src_path = str(Path(__file__).parent.parent / "src")
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
+
+
+@pytest.fixture
+def openai_client_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:
+    """
+    Import ai_utilities.openai_client AFTER openai_mocks patching has run.
+
+    This avoids stale module-object references when other tests reload modules.
+    """
+    import ai_utilities.openai_client as mod
+    return importlib.import_module(mod.__name__)
 
 
 def pytest_addoption(parser):
