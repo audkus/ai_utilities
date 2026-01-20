@@ -15,36 +15,6 @@ from ai_utilities.file_models import UploadedFile
 from ai_utilities.providers.provider_exceptions import FileTransferError
 
 
-@pytest.fixture
-def openai_mocks(
-    monkeypatch: pytest.MonkeyPatch,
-    request: pytest.FixtureRequest,
-) -> Tuple[MagicMock, MagicMock]:
-    """Provide per-test OpenAI constructor + client mocks and patch the correct symbols."""
-    # Flag so the global autouse fixture can reliably defer
-    setattr(request.node, "_uses_openai_mocks", True)
-
-    constructor_mock: MagicMock = MagicMock(name="OpenAI_ctor_local")
-    client_mock: MagicMock = MagicMock(name="OpenAI_client_local")
-    constructor_mock.return_value = client_mock
-
-    # Patch the symbols actually used in code
-    modules_to_patch = [
-        "ai_utilities.openai_client",              # OpenAIClient uses this
-        "ai_utilities.providers.openai_provider",  # Provider uses this
-        "ai_utilities.async_client",               # If async path uses OpenAI directly
-    ]
-
-    for module_name in modules_to_patch:
-        try:
-            module = __import__(module_name, fromlist=["*"])
-            monkeypatch.setattr(module, "OpenAI", constructor_mock, raising=False)
-        except ImportError:
-            pass
-
-    return constructor_mock, client_mock
-
-
 class TestOpenAIProviderComplete:
     """Comprehensive test suite for OpenAIProvider."""
     
