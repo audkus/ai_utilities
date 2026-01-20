@@ -39,6 +39,17 @@ def openai_client_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:
     return importlib.import_module(mod.__name__)
 
 
+@pytest.fixture
+def openai_provider_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:
+    """
+    Import ai_utilities.providers.openai_provider AFTER openai_mocks has patched constructors.
+    
+    This prevents stale 'OpenAI = ...' alias bindings from earlier imports.
+    """
+    sys.modules.pop("ai_utilities.providers.openai_provider", None)
+    return importlib.import_module("ai_utilities.providers.openai_provider")
+
+
 def pytest_addoption(parser):
     """Add custom command line options for test guardrails."""
     parser.addoption(
