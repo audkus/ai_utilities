@@ -8,6 +8,8 @@ import os
 import sys
 from configparser import ConfigParser
 from unittest.mock import Mock, patch
+from types import ModuleType
+import importlib
 
 import pytest
 
@@ -15,24 +17,30 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities.exceptions import RateLimitExceededError
-from ai_utilities.openai_client import OpenAIClient
 from ai_utilities.openai_model import OpenAIModel
 from ai_utilities.response_processor import ResponseProcessor
 from ai_utilities.token_counter import TokenCounter
 
 
+@pytest.fixture
+def openai_client_mod(openai_mocks) -> ModuleType:
+    """Import ai_utilities.openai_client AFTER openai_mocks has patched constructors."""
+    sys.modules.pop("ai_utilities.openai_client", None)
+    return importlib.import_module("ai_utilities.openai_client")
+
+
 class TestOpenAIClient:
     """Test OpenAIClient single responsibility for API communication."""
     
-    def test_initialization(self):
+    def test_initialization(self, openai_mocks, openai_client_mod):
         """Test OpenAIClient initialization."""
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         assert client.client is not None
         assert client.api_key == "test-key"
     
-    def test_initialization_with_custom_base_url(self):
+    def test_initialization_with_custom_base_url(self, openai_mocks, openai_client_mod):
         """Test OpenAIClient initialization with custom base URL."""
-        client = OpenAIClient(
+        client = openai_client_mod.OpenAIClient(
             api_key="test-key",
             base_url="https://custom.openai.com/v1",
             timeout=60
@@ -42,7 +50,7 @@ class TestOpenAIClient:
         assert client.timeout == 60
     
     @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion(self, mock_openai):
+    def test_create_chat_completion(self, mock_openai, openai_client_mod):
         """Test chat completion creation."""
         # Mock the OpenAI response
         mock_response = Mock()
@@ -53,7 +61,7 @@ class TestOpenAIClient:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         response = client.create_chat_completion(
             model="test-model-1",
             messages=[{"role": "user", "content": "Hello"}],
@@ -69,14 +77,14 @@ class TestOpenAIClient:
         assert response == mock_response
     
     @patch('ai_utilities.openai_client.OpenAI')
-    def test_get_models(self, mock_openai):
+    def test_get_models(self, mock_openai, openai_client_mod):
         """Test model listing."""
         mock_models = Mock()
         mock_client = Mock()
         mock_client.models.list.return_value = mock_models
         mock_openai.return_value = mock_client
         
-        client = OpenAIClient(api_key="test-key")
+        client = openai_client_mod.OpenAIClient(api_key="test-key")
         models = client.get_models()
         
         mock_client.models.list.assert_called_once()
@@ -372,7 +380,7 @@ class TestComponentIntegration:
     """Test integration between refactored components."""
     
     @patch('ai_utilities.openai_client.OpenAI')
-    def test_end_to_end_workflow(self, mock_openai):
+    def test_end_to_end_workflow(self, mock_openai, openai_mocks, openai_client_mod):
         """Test end-to-end workflow with all components."""
         # Mock OpenAI response
         mock_response = Mock()
@@ -383,7 +391,7 @@ class TestComponentIntegration:
         mock_openai.return_value = mock_client
         
         # Create components
-        api_client = OpenAIClient(api_key="test-key")
+        api_client = openai_client_mod.OpenAIClient(api_key="test-key")
         processor = ResponseProcessor()
         counter = TokenCounter()
         
