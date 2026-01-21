@@ -455,26 +455,35 @@ class TestThreadSafeUsageTracker:
     
     def test_reset_if_new_day(self):
         """Test daily reset functionality."""
+        import importlib
+        import ai_utilities.usage_tracker as ut_module
+        from datetime import date
+        
         with tempfile.TemporaryDirectory() as temp_dir:
             stats_file = Path(temp_dir) / "test_stats.json"
-            tracker = ThreadSafeUsageTracker(stats_file=stats_file)
             
-            # Record usage today
+            # Record usage with today's date
+            today = date.today()
+            tomorrow = date.fromordinal(today.toordinal() + 1)
+            
+            # Create tracker and record usage
+            tracker = ThreadSafeUsageTracker(stats_file=stats_file)
             tracker.record_usage(tokens_used=100)
             stats = tracker.get_stats()
             assert stats.tokens_used_today == 100
             
-            # Mock date change to tomorrow
-            from datetime import date
-            original_today = date.today
-            tomorrow = date.fromordinal(original_today().toordinal() + 1)
+            # Reload module and patch date to tomorrow
+            importlib.reload(ut_module)
             
-            with patch('ai_utilities.usage_tracker.date') as mock_date:
+            with patch.object(ut_module, 'date') as mock_date:
                 mock_date.today.return_value = tomorrow
                 mock_date.side_effect = lambda *args, **kw: date(*args, **kw)
                 
+                # Create new tracker instance that will use patched date
+                tracker2 = ut_module.ThreadSafeUsageTracker(stats_file=stats_file)
+                
                 # Getting stats should reset daily counters
-                stats = tracker.get_stats()
+                stats = tracker2.get_stats()
                 assert stats.tokens_used_today == 0
                 assert stats.requests_today == 0
                 assert stats.last_reset == tomorrow.isoformat()

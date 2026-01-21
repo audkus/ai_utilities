@@ -407,8 +407,8 @@ if __name__ == "__main__":
                 ("test.py", "text/x-python"),
                 ("test.log", "text/plain"),
                 ("test.rst", "text/x-rst"),
-                ("test.yaml", "application/x-yaml"),
-                ("test.yml", "application/x-yaml"),
+                ("test.yaml", ["application/x-yaml", "text/x-yaml"]),  # Both are valid
+                ("test.yml", ["application/x-yaml", "text/x-yaml"]),  # Both are valid
                 ("test.json", "application/json"),
             ]
             
@@ -417,4 +417,7 @@ if __name__ == "__main__":
                 test_file.write_text("Test content")
                 
                 source = loader.load_source(test_file)
-                assert source.mime_type == expected_mime, f"Mime type mismatch for {filename}"
+                if isinstance(expected_mime, list):
+                    assert source.mime_type in expected_mime, f"Mime type mismatch for {filename}: got {source.mime_type}, expected one of {expected_mime}"
+                else:
+                    assert source.mime_type == expected_mime, f"Mime type mismatch for {filename}: got {source.mime_type}, expected {expected_mime}"

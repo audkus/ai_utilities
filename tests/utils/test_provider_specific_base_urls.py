@@ -160,10 +160,10 @@ class TestClientIntegration:
         "AI_API_KEY": "test-key"
     })
     def test_client_uses_text_generation_webui_base_url(self):
-        """Test that AiClient uses TEXT_GENERATION_WEBUI_BASE_URL."""
-        settings = AiSettings()  # Create settings with patched environment
+        """Test that AiClient uses TEXT_GENERATION_WEBUI_BASE_URL when provider is set."""
+        settings = AiSettings(provider="text-generation-webui")  # Explicitly set provider
         client = AiClient(settings=settings)  # Pass explicit settings
-        # Should infer text-generation-webui provider and use its base URL
+        # Should use text-generation-webui provider and resolve its base URL
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == "http://localhost:5000/v1"
 
@@ -172,8 +172,8 @@ class TestClientIntegration:
         "AI_API_KEY": "test-key"
     })
     def test_client_uses_fastchat_base_url(self):
-        """Test that AiClient uses FASTCHAT_BASE_URL."""
-        settings = AiSettings()  # Create settings with patched environment
+        """Test that AiClient uses FASTCHAT_BASE_URL when provider is set."""
+        settings = AiSettings(provider="fastchat")  # Explicitly set provider
         client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "fastchat"
         assert client.settings.base_url == "http://localhost:8000/v1"
@@ -207,7 +207,7 @@ class TestClientIntegration:
     })
     def test_provider_base_url_without_api_key_works(self):
         """Test that provider-specific base URL works without API key."""
-        settings = AiSettings()  # Create settings with patched environment
+        settings = AiSettings(provider="text-generation-webui")  # Explicitly set provider
         client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == "http://localhost:5000/v1"

@@ -177,10 +177,16 @@ class TestTokenCounter:
     
     def test_count_message_tokens_logging(self):
         """Test that message token counting logs appropriately."""
-        with patch('ai_utilities.token_counter.logger') as mock_logger:
+        import importlib
+        import ai_utilities.token_counter as tc_module
+        
+        # Reimport to get fresh reference
+        importlib.reload(tc_module)
+        
+        with patch.object(tc_module, 'logger') as mock_logger:
             messages = [{"role": "user", "content": "Hello"}]
             
-            TokenCounter.count_message_tokens(messages, "word")
+            tc_module.TokenCounter.count_message_tokens(messages, "word")
             
             # Should log debug message
             mock_logger.debug.assert_called_once()
@@ -203,8 +209,14 @@ class TestTokenCounter:
     
     def test_estimate_response_tokens_logging(self):
         """Test that response estimation logs appropriately."""
-        with patch('ai_utilities.token_counter.logger') as mock_logger:
-            TokenCounter.estimate_response_tokens(100, 1.5)
+        import importlib
+        import ai_utilities.token_counter as tc_module
+        
+        # Reimport to get fresh reference
+        importlib.reload(tc_module)
+        
+        with patch.object(tc_module, 'logger') as mock_logger:
+            tc_module.TokenCounter.estimate_response_tokens(100, 1.5)
             
             # Should log debug message
             mock_logger.debug.assert_called_once()
@@ -226,11 +238,17 @@ class TestTokenCounter:
     
     def test_count_tokens_for_model_logging(self):
         """Test that model-specific counting logs appropriately."""
-        with patch('ai_utilities.token_counter.logger') as mock_logger:
+        import importlib
+        import ai_utilities.token_counter as tc_module
+        
+        # Reimport to get fresh reference
+        importlib.reload(tc_module)
+        
+        with patch.object(tc_module, 'logger') as mock_logger:
             text = "test"
             model = "test-model-1"
             
-            TokenCounter.count_tokens_for_model(text, model)
+            tc_module.TokenCounter.count_tokens_for_model(text, model)
             
             # Should log debug message
             mock_logger.debug.assert_called_once()
@@ -277,20 +295,6 @@ class TestTokenCounter:
         assert result_lower == int(base_count * 1.0)  # Known model
         assert result_upper == base_count  # Unknown model
         assert result_mixed == base_count  # Unknown model
-    
-    @patch('ai_utilities.token_counter.logger')
-    def test_count_tokens_for_model_logging(self, mock_logger):
-        """Test that model-specific counting logs appropriately."""
-        text = "test"
-        model = "test-model-1"
-        
-        TokenCounter.count_tokens_for_model(text, model)
-        
-        # Should log debug message
-        mock_logger.debug.assert_called_once()
-        log_message = mock_logger.debug.call_args[0][0]
-        assert model in log_message
-        assert "tokens" in log_message
     
     def test_count_tokens_unicode_text(self):
         """Test token counting with unicode text."""

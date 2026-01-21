@@ -24,18 +24,26 @@ class RateLimitInfo:
     tokens_per_minute: int
     tokens_per_day: int
     last_updated: datetime
-    
+
     def to_model_config(self) -> ModelConfig:
-        """Convert to ModelConfig instance."""
-        # Clamp values to ModelConfig constraints
-        max_requests_per_minute = 10000
-        max_tokens_per_minute = 2000000
-        max_tokens_per_day = 50000000
-        
+        """Convert to a valid ModelConfig (clamped to constraints)."""
+        # ModelConfig constraints (keep in sync with ModelConfig validators)
+        min_requests_per_minute: int = 1
+        min_tokens_per_minute: int = 1000
+        min_tokens_per_day: int = 10_000
+
+        max_requests_per_minute: int = 10_000
+        max_tokens_per_minute: int = 2_000_000
+        max_tokens_per_day: int = 50_000_000
+
+        rpm: int = max(min(self.requests_per_minute, max_requests_per_minute), min_requests_per_minute)
+        tpm: int = max(min(self.tokens_per_minute, max_tokens_per_minute), min_tokens_per_minute)
+        tpd: int = max(min(self.tokens_per_day, max_tokens_per_day), min_tokens_per_day)
+
         return ModelConfig(
-            requests_per_minute=min(self.requests_per_minute, max_requests_per_minute),
-            tokens_per_minute=min(self.tokens_per_minute, max_tokens_per_minute),
-            tokens_per_day=min(self.tokens_per_day, max_tokens_per_day)
+            requests_per_minute=rpm,
+            tokens_per_minute=tpm,
+            tokens_per_day=tpd,
         )
 
 

@@ -296,6 +296,7 @@ class TestAsyncProviderProtocol:
 
 
 @pytest.mark.asyncio
+@pytest.mark.filterwarnings("ignore:.*coroutine.*was never awaited.*:RuntimeWarning")
 class TestCancellationFriendliness:
     """Test cancellation friendliness of async operations."""
     

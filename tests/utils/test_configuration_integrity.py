@@ -259,8 +259,8 @@ class TestConfigurationBestPractices:
             content = f.read()
         
         # Check for essential pytest configuration
-        assert '[tool:pytest]' in content, (
-            "Missing [tool:pytest] section in pytest.ini"
+        assert '[pytest]' in content, (
+            "Missing [pytest] section in pytest.ini"
         )
         assert 'testpaths = tests' in content, (
             "pytest.ini should have 'testpaths = tests' to restrict test discovery"
