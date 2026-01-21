@@ -1,7 +1,7 @@
 """Comprehensive tests for provider factory and selection - Phase 1."""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from ai_utilities import AiSettings, AiClient, create_provider
 from ai_utilities.providers import (
@@ -373,21 +373,6 @@ class TestProviderFactoryIntegration:
         client = AiClient(settings=settings, provider=provider)
 
         with pytest.raises(RuntimeError, match="invalid credentials"):
-            client.ask("test")
-
-        """Test that provider errors are properly propagated."""
-        settings = AiSettings(
-            provider="openai",
-            api_key="invalid-key",
-            _env_file=None
-        )
-        
-        provider = create_provider(settings)
-        client = AiClient(settings=settings, provider=provider)
-        
-        # Should raise error when trying to use invalid credentials
-        # The exact error type depends on implementation
-        with pytest.raises(Exception):
             client.ask("test")
 
 
