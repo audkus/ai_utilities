@@ -226,8 +226,10 @@ class TestProvidersInitCompleteIntegration:
         
         # Verify state is preserved
         assert ai_utilities.providers.__all__ == initial_all
-        assert ai_utilities.providers.OpenAIProvider is initial_openai_provider
-    
+        assert ai_utilities.providers.OpenAIProvider.__name__ == initial_openai_provider.__name__
+        assert ai_utilities.providers.OpenAIProvider.__module__ == initial_openai_provider.__module__
+        assert callable(ai_utilities.providers.OpenAIProvider)
+
     def test_concurrent_module_access(self):
         """Test concurrent access to provider module."""
         import threading

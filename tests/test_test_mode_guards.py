@@ -7,9 +7,9 @@ import pytest
 from ai_utilities.env_overrides import (
     override_env, 
     is_test_mode, 
-    get_safe_env,
-    test_mode_guard
+    get_safe_env
 )
+from ai_utilities.env_overrides import test_mode_guard as _test_mode_guard
 
 
 def test_is_test_mode_detects_pytest():
@@ -23,7 +23,7 @@ def test_test_mode_guard_context():
     # Should already be True in pytest, but test the context anyway
     initial_state = is_test_mode()
     
-    with test_mode_guard():
+    with _test_mode_guard():
         assert is_test_mode() is True
     
     # Should return to previous state

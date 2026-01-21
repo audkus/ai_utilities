@@ -347,7 +347,7 @@ class TestAiClientCaching:
             Mock(embedding=[0.4, 0.5, 0.6])
         ]
         
-        with patch('openai.OpenAI') as mock_openai:
+        with patch('ai_utilities.client.OpenAI') as mock_openai:
             mock_client = Mock()
             mock_client.embeddings.create.return_value = mock_embeddings
             mock_openai.return_value = mock_client
@@ -372,7 +372,7 @@ class TestAiClientCaching:
         mock_embeddings = Mock()
         mock_embeddings.data = [Mock(embedding=[0.1, 0.2, 0.3])]
         
-        with patch('openai.OpenAI') as mock_openai:
+        with patch('ai_utilities.client.OpenAI') as mock_openai:
             mock_client = Mock()
             mock_client.embeddings.create.return_value = mock_embeddings
             mock_openai.return_value = mock_client

@@ -7,10 +7,9 @@ Pydantic models for AI configuration with validation, type safety, and immutabil
 import os
 import json
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union, ClassVar, Iterable
 from configparser import ConfigParser
 from datetime import datetime, timedelta
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -962,28 +961,34 @@ class AiSettings(BaseSettings):
         return cls.interactive_setup(force_reconfigure=True)
     
     @classmethod
-    def validate_model_availability(cls, api_key: str, model: str) -> bool:
-        """Check if a model is available in the OpenAI API.
-        
+    def validate_model_availability(cls, api_key: str, model: str, *, strict: bool = True) -> bool:
+        """Check if a model is available via the OpenAI Models API.
+
         Args:
-            api_key: OpenAI API key
-            model: Model name to validate
-            
+            api_key: OpenAI API key.
+            model: Model name/id to validate.
+            strict: If True, return False when validation cannot be performed (e.g. network/SDK error).
+                    If False, assume True on errors (permissive / legacy behavior).
+
         Returns:
-            True if model is available, False otherwise
+            True if model is present in the models list; otherwise False.
         """
         if not api_key or not model:
             return False
-            
+
         try:
-            client = OpenAI(api_key=api_key)
-            models = client.models.list()
-            available_models = {model.id for model in models.data}
-            return model in available_models
+            client: Any = OpenAI(api_key=api_key)
+            models: Any = client.models.list()
+
+            # Avoid shadowing the `model` parameter.
+            data: Iterable[Any] = getattr(models, "data", []) or []
+            available_ids: set[str] = {str(m.id) for m in data if getattr(m, "id", None) is not None}
+
+            return model in available_ids
         except Exception:
-            # If we can't validate, assume it might work
-            # This prevents breaking during network issues
-            return True
+            # Deterministic by default (strict=True) so unit tests and CI are stable.
+            # Permissive fallback remains available for interactive UX flows.
+            return False if strict else True
 
     @classmethod
     def check_for_updates(cls, api_key: str, check_interval_days: int = 30) -> Dict[str, Any]:
