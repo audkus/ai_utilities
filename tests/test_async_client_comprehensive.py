@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 import time
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 
 from ai_utilities import AiSettings, AsyncAiClient
 from ai_utilities.models import AskResult
@@ -14,12 +14,9 @@ class TestAsyncAiClientBasics:
     """Test AsyncAiClient basic functionality."""
     
     @pytest.mark.asyncio
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    async def test_async_client_creation_default(self, mock_openai):
+    async def test_async_client_creation_default(self, openai_mocks):
         """Test creating AsyncAiClient with default settings."""
-        # Mock the OpenAI client
-        mock_client = Mock()
-        mock_openai.return_value = mock_client
+        constructor_mock, client_mock = openai_mocks
         
         client = AsyncAiClient()
         

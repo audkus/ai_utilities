@@ -355,7 +355,26 @@ class TestProviderFactoryIntegration:
         response = client.ask("test")
         assert "test" in response
     
-    def test_provider_error_propagation(self, isolated_env):
+    def test_provider_error_propagation(self, isolated_env, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that provider errors are properly propagated."""
+        settings = AiSettings(
+            provider="openai",
+            api_key="invalid-key",
+            _env_file=None,
+        )
+
+        provider = create_provider(settings)
+
+        def _raise_provider_error(*args, **kwargs):
+            raise RuntimeError("invalid credentials")
+
+        monkeypatch.setattr(provider, "ask", _raise_provider_error, raising=True)
+
+        client = AiClient(settings=settings, provider=provider)
+
+        with pytest.raises(RuntimeError, match="invalid credentials"):
+            client.ask("test")
+
         """Test that provider errors are properly propagated."""
         settings = AiSettings(
             provider="openai",

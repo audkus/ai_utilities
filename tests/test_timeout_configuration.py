@@ -21,27 +21,23 @@ class TestTimeoutConfiguration:
         settings = AiSettings(timeout=60)
         assert settings.timeout == 60
     
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_timeout_passed_to_openai_client(self, mock_openai):
+    def test_timeout_passed_to_openai_client(self, openai_mocks):
         """Test that timeout is passed to OpenAI client constructor."""
-        mock_client = MagicMock()
-        mock_openai.return_value = mock_client
+        constructor_mock, client_mock = openai_mocks
         
         settings = AiSettings(api_key="test-key", timeout=45)
         provider = create_provider(settings)
         
         # Verify OpenAI client was created with correct timeout
-        mock_openai.assert_called_once_with(
+        constructor_mock.assert_called_once_with(
             api_key="test-key",
             base_url=None,
             timeout=45
         )
     
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_environment_timeout_override(self, mock_openai):
+    def test_environment_timeout_override(self, openai_mocks):
         """Test that AI_TIMEOUT environment variable overrides default."""
-        mock_client = MagicMock()
-        mock_openai.return_value = mock_client
+        constructor_mock, client_mock = openai_mocks
         
         # Set environment variable
         with patch.dict(os.environ, {'AI_TIMEOUT': '25'}):
@@ -50,17 +46,15 @@ class TestTimeoutConfiguration:
             
             # Verify timeout from environment was used
             assert settings.timeout == 25
-            mock_openai.assert_called_once_with(
+            constructor_mock.assert_called_once_with(
                 api_key="test-key",
                 base_url=None,
                 timeout=25
             )
     
-    @patch('ai_utilities.providers.openai_provider.OpenAI')
-    def test_request_timeout_s_override(self, mock_openai):
+    def test_request_timeout_s_override(self, openai_mocks):
         """Test that AI_REQUEST_TIMEOUT_S environment variable works."""
-        mock_client = MagicMock()
-        mock_openai.return_value = mock_client
+        constructor_mock, client_mock = openai_mocks
         
         # Set environment variable for float timeout
         with patch.dict(os.environ, {'AI_REQUEST_TIMEOUT_S': '15.5'}):
