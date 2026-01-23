@@ -8,7 +8,7 @@ from ai_utilities.di.environment import (
     EnvironmentProvider,
     ContextVarEnvironmentProvider,
     StandardEnvironmentProvider,
-    TestEnvironmentProvider,
+    EnvironmentProviderStub,
     get_default_environment_provider,
     set_default_environment_provider,
     get_env,
@@ -17,7 +17,7 @@ from ai_utilities.di.environment import (
 from ai_utilities.env_overrides import override_env
 
 
-class TestEnvironmentProviderImplementation:
+class EnvironmentProviderStubImplementation:
     """Test the EnvironmentProvider interface and implementations."""
     
     def test_context_var_provider_basic(self):
@@ -116,9 +116,9 @@ class TestEnvironmentProviderImplementation:
                     del os.environ[var]
     
     def test_test_provider(self):
-        """Test TestEnvironmentProvider functionality."""
+        """Test EnvironmentProviderStub functionality."""
         initial_state = {"VAR1": "value1", "VAR2": "value2"}
-        provider = TestEnvironmentProvider(initial_state)
+        provider = EnvironmentProviderStub(initial_state)
         
         # Test getting values
         assert provider.get("VAR1") == "value1"
@@ -148,7 +148,7 @@ class TestEnvironmentProviderImplementation:
         assert provider1 is provider2  # Should be same instance
         
         # Test setting default provider
-        new_provider = TestEnvironmentProvider()
+        new_provider = EnvironmentProviderStub()
         set_default_environment_provider(new_provider)
         
         provider3 = get_default_environment_provider()
@@ -175,21 +175,23 @@ class TestEnvironmentProviderImplementation:
             provider.clear("TEST_VAR")
 
 
-class TestEnvironmentProviderIntegration:
+class EnvironmentProviderStubIntegration:
     """Integration tests for environment providers."""
     
     def test_context_var_provider_respects_overrides(self):
         """Test that contextvar provider properly respects override_env."""
         provider = ContextVarEnvironmentProvider(warn_on_direct_access=False)
         
-        # Set up nested overrides
+        # Set up nested overrides - expect warning for nested override
         with override_env({"AI_VAR1": "outer1", "AI_VAR2": "outer2"}):
             assert provider.get("AI_VAR1") == "outer1"
             assert provider.get("AI_VAR2") == "outer2"
             
-            with override_env({"AI_VAR1": "inner1"}):
-                assert provider.get("AI_VAR1") == "inner1"  # Inner override takes precedence
-                assert provider.get("AI_VAR2") == "outer2"  # Outer override still visible
+            # Nested override should generate warning, but we expect it
+            with pytest.warns(UserWarning, match="Nested environment overrides detected"):
+                with override_env({"AI_VAR1": "inner1"}):
+                    assert provider.get("AI_VAR1") == "inner1"  # Inner override takes precedence
+                    assert provider.get("AI_VAR2") == "outer2"  # Outer override still visible
             
             # Back to outer context
             assert provider.get("AI_VAR1") == "outer1"
@@ -202,7 +204,7 @@ class TestEnvironmentProviderIntegration:
     def test_provider_isolation(self):
         """Test that different providers are properly isolated."""
         # Create test provider with specific state
-        test_provider = TestEnvironmentProvider({"TEST_VAR": "test_value"})
+        test_provider = EnvironmentProviderStub({"TEST_VAR": "test_value"})
         
         # Create standard provider
         standard_provider = StandardEnvironmentProvider()

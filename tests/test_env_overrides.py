@@ -49,17 +49,20 @@ class TestEnvOverrides:
             overrides = get_env_overrides()
             assert overrides['AI_MODEL'] == 'test-model-2'
             
+            # Second level - no warning since no conflicting keys
             with override_env({'AI_TEMPERATURE': '0.9'}):
                 # Second level - should merge with first
                 overrides = get_env_overrides()
                 assert overrides['AI_MODEL'] == 'test-model-2'
                 assert overrides['AI_TEMPERATURE'] == '0.9'
                 
-                with override_env({'AI_MODEL': 'test-model-1'}):
-                    # Third level - should override model
-                    overrides = get_env_overrides()
-                    assert overrides['AI_MODEL'] == 'test-model-1'
-                    assert overrides['AI_TEMPERATURE'] == '0.9'
+                # Third level - expect warning for conflicting key
+                with pytest.warns(UserWarning, match="Nested environment overrides detected"):
+                    with override_env({'AI_MODEL': 'test-model-1'}):
+                        # Third level - should override model
+                        overrides = get_env_overrides()
+                        assert overrides['AI_MODEL'] == 'test-model-1'
+                        assert overrides['AI_TEMPERATURE'] == '0.9'
                 
                 # Back to second level
                 overrides = get_env_overrides()

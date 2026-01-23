@@ -13,10 +13,10 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from ai_utilities.di.environment import (
-    ContextVarEnvironmentProvider, StandardEnvironmentProvider, TestEnvironmentProvider
+    ContextVarEnvironmentProvider, StandardEnvironmentProvider, EnvironmentProviderStub
 )
 from ai_utilities.env_detection import is_interactive_environment, get_environment_type
-from ai_utilities.env_overrides import is_test_mode, test_mode_guard
+from ai_utilities.env_overrides import is_test_mode, test_mode_guard as test_mode_guard_cm
 
 
 class TestEnvironmentProviderCoverage:
@@ -35,8 +35,8 @@ class TestEnvironmentProviderCoverage:
             assert "OTHER_VAR" not in result
     
     def test_test_environment_provider_with_prefix_filter(self):
-        """Test TestEnvironmentProvider.get_all with prefix filter (covers line 217)."""
-        provider = TestEnvironmentProvider()
+        """Test EnvironmentProviderStub.get_all with prefix filter (covers line 217)."""
+        provider = EnvironmentProviderStub()
         
         # Set variables directly on the test provider
         provider._env = {"TEST_VAR_1": "value1", "TEST_VAR_2": "value2", "OTHER_VAR": "other"}
@@ -123,3 +123,15 @@ class TestEnvironmentOverridesCoverage:
         with patch.dict(os.environ, {"VAR1": "val1", "VAR2": "val2"}, clear=True):
             result = provider.get_all()
             assert result == {"VAR1": "val1", "VAR2": "val2"}
+    
+    def test_test_mode_guard_context_manager(self) -> None:
+        """Test test_mode_guard context manager functionality."""
+        # Test that the context manager works correctly
+        initial_state = is_test_mode()
+        
+        # Use the context manager properly with 'with' statement
+        with test_mode_guard_cm():
+            assert is_test_mode() is True
+        
+        # Should return to previous state
+        assert is_test_mode() is initial_state

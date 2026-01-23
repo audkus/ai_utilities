@@ -190,7 +190,7 @@ class StandardEnvironmentProvider(EnvironmentProvider):
             del os.environ[key]
 
 
-class TestEnvironmentProvider(EnvironmentProvider):
+class EnvironmentProviderStub(EnvironmentProvider):
     """
     Test environment provider with controlled state.
     

@@ -369,8 +369,9 @@ class TestOpenAIModelRefactoring:
         with patch('ai_utilities.openai_model.ResponseProcessor') as mock_processor:
             mock_processor.extract_json.return_value = '{"test": "data"}'
             
-            # Call as static method
-            result = OpenAIModel.clean_response('{"test": "data"}')
+            # Call as static method and expect deprecation warning
+            with pytest.warns(DeprecationWarning, match="OpenAIModel.clean_response.*is deprecated"):
+                result = OpenAIModel.clean_response('{"test": "data"}')
             
             assert "deprecated" in caplog.text.lower()
             assert result == '{"test": "data"}'

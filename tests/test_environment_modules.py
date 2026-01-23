@@ -296,6 +296,7 @@ class TestEnvOverrides:
         with override_env({"OUTER": "outer_value"}):
             assert get_env_overrides() == {"OUTER": "outer_value"}
             
+            # No warning since no conflicting keys
             with override_env({"INNER": "inner_value"}):
                 assert get_env_overrides() == {
                     "OUTER": "outer_value",
@@ -483,8 +484,10 @@ class TestEdgeCases:
         with override_env({"AI_VAR": "first"}):
             assert get_ai_env("VAR") == "first"
             
-            with override_env({"AI_VAR": "second"}):
-                assert get_ai_env("VAR") == "second"
+            # Nested override should generate warning
+            with pytest.warns(UserWarning, match="Nested environment overrides detected"):
+                with override_env({"AI_VAR": "second"}):
+                    assert get_ai_env("VAR") == "second"
             
             # Should restore to first value
             assert get_ai_env("VAR") == "first"
