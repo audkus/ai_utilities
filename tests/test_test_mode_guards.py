@@ -67,12 +67,14 @@ def test_safe_env_respects_overrides():
     """Test that get_safe_env respects contextvar overrides."""
     # Set up an override
     with override_env({"AI_TEST_VAR": "override_value"}):
+        # This should not generate a warning since we're using override_env
         result = get_safe_env("AI_TEST_VAR", "default")
         assert result == "override_value"
     
-    # Outside the override, should get default or real env
-    result = get_safe_env("AI_TEST_VAR", "default")
-    assert result == "default"
+    # Outside the override, should get default and generate warning
+    with pytest.warns(UserWarning, match="Direct os.environ access detected"):
+        result = get_safe_env("AI_TEST_VAR", "default")
+        assert result == "default"
 
 
 def test_no_warning_for_non_nested_overrides():

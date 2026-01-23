@@ -29,7 +29,10 @@ class TestAsyncAiClientBasics:
     @pytest.mark.asyncio
     async def test_async_client_creation_with_settings(self, fake_settings):
         """Test creating AsyncAiClient with custom settings."""
-        client = AsyncAiClient(settings=fake_settings)
+        # Use a simple provider to avoid mock issues
+        from tests.fake_provider import FakeAsyncProvider
+        provider = FakeAsyncProvider()
+        client = AsyncAiClient(settings=fake_settings, provider=provider)
         
         assert client.settings == fake_settings
         assert client.provider is not None

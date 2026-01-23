@@ -11,7 +11,7 @@ from ai_utilities.context.configuration import (
     get_current_environment_provider,
     get_current_config_manager,
 )
-from ai_utilities.di.environment import TestEnvironmentProvider
+from ai_utilities.di.environment import EnvironmentProviderStub
 from ai_utilities.config_models import AiSettings
 
 
@@ -20,7 +20,7 @@ class TestConfigurationContext:
     
     def test_configuration_context_basic(self):
         """Test ConfigurationContext basic functionality."""
-        env_provider = TestEnvironmentProvider({"AI_MODEL": "test-model"})
+        env_provider = EnvironmentProviderStub({"AI_MODEL": "test-model"})
         
         with ConfigurationContext(environment_provider=env_provider) as context:
             # Test getting environment provider
@@ -60,8 +60,8 @@ class TestConfigurationContext:
     
     def test_configuration_context_nesting(self):
         """Test ConfigurationContext nesting behavior."""
-        outer_env = TestEnvironmentProvider({"AI_MODEL": "outer-model"})
-        inner_env = TestEnvironmentProvider({"AI_MODEL": "inner-model"})
+        outer_env = EnvironmentProviderStub({"AI_MODEL": "outer-model"})
+        inner_env = EnvironmentProviderStub({"AI_MODEL": "inner-model"})
         
         with ConfigurationContext(environment_provider=outer_env) as outer_context:
             # Should use outer context
@@ -111,7 +111,7 @@ class TestConfigurationContext:
     
     def test_configuration_context_function(self):
         """Test configuration_context convenience function."""
-        env_provider = TestEnvironmentProvider({"AI_MODEL": "func-model"})
+        env_provider = EnvironmentProviderStub({"AI_MODEL": "func-model"})
         
         with configuration_context(environment_provider=env_provider) as context:
             assert isinstance(context, ConfigurationContext)
@@ -122,14 +122,14 @@ class TestConfigurationContext:
     
     def test_backward_compatibility_functions(self):
         """Test backward compatibility functions."""
-        env_provider = TestEnvironmentProvider({"AI_MODEL": "compat-model"})
+        env_provider = EnvironmentProviderStub({"AI_MODEL": "compat-model"})
         
         # Test without context (uses default)
         settings = get_current_ai_settings()
         assert isinstance(settings, AiSettings)
         
         provider = get_current_environment_provider()
-        assert isinstance(provider, TestEnvironmentProvider) or hasattr(provider, 'get')
+        assert isinstance(provider, EnvironmentProviderStub) or hasattr(provider, 'get')
         
         config_manager = get_current_config_manager()
         assert config_manager is not None
@@ -151,7 +151,7 @@ class TestConfigurationContextIntegration:
     
     def test_context_with_ai_settings_integration(self):
         """Test ConfigurationContext integration with AiSettings."""
-        env_provider = TestEnvironmentProvider({
+        env_provider = EnvironmentProviderStub({
             "AI_MODEL": "env-model",
             "AI_TEMPERATURE": "0.8",
             "AI_API_KEY": "test-key"
@@ -172,7 +172,7 @@ class TestConfigurationContextIntegration:
     
     def test_context_caching_behavior(self):
         """Test ConfigurationContext AI settings caching."""
-        env_provider = TestEnvironmentProvider({"AI_MODEL": "cached-model"})
+        env_provider = EnvironmentProviderStub({"AI_MODEL": "cached-model"})
         
         with ConfigurationContext(environment_provider=env_provider) as context:
             # First call should create and cache settings
@@ -197,7 +197,7 @@ class TestConfigurationContextIntegration:
         
         def worker(thread_id):
             """Worker function for threading test."""
-            env_provider = TestEnvironmentProvider({"AI_MODEL": f"thread-{thread_id}-model"})
+            env_provider = EnvironmentProviderStub({"AI_MODEL": f"thread-{thread_id}-model"})
             
             with ConfigurationContext(environment_provider=env_provider) as context:
                 settings = context.get_ai_settings()
