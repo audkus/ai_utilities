@@ -600,7 +600,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_concurrent_requests_isolation(self):
         """Test that concurrent requests don't interfere with each other."""
-        mock_provider = AsyncMock(spec=AsyncProvider)
+        mock_provider = AsyncMock()
         
         # Different responses for different prompts
         async def mock_ask(prompt, **kwargs):
@@ -623,7 +623,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_large_number_of_prompts(self):
         """Test handling large numbers of prompts."""
-        mock_provider = AsyncMock(spec=AsyncProvider)
+        mock_provider = AsyncMock()
         mock_provider.ask.return_value = "Response"
         
         client = AsyncAiClient(provider=mock_provider)
@@ -639,14 +639,29 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_exception_during_task_creation(self):
         """Test handling of exceptions during task creation."""
-        mock_provider = AsyncMock(spec=AsyncProvider)
+        mock_provider = AsyncMock()
         
         # Create a client that will fail during task creation
         client = AsyncAiClient(provider=mock_provider)
         
+        # Track created coroutines to clean them up
+        created_coroutines = []
+        original_create_task = asyncio.create_task
+        
+        def mock_create_task(coro):
+            created_coroutines.append(coro)
+            raise RuntimeError("Task creation failed")
+        
         # Patch asyncio.create_task to raise an exception
-        with patch('asyncio.create_task', side_effect=RuntimeError("Task creation failed")):
+        with patch('asyncio.create_task', side_effect=mock_create_task):
             with pytest.raises(RuntimeError):
                 await client.ask_many(["Test prompt"])
+        
+        # Clean up any created coroutines to avoid un-awaited coroutine warnings
+        for coro in created_coroutines:
+            try:
+                coro.close()
+            except Exception:
+                pass  # Ignore cleanup errors
     
     
