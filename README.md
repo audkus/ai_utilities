@@ -223,7 +223,92 @@ pytest -m "integration" --timeout=120     # Integration tests (if API key availa
 
 Integration tests are automatically skipped if API keys are missing.
 
-For detailed testing guidelines, see [CI_TIMEOUT_GUIDELINES.md](CI_TIMEOUT_GUIDELINES.md).
+### Coverage Testing
+
+**Important**: This repository uses pytest-cov for coverage. Do not use `python -m coverage run -m pytest` because pytest.ini already enables pytest-cov and the two approaches conflict.
+
+#### Coverage Commands
+
+- **Full suite coverage**: `python -m pytest` (pytest.ini adds --cov + reports automatically)
+- **One test file**: `python -m pytest -q tests/test_environment_modules_simple.py`
+- **Explicit coverage report**: `python -m pytest -q tests/test_environment_modules_simple.py --cov=ai_utilities --cov-report=term-missing`
+- **HTML report**: View at `coverage_reports/index.html`
+
+#### Convenience Commands (Makefile)
+
+```bash
+make test      # Run full test suite with coverage
+make test-fast # Run tests quietly  
+make cov       # Run tests with coverage reports (term + html)
+make help      # Show all available targets
+```
+
+#### Handling Long Output
+
+```bash
+# Pipe coverage output to file and view last 100 lines
+python -m pytest --cov-report=term-missing > /tmp/cov.txt && tail -100 /tmp/cov.txt
+```
+
+⚠️ **Anti-footgun**: If you run `python -m coverage run -m pytest`, you'll see pytest-cov reports during the run, but `coverage report` afterwards will show 0% because the outer coverage session collected nothing.
+
+For detailed testing guidelines, see [CI_TIMEOUT_GUIDELINES.md](CI_TIMEOUT_GUIDELINES.md) and [Testing Setup Guide](docs/testing-setup.md).
+
+## Troubleshooting: urllib3 LibreSSL warning (macOS)
+
+When running tests or using the library on macOS, you may see this warning:
+
+```
+urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+```
+
+### Why this happens
+- urllib3 v2 requires OpenSSL 1.1.1+ for optimal HTTPS operations
+- Apple Command Line Tools Python can be linked with LibreSSL instead of OpenSSL
+- This mismatch triggers a `NotOpenSSLWarning` but doesn't break functionality
+
+### Check your SSL backend
+```bash
+python -c "import ssl; print(ssl.OPENSSL_VERSION)"
+```
+
+If it shows "LibreSSL", you're using Apple's Python build.
+
+### How to resolve
+Use a Python build linked against OpenSSL:
+
+**Option 1: python.org installer**
+```bash
+# Download from python.org and reinstall your venv
+rm -rf .venv
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+**Option 2: Homebrew**
+```bash
+brew install python@3.11
+rm -rf .venv
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+**Option 3: pyenv**
+```bash
+pyenv install 3.11.7
+pyenv local 3.11.7
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Note for contributors
+- The warning is safe to ignore for development and testing
+- CI/Linux environments typically use OpenSSL, so you may not see it there
+- Only HTTPS-heavy production workloads need the OpenSSL-linked Python for optimal performance
 
 ## Where to Go Next
 
