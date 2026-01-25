@@ -248,6 +248,27 @@ Integration tests are automatically skipped if API keys are missing. Other skipp
 - **Explicit coverage report**: `python -m pytest -q tests/test_environment_modules_simple.py --cov=ai_utilities --cov-report=term-missing`
 - **HTML report**: View at `coverage_reports/index.html`
 
+### Test Hygiene
+
+**Tests must not write to repository root.** All test artifacts must be created in temporary directories.
+
+- **Use `tmp_path` fixture**: For per-test temporary files
+- **Use `tmp_path_factory`**: For session-scoped temporary directories  
+- **Never write to root**: Tests will fail if they create files in repository root
+- **Guardrail enforcement**: Automatic detection prevents root artifact creation
+
+#### Example
+```python
+def test_with_temp_files(tmp_path):
+    # Good: Use tmp_path for test files
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("content")
+    assert test_file.exists()
+    
+    # Bad: Don't write to repository root
+    # Path("root_file.txt").write_text("content")  # Will fail!
+```
+
 #### Convenience Commands (Makefile)
 
 ```bash
