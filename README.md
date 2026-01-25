@@ -195,13 +195,23 @@ pytest -m "not integration" --timeout=30
 ```
 
 #### Integration Tests (Requires API Keys)
-```bash
-# Set up API key first
-export AI_API_KEY=your-api-key
 
-# Run integration tests
+Integration tests automatically load environment variables from the `.env` file, so you only need to set up the `.env` file:
+
+```bash
+# Option 1: Use .env file (recommended)
+# Create .env file with your API key
+echo "AI_API_KEY=your-api-key" >> .env
+
+# Run integration tests (will automatically use .env)
+pytest -m "integration" --timeout=120
+
+# Option 2: Export manually (alternative to .env)
+export AI_API_KEY=your-api-key
 pytest -m "integration" --timeout=120
 ```
+
+**Note**: Integration tests are automatically skipped if API keys are missing.
 
 #### All Tests
 ```bash
@@ -221,7 +231,11 @@ pytest -m "integration" --timeout=120     # Integration tests (if API key availa
 - **Unit tests**: Fast tests without external dependencies
 - **Integration tests**: Tests that call real APIs (marked with `@pytest.mark.integration`)
 
-Integration tests are automatically skipped if API keys are missing.
+Integration tests are automatically skipped if API keys are missing. Other skipped test categories include:
+- **Live provider tests**: Require `RUN_LIVE_AI_TESTS=1` environment variable
+- **File integration tests**: Require `--run-integration` flag and test files
+- **Audio integration tests**: Require API keys and audio files
+- **Slow tests**: Require `--run-slow` flag (performance/settings tests)
 
 ### Coverage Testing
 
