@@ -5,22 +5,16 @@ This module provides common fixtures and test configuration for the ai_utilities
 """
 from __future__ import annotations
 
-import asyncio
+import importlib
 import logging
 import os
-import os as _os
+import socket
 import sys
 import tempfile
-import time
-from typing import Union
 from pathlib import Path
 from types import ModuleType
 from typing import Tuple
-from unittest.mock import MagicMock
-
-import importlib
-import socket
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -144,8 +138,6 @@ def block_network(monkeypatch, request):
     allow_network = integration_enabled or network_allowed or env_integration
 
     if not allow_network:
-        original_connect = socket.socket.connect
-
         def blocked_connect(self, *args, **kwargs):
             raise RuntimeError(
                 "Network connections blocked by default. Use --allow-network or --run-integration to enable."
@@ -179,7 +171,7 @@ def patch_openai_aliases(
     CRITICAL: Import ONLY inside fixture body to prevent early imports.
     """
     from unittest.mock import AsyncMock
-    
+
     # Early return if test explicitly uses openai_mocks fixture
     if "openai_mocks" in request.fixturenames:
         return
@@ -240,7 +232,7 @@ def openai_mocks(
 ) -> Tuple[MagicMock, MagicMock]:
     """Per-test OpenAI ctor/client mocks; patch the exact loaded module objects."""
     from unittest.mock import AsyncMock
-    
+
     ctor: MagicMock = MagicMock(name="OpenAI_ctor_local")
     client: MagicMock = MagicMock(name="OpenAI_client_local")
     ctor.return_value = client
@@ -685,6 +677,134 @@ def frozen_time():
     time_module.time = original_time_time
 
 
+# Repository root allowlists for test hygiene enforcement
+ROOT_FILE_ALLOWLIST = {
+    ".gitignore",
+    ".pre-commit-config.yaml",
+    ".env.example",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "MANIFEST.in",
+    "Makefile",
+    "MIGRATION.md",
+    "README.md",
+    "RELEASE.md",
+    "RELEASE_CHECKLIST.md",
+    "SUPPORT.md",
+    "pyproject.toml",
+    "pytest.ini",
+    "tox.ini",
+    ".coveragerc",  # Keep only ONE coverage config file
+}
+
+ROOT_DIR_ALLOWLIST = {
+    ".git",
+    ".github",
+    "src",
+    "tests",
+    "docs",
+    "scripts",
+    "examples",
+    "dev_tools",
+    "tools",
+    "reports",
+    "coverage_reports",
+}
+
+# Transient files allowed during test run but must be cleaned up
+TRANSIENT_FILES = {
+    ".coverage",
+    ".coverage.*",  # Coverage files with process IDs
+}
+
+# Allowed write paths under repo root
+ALLOWED_WRITE_PATHS = {
+    "coverage_reports/**",
+    "reports/**",
+}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def enforce_repo_root_cleanliness():
+    """Session-level guard to ensure repo root stays clean.
+    
+    This fixture runs at session start and end to ensure no new files
+    or directories are created in the repository root outside the allowlists.
+    
+    Raises:
+        AssertionError: If unauthorized files/dirs found in repo root
+    """
+    from pathlib import Path
+
+    def get_repo_root():
+        """Get repository root by walking up from conftest.py."""
+        conftest_path = Path(__file__).resolve()
+        current = conftest_path.parent
+        while current.parent != current.root and not (current / "pyproject.toml").exists():
+            current = current.parent
+        return current
+
+    repo_root = get_repo_root()
+
+    # Snapshot initial state
+    initial_files = set()
+    initial_dirs = set()
+
+    for item in repo_root.iterdir():
+        if item.is_file():
+            initial_files.add(item.name)
+        elif item.is_dir():
+            initial_dirs.add(item.name)
+
+    yield
+
+    # Check final state
+    final_files = set()
+    final_dirs = set()
+
+    for item in repo_root.iterdir():
+        if item.is_file():
+            final_files.add(item.name)
+        elif item.is_dir():
+            final_dirs.add(item.name)
+
+    # Find new items
+    new_files = final_files - initial_files - ROOT_FILE_ALLOWLIST
+    new_dirs = final_dirs - initial_dirs - ROOT_DIR_ALLOWLIST
+
+    # Check for lingering transient files (using pattern matching)
+    import fnmatch
+    lingering_transient = set()
+    for file in final_files - initial_files:
+        for pattern in TRANSIENT_FILES:
+            if fnmatch.fnmatch(file, pattern):
+                lingering_transient.add(file)
+                break
+
+    # Remove transient files from new_files
+    new_files = [f for f in new_files if not any(fnmatch.fnmatch(f, pattern) for pattern in TRANSIENT_FILES)]
+
+    if new_files or new_dirs or lingering_transient:
+        error_parts = []
+
+        if new_files:
+            error_parts.append(f"Unauthorized files: {sorted(new_files)}")
+        if new_dirs:
+            error_parts.append(f"Unauthorized directories: {sorted(new_dirs)}")
+        if lingering_transient:
+            error_parts.append(f"Lingering transient files: {sorted(lingering_transient)}")
+
+        raise AssertionError(
+            f"Repository root contamination detected!\n"
+            f"Repository root: {repo_root}\n"
+            f"{'. '.join(error_parts)}\n"
+            f"Allowed files: {sorted(ROOT_FILE_ALLOWLIST)}\n"
+            f"Allowed directories: {sorted(ROOT_DIR_ALLOWLIST)}\n"
+            f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
+        )
+
+
 @pytest.fixture(autouse=True)
 def prevent_root_artifacts(tmp_path, monkeypatch):
     """Prevent tests from creating artifacts in repository root.
@@ -699,19 +819,18 @@ def prevent_root_artifacts(tmp_path, monkeypatch):
     Raises:
         AssertionError: If test attempts to write to repository root
     """
+    import fnmatch
     from pathlib import Path
-    
+
     # Robust repository root detection
     def get_repo_root():
         """Get repository root with multiple fallback strategies."""
         # Strategy 1: Walk up from conftest.py location
         conftest_path = Path(__file__).resolve()
         current = conftest_path.parent
-        while current.parent != current.root:
-            if (current / "pyproject.toml").exists():
-                return current
+        while current.parent != current.root and not (current / "pyproject.toml").exists():
             current = current.parent
-        
+
         # Strategy 2: Try git root
         try:
             import subprocess
@@ -725,168 +844,153 @@ def prevent_root_artifacts(tmp_path, monkeypatch):
                 return Path(git_root.stdout.strip())
         except (subprocess.SubprocessError, FileNotFoundError):
             pass
-        
+
         # Strategy 3: Fallback to conftest parent
         return conftest_path.parent
-    
+
     repo_root = get_repo_root()
-    
+
     # Change working directory to tmp_path for safety
     monkeypatch.chdir(tmp_path)
-    
-    # Minimal allowlist for truly necessary root artifacts
-    allowed_root_paths = {
-        repo_root / ".pytest_cache",
-        repo_root / "coverage_reports",  # Only when explicitly enabled
-        repo_root / ".coverage",
-        repo_root / ".DS_Store",  # OS noise
-    }
-    
-    def check_path_safety(path):
-        """Check if a path is safe for write operations."""
+
+    def is_path_allowed(path):
+        """Check if a path is allowed for write operations."""
         if not path:
-            return True
-        
-        # Resolve the path and check if it's under repo root
+            return False
+
         try:
             resolved_path = Path(path).resolve()
         except (OSError, ValueError):
-            # If we can't resolve, assume it might be unsafe
             resolved_path = Path(path)
-        
+
         # Convert to absolute if relative
         if not resolved_path.is_absolute():
             resolved_path = Path.cwd() / resolved_path
             resolved_path = resolved_path.resolve()
-        
+
         # Check if path is under repo root
         try:
             resolved_path.relative_to(repo_root)
             # Path is under repo root - check if it's allowed
-            for allowed_path in allowed_root_paths:
-                try:
-                    resolved_path.relative_to(allowed_path)
-                    return True  # Allowed path
-                except ValueError:
-                    continue
+            relative_path = str(resolved_path.relative_to(repo_root))
+
+            # Check against allowed patterns
+            for pattern in ALLOWED_WRITE_PATHS:
+                if fnmatch.fnmatch(relative_path, pattern):
+                    return True
+                # Also check if path starts with allowed directory
+                if relative_path.startswith(pattern.replace("**", "").rstrip("/")):
+                    return True
+
+            # Check if it's a transient file in root
+            if resolved_path.parent == repo_root:
+                for pattern in TRANSIENT_FILES:
+                    if fnmatch.fnmatch(resolved_path.name, pattern):
+                        return True
+
             return False  # Unsafe path under repo root
         except ValueError:
             # Path is not under repo root - safe
             return True
-    
+
     def safe_open_wrapper(original_open, file, mode='r', *args, **kwargs):
         """Wrapper for open() that blocks unsafe writes."""
         if 'w' in mode or 'a' in mode or 'x' in mode or '+' in mode:
-            if not check_path_safety(file):
+            if not is_path_allowed(file):
                 raise AssertionError(
                     f"Test attempted to write to repository root: {file}\n"
                     f"Repository root: {repo_root}\n"
                     f"Current working directory: {Path.cwd()}\n"
-                    f"Use tmp_path fixture for temporary files or write outside repository."
+                    f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
                 )
         return original_open(file, mode, *args, **kwargs)
-    
-    # Apply patches
-    import builtins
-    
+
     # Store original methods before patching
+    import builtins
     original_open = builtins.open
     original_write_text = Path.write_text
     original_write_bytes = Path.write_bytes
     original_mkdir = Path.mkdir
-    original_unlink = Path.unlink
     original_rename = Path.rename
     original_replace = Path.replace
     original_touch = Path.touch
-    
-    monkeypatch.setattr(builtins, 'open', lambda file, mode='r', *args, **kwargs: 
+
+    monkeypatch.setattr(builtins, 'open', lambda file, mode='r', *args, **kwargs:
                        safe_open_wrapper(original_open=original_open, file=file, mode=mode, *args, **kwargs))
-    
+
     def safe_write_text_wrapper(self, data, encoding=None, errors=None):
         """Wrapper for Path.write_text() that blocks unsafe writes."""
-        if not check_path_safety(self):
+        if not is_path_allowed(self):
             raise AssertionError(
                 f"Test attempted to write_text to repository root: {self}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or write outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_write_text(self, data, encoding, errors)
-    
+
     def safe_write_bytes_wrapper(self, data):
         """Wrapper for Path.write_bytes() that blocks unsafe writes."""
-        if not check_path_safety(self):
+        if not is_path_allowed(self):
             raise AssertionError(
                 f"Test attempted to write_bytes to repository root: {self}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or write outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_write_bytes(self, data)
-    
+
     def safe_mkdir_wrapper(self, mode=0o777, parents=False, exist_ok=False):
         """Wrapper for Path.mkdir() that blocks unsafe directory creation."""
-        if not check_path_safety(self):
+        if not is_path_allowed(self):
             raise AssertionError(
                 f"Test attempted to create directory in repository root: {self}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary directories or create outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_mkdir(self, mode, parents, exist_ok)
-    
-    def safe_unlink_wrapper(self, missing_ok=False):
-        """Wrapper for Path.unlink() that blocks unsafe deletions."""
-        if not check_path_safety(self):
-            raise AssertionError(
-                f"Test attempted to unlink file in repository root: {self}\n"
-                f"Repository root: {repo_root}\n"
-                f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or operate outside repository."
-            )
-        return original_unlink(self, missing_ok)
-    
+
     def safe_rename_wrapper(self, target):
         """Wrapper for Path.rename() that blocks unsafe renames."""
-        if not check_path_safety(self) or not check_path_safety(target):
+        if not is_path_allowed(self) or not is_path_allowed(target):
             raise AssertionError(
                 f"Test attempted to rename file in repository root: {self} -> {target}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or operate outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_rename(self, target)
-    
+
     def safe_replace_wrapper(self, target):
         """Wrapper for Path.replace() that blocks unsafe replacements."""
-        if not check_path_safety(self) or not check_path_safety(target):
+        if not is_path_allowed(self) or not is_path_allowed(target):
             raise AssertionError(
                 f"Test attempted to replace file in repository root: {self} -> {target}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or operate outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_replace(self, target)
-    
+
     def safe_touch_wrapper(self, mode=0o666, exist_ok=True):
         """Wrapper for Path.touch() that blocks unsafe touches."""
-        if not check_path_safety(self):
+        if not is_path_allowed(self):
             raise AssertionError(
                 f"Test attempted to touch file in repository root: {self}\n"
                 f"Repository root: {repo_root}\n"
                 f"Current working directory: {Path.cwd()}\n"
-                f"Use tmp_path fixture for temporary files or operate outside repository."
+                f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
             )
         return original_touch(self, mode, exist_ok)
-    
+
     monkeypatch.setattr(Path, 'write_text', safe_write_text_wrapper, raising=False)
     monkeypatch.setattr(Path, 'write_bytes', safe_write_bytes_wrapper, raising=False)
     monkeypatch.setattr(Path, 'mkdir', safe_mkdir_wrapper, raising=False)
-    monkeypatch.setattr(Path, 'unlink', safe_unlink_wrapper, raising=False)
     monkeypatch.setattr(Path, 'rename', safe_rename_wrapper, raising=False)
     monkeypatch.setattr(Path, 'replace', safe_replace_wrapper, raising=False)
     monkeypatch.setattr(Path, 'touch', safe_touch_wrapper, raising=False)
-    
+
     yield
 
 
