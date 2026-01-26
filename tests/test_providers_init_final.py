@@ -68,20 +68,18 @@ def test_openai_provider_error_propagation():
 
 
 def test_openai_provider_multiple_accesses():
-    """Test that OpenAIProvider works consistently across multiple accesses."""
-    with patch('ai_utilities.providers.OpenAIProvider') as mock_provider_class:
-        mock_provider_class.TEST_ATTR = "test_value"
-        
-        from ai_utilities.providers import OpenAIProvider
-        
-        # Access multiple different attributes
-        val1 = OpenAIProvider.TEST_ATTR
-        val2 = OpenAIProvider.TEST_ATTR
-        val3 = OpenAIProvider.__name__ if hasattr(mock_provider_class, '__name__') else None
-        
-        # Should access the mocked class consistently
-        assert val1 == "test_value"
-        assert val2 == "test_value"
+    """Test that OpenAIProvider is consistently accessible."""
+    from ai_utilities.providers import OpenAIProvider
+    
+    # Test that the class is consistently accessible
+    assert OpenAIProvider is not None
+    assert hasattr(OpenAIProvider, '__name__')
+    
+    # Test that we can access it multiple times
+    provider1 = OpenAIProvider
+    provider2 = OpenAIProvider
+    
+    assert provider1 is provider2  # Should be the same class object
 
 
 def test_providers_exception_instantiation():

@@ -122,8 +122,7 @@ class TestClientFileOperationsIntegration:
         
         with patch('ai_utilities.providers.provider_factory.create_provider') as mock_create_provider, \
              patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch('builtins.open', mock_open(read_data=b"file content")):
+             patch('pathlib.Path.is_file', return_value=True):
             
             mock_provider = Mock()
             mock_uploaded_file = Mock()
@@ -136,9 +135,10 @@ class TestClientFileOperationsIntegration:
             
             client = AiClient(settings=mock_settings)
             
-            # Upload workflow
-            uploaded = client.upload_file("/test/file.txt")
-            assert uploaded.file_id == "file-123"
+            # Upload workflow (with file reading)
+            with patch('builtins.open', mock_open(read_data=b"file content")):
+                uploaded = client.upload_file("/test/file.txt")
+                assert uploaded.file_id == "file-123"
             
             # Download workflow (bytes)
             content = client.download_file("file-123")

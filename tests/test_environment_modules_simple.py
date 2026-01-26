@@ -16,7 +16,7 @@ from ai_utilities.di.environment import (
     ContextVarEnvironmentProvider, StandardEnvironmentProvider, EnvironmentProviderStub
 )
 from ai_utilities.env_detection import is_interactive_environment, get_environment_type
-from ai_utilities.env_overrides import is_test_mode, test_mode_guard as test_mode_guard_cm
+from ai_utilities.env_overrides import is_test_mode, test_mode_guard
 
 
 class TestEnvironmentProviderCoverage:
@@ -130,7 +130,7 @@ class TestEnvironmentOverridesCoverage:
         initial_state = is_test_mode()
         
         # Use the context manager properly with 'with' statement
-        with test_mode_guard_cm():
+        with test_mode_guard():
             assert is_test_mode() is True
         
         # Should return to previous state

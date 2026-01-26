@@ -125,15 +125,24 @@ class TestAiClient:
     
     def test_client_initialization_default_settings(self):
         """Test client initialization with default settings."""
-        with patch('ai_utilities.client.AiSettings.from_dotenv') as mock_from_dotenv:
+        with patch('ai_utilities.client.Path') as mock_path, \
+             patch('ai_utilities.client.AiSettings.from_dotenv') as mock_from_dotenv:
+            # Mock that .env file exists
+            mock_path.return_value.exists.return_value = True
+            
             # Use real AiSettings object instead of mock
             from ai_utilities.config_models import AiSettings
-            mock_settings = AiSettings(api_key="test_key", model="gpt-3.5-turbo", provider="openai")
+            mock_settings = AiSettings(
+                api_key="test_key", 
+                model="gpt-3.5-turbo", 
+                provider="openai",
+                _env_file=None
+            )
             mock_from_dotenv.return_value = mock_settings
             
             client = AiClient()
             
-            mock_from_dotenv.assert_called_once()
+            mock_from_dotenv.assert_called_once_with(".env")
             assert client.settings.api_key == "test_key"
             assert client.settings.model == "gpt-3.5-turbo"
     
