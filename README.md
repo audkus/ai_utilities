@@ -239,14 +239,73 @@ Integration tests are automatically skipped if API keys are missing. Other skipp
 
 ### Coverage Testing
 
-**Important**: This repository uses pytest-cov for coverage. Do not use `python -m coverage run -m pytest` because pytest.ini already enables pytest-cov and the two approaches conflict.
+This repository uses coverage.py for accurate test coverage measurement. Use the following commands for consistent coverage results.
 
 #### Coverage Commands
 
-- **Full suite coverage**: `python -m pytest` (pytest.ini adds --cov + reports automatically)
-- **One test file**: `python -m pytest -q tests/test_environment_modules_simple.py`
-- **Explicit coverage report**: `python -m pytest -q tests/test_environment_modules_simple.py --cov=ai_utilities --cov-report=term-missing`
-- **HTML report**: View at `coverage_reports/index.html`
+**Run tests with coverage:**
+```bash
+COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest -q
+```
+
+**Generate HTML report:**
+```bash
+coverage html -d coverage_reports/html
+```
+
+**Show terminal coverage report:**
+```bash
+coverage report -m
+```
+
+**Run specific test file with coverage:**
+```bash
+COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest tests/test_specific_file.py -q
+```
+
+**Coverage for specific module:**
+```bash
+COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest tests/test_specific_file.py -q --cov=ai_utilities.module_name --cov-report=term-missing
+```
+
+**Important Notes:**
+- Always use `COVERAGE_FILE=coverage_reports/.coverage` to ensure coverage data is stored in the correct location
+- The `-m` flag shows missing lines in the coverage report
+- HTML reports are generated in `coverage_reports/html/` for detailed viewing
+- Coverage data accumulates - use `coverage erase` to reset if needed
+
+### Project Structure Protection
+
+This repository includes automated tests to prevent project structure pollution and maintain clean organization.
+
+**Protected Structure Rules:**
+- **Coverage reports**: Only in `coverage_reports/` at repository root
+- **No coverage files**: In `tests/` directory or subdirectories  
+- **No duplicate directories**: `htmlcov/`, `reports/` in wrong locations
+- **Test artifacts**: Only in appropriate locations (never in root except `.pytest_cache`)
+
+**Automated Enforcement:**
+```bash
+# Run structure validation tests
+python -m pytest tests/test_project_structure.py -v
+```
+
+**Directory Standards:**
+```
+ai_utilities/
+├── coverage_reports/          # ✅ Only coverage reports location
+│   ├── .coverage              # Coverage data file
+│   ├── html/                  # HTML reports
+│   └── .gitignore             # Excludes all files except itself
+├── reports/                   # ✅ Manual reports and test outputs
+│   ├── manual_report_*.md     # Generated reports
+│   └── test_output/           # Test artifacts
+├── tests/                     # ✅ Test files only (no coverage data)
+│   └── test_*.py
+└── .pytest_cache              # ✅ Allowed standard pytest artifact
+```
+
+This prevents the common problem of coverage reports and test artifacts being scattered throughout the project, maintaining a clean and predictable structure.
 
 ### Test Hygiene
 
