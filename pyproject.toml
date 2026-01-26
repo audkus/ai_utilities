@@ -152,6 +152,8 @@ target-version = "py39"
 select = [
     # pycodestyle
     "E",
+    # pycodestyle warnings  
+    "W",
     # Pyflakes
     "F",
     # pyupgrade
@@ -162,16 +164,55 @@ select = [
     "SIM",
     # isort
     "I",
-    # unused imports
-    "F401",
-    # import violations
-    "F403",
-    "F405",
+    # flake8-bandit (security)
+    "S",
+    # ruff-specific rules
+    "RUF",
+    # flake8-comprehensions
+    "C4",
+    # flake8-pie
+    "PIE",
 ]
 ignore = [
     # Star imports are used in __init__.py files
     "F403",
     "F405",
+    # typing modernization - avoid churn for py39 compatibility
+    "UP006",
+    "UP045", 
+    "UP007",
+]
+
+# Per-file ignores with minimal, justified exceptions
+per-file-ignores = [
+    # Allow assert statements in dev tools
+    "dev_tools/**:S101",
+    # Allow assert statements in diagnostic scripts  
+    "tools/diagnostics/**:S101",
+    # Benchmark-specific patterns
+    "tools/benchmarks.py:F841,E501,F401,UP006,UP035,RUF059",
+    # Test utilities compatibility
+    "tests/utils/**:UP006,UP035,F841,W293",
+    # Test-specific allowances
+    "tests/**:S101,B018,S105,S106,S108,S311,S603,S607,B011,B017,E501,SIM117,SIM105",
+    # CLI tools - print statements appropriate
+    "src/ai_utilities/cli.py:",
+    # Conditional OpenAI import handling
+    "src/ai_utilities/client.py:E402",
+    "src/ai_utilities/providers/openai_provider.py:E402",
+    "src/ai_utilities/providers/openai_compatible_provider.py:E402",
+    # SQL queries with validated table names
+    "src/ai_utilities/cache.py:S608",
+    # Test reset cleanup patterns
+    "src/ai_utilities/_test_reset.py:S110",
+    # Audio error handling patterns
+    "src/ai_utilities/audio/audio_utils.py:S110",
+    # Setup tools - print statements appropriate
+    "src/ai_utilities/setup/**:",
+    # Dynamic loading and module organization
+    "src/ai_utilities/__init__.py:F401,E402",
+    # Git subprocess in safe context
+    "src/ai_utilities/knowledge/models.py:S607",
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

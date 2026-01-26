@@ -335,7 +335,7 @@ class TestAiClientCaching:
         assert call_count == 2  # No additional call
     
     def test_embeddings_caches(self):
-        """Test that get_embeddings() works correctly (note: doesn't use cache currently)."""
+        """Test that get_embeddings() works correctly with cache."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", api_key="test-key")
         provider = FakeProvider(settings)
         client = AiClient(settings=settings, provider=provider)
@@ -358,13 +358,13 @@ class TestAiClientCaching:
             assert len(result1) == 2
             assert result1[0] == [0.1, 0.2, 0.3]
             
-            # Second call (note: embeddings doesn't use cache currently)
+            # Second call (should use cache)
             result2 = client.get_embeddings(["hello", "world"])
-            assert mock_client.embeddings.create.call_count == 2  # Makes another call
+            assert mock_client.embeddings.create.call_count == 1  # Still only 1 call due to cache
             assert result1 == result2
     
     def test_embeddings_cache_key_sensitive(self):
-        """Test that embeddings calls work correctly with different inputs (note: doesn't use cache currently)."""
+        """Test that embeddings calls work correctly with different inputs and cache."""
         settings = AiSettings(cache_enabled=True, cache_backend="memory", api_key="test-key")
         provider = FakeProvider(settings)
         client = AiClient(settings=settings, provider=provider)
@@ -384,9 +384,9 @@ class TestAiClientCaching:
             client.get_embeddings(["world"])
             assert mock_client.embeddings.create.call_count == 2
             
-            # Same text should make another call (no caching currently)
+            # Same text should use cache
             client.get_embeddings(["hello"])
-            assert mock_client.embeddings.create.call_count == 3  # Makes another call
+            assert mock_client.embeddings.create.call_count == 2  # Still 2 due to cache
     
     def test_explicit_cache_backend_overrides_settings(self):
         """Test that explicit cache backend overrides settings."""

@@ -726,82 +726,96 @@ ALLOWED_WRITE_PATHS = {
 
 
 @pytest.fixture(scope="session", autouse=True)
-def enforce_repo_root_cleanliness():
+def enforce_repo_root_cleanliness() -> None:
     """Session-level guard to ensure repo root stays clean.
-    
-    This fixture runs at session start and end to ensure no new files
-    or directories are created in the repository root outside the allowlists.
-    
-    Raises:
-        AssertionError: If unauthorized files/dirs found in repo root
-    """
-    from pathlib import Path
 
-    def get_repo_root():
+    - Snapshots repo root state at session start.
+    - At session end, removes known transient artifacts created by tools
+      (e.g. `.coverage*` from `coverage run`) if they were created during this run.
+    - Fails if any other unauthorized files/dirs appear in repo root.
+
+    Raises:
+        AssertionError: If unauthorized files/dirs found in repo root.
+    """
+    import fnmatch
+
+    def get_repo_root() -> Path:
         """Get repository root by walking up from conftest.py."""
-        conftest_path = Path(__file__).resolve()
-        current = conftest_path.parent
+        conftest_path: Path = Path(__file__).resolve()
+        current: Path = conftest_path.parent
         while current.parent != current.root and not (current / "pyproject.toml").exists():
             current = current.parent
         return current
 
-    repo_root = get_repo_root()
+    repo_root: Path = get_repo_root()
 
-    # Snapshot initial state
-    initial_files = set()
-    initial_dirs = set()
+    def snapshot_root(root: Path) -> tuple[set[str], set[str]]:
+        files: set[str] = set()
+        dirs: set[str] = set()
+        for item in root.iterdir():
+            if item.is_file():
+                files.add(item.name)
+            elif item.is_dir():
+                dirs.add(item.name)
+        return files, dirs
 
-    for item in repo_root.iterdir():
-        if item.is_file():
-            initial_files.add(item.name)
-        elif item.is_dir():
-            initial_dirs.add(item.name)
+    initial_files, initial_dirs = snapshot_root(repo_root)
 
     yield
 
-    # Check final state
-    final_files = set()
-    final_dirs = set()
+    # 1) Auto-clean transient artifacts created during *this* run (best-effort).
+    #    This makes `coverage run -m pytest` compatible with the root policy.
+    created_during_run: set[str] = set()
+    final_files_pre, _final_dirs_pre = snapshot_root(repo_root)
+    created_during_run = final_files_pre - initial_files
 
-    for item in repo_root.iterdir():
-        if item.is_file():
-            final_files.add(item.name)
-        elif item.is_dir():
-            final_dirs.add(item.name)
+    transient_created: list[Path] = []
+    for name in sorted(created_during_run):
+        if any(fnmatch.fnmatch(name, pattern) for pattern in TRANSIENT_FILES):
+            transient_created.append(repo_root / name)
 
-    # Find new items
+    transient_delete_failures: list[str] = []
+    for path in transient_created:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as exc:  # pragma: no cover
+            transient_delete_failures.append(f"{path.name} ({exc})")
+
+    if transient_delete_failures:
+        raise AssertionError(
+            "Repository root contamination detected!\n"
+            f"Repository root: {repo_root}\n"
+            f"Could not delete transient files: {sorted(transient_delete_failures)}\n"
+            "Delete them manually and re-run.\n"
+            f"Transient patterns: {sorted(TRANSIENT_FILES)}"
+        )
+
+    # 2) Re-snapshot after cleanup and enforce allowlists.
+    final_files, final_dirs = snapshot_root(repo_root)
+
     new_files = final_files - initial_files - ROOT_FILE_ALLOWLIST
     new_dirs = final_dirs - initial_dirs - ROOT_DIR_ALLOWLIST
 
-    # Check for lingering transient files (using pattern matching)
-    import fnmatch
-    lingering_transient = set()
-    for file in final_files - initial_files:
-        for pattern in TRANSIENT_FILES:
-            if fnmatch.fnmatch(file, pattern):
-                lingering_transient.add(file)
-                break
+    # Remove transient patterns from `new_files` (even if tool recreated them late).
+    new_files = {
+        f for f in new_files
+        if not any(fnmatch.fnmatch(f, pattern) for pattern in TRANSIENT_FILES)
+    }
 
-    # Remove transient files from new_files
-    new_files = [f for f in new_files if not any(fnmatch.fnmatch(f, pattern) for pattern in TRANSIENT_FILES)]
-
-    if new_files or new_dirs or lingering_transient:
-        error_parts = []
-
+    if new_files or new_dirs:
+        error_parts: list[str] = []
         if new_files:
             error_parts.append(f"Unauthorized files: {sorted(new_files)}")
         if new_dirs:
             error_parts.append(f"Unauthorized directories: {sorted(new_dirs)}")
-        if lingering_transient:
-            error_parts.append(f"Lingering transient files: {sorted(lingering_transient)}")
 
         raise AssertionError(
-            f"Repository root contamination detected!\n"
+            "Repository root contamination detected!\n"
             f"Repository root: {repo_root}\n"
             f"{'. '.join(error_parts)}\n"
             f"Allowed files: {sorted(ROOT_FILE_ALLOWLIST)}\n"
             f"Allowed directories: {sorted(ROOT_DIR_ALLOWLIST)}\n"
-            f"Use tmp_path, tmp_path_factory, or reports/ for outputs."
+            "Use tmp_path, tmp_path_factory, or reports/ for outputs."
         )
 
 

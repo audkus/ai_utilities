@@ -3,7 +3,8 @@ Tests for providers/__init__.py to achieve 100% coverage.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+import sys
+from unittest.mock import Mock, patch, MagicMock
 
 from ai_utilities.providers import (
     BaseProvider, OpenAIProvider, OpenAICompatibleProvider, create_provider,
@@ -213,5 +214,102 @@ class TestProvidersInitEdgeCases:
         # Verify all items in __all__ are actually importable
         for item in __all__:
             assert hasattr(__import__('ai_utilities.providers', fromlist=[item]), item), f"{item} not found in module"
+
+
+class TestProvidersInitErrorHandling:
+    """Test import error handling branches in providers/__init__.py."""
+
+    def test_openai_provider_fallback_with_import_error(self) -> None:
+        """Test OpenAI provider fallback when ImportError occurs."""
+        # Remove modules to force re-import
+        modules_to_remove = [
+            'ai_utilities.providers',
+            'ai_utilities.providers.openai_provider'
+        ]
+        removed_modules = {}
+        for module_name in modules_to_remove:
+            if module_name in sys.modules:
+                removed_modules[module_name] = sys.modules[module_name]
+                del sys.modules[module_name]
+        
+        try:
+            # Create a mock module that raises ImportError when accessed
+            import types
+            def mock_import():
+                raise ImportError("No openai")
+            
+            mock_module = types.ModuleType('mock_openai_provider')
+            mock_module.__spec__ = None  # This will cause ImportError on import
+            
+            # Put the mock module in sys.modules to trigger ImportError on relative import
+            sys.modules['ai_utilities.providers.openai_provider'] = mock_module
+            
+            # Re-import to trigger the fallback path
+            import importlib
+            importlib.reload(__import__('ai_utilities.providers'))
+            import ai_utilities.providers as providers
+            
+            # The fallback class should raise MissingOptionalDependencyError
+            with pytest.raises(MissingOptionalDependencyError) as exc_info:
+                providers.OpenAIProvider(settings={})
+            
+            error_msg = str(exc_info.value)
+            assert "OpenAI provider requires extra 'openai'" in error_msg
+            assert "pip install ai-utilities[openai]" in error_msg
+        finally:
+            # Restore modules
+            for module_name, module in removed_modules.items():
+                sys.modules[module_name] = module
+
+    def test_openai_compatible_provider_fallback_with_import_error(self) -> None:
+        """Test OpenAI Compatible provider fallback when ImportError occurs."""
+        # Remove modules to force re-import
+        modules_to_remove = [
+            'ai_utilities.providers',
+            'ai_utilities.providers.openai_compatible_provider'
+        ]
+        removed_modules = {}
+        for module_name in modules_to_remove:
+            if module_name in sys.modules:
+                removed_modules[module_name] = sys.modules[module_name]
+                del sys.modules[module_name]
+        
+        try:
+            # Create a mock module that raises ImportError when accessed
+            import types
+            
+            mock_module = types.ModuleType('mock_openai_compatible_provider')
+            mock_module.__spec__ = None  # This will cause ImportError on import
+            
+            # Put the mock module in sys.modules to trigger ImportError on relative import
+            sys.modules['ai_utilities.providers.openai_compatible_provider'] = mock_module
+            
+            # Re-import to trigger the fallback path
+            import importlib
+            importlib.reload(__import__('ai_utilities.providers'))
+            import ai_utilities.providers as providers
+            
+            # The fallback class should raise MissingOptionalDependencyError
+            with pytest.raises(MissingOptionalDependencyError) as exc_info:
+                providers.OpenAICompatibleProvider(settings={})
+            
+            error_msg = str(exc_info.value)
+            assert "OpenAI Compatible provider requires extra 'openai'" in error_msg
+            assert "pip install ai-utilities[openai]" in error_msg
+        finally:
+            # Restore modules
+            for module_name, module in removed_modules.items():
+                sys.modules[module_name] = module
+
+    def test_exception_chaining_in_fallback_classes(self) -> None:
+        """Test that fallback classes properly chain exceptions."""
+        # Test the exception chaining works correctly
+        original_error = ImportError("No module named 'openai'")
+        
+        try:
+            raise MissingOptionalDependencyError("Test message") from original_error
+        except MissingOptionalDependencyError as e:
+            assert e.__cause__ is original_error
+            assert str(e) == "Test message"
     
     

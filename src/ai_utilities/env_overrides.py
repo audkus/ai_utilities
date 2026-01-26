@@ -81,17 +81,23 @@ def _warn_if_direct_env_mutation(key: str) -> None:
     """
     Issue a warning if direct environment mutation is detected in test mode.
     
+    Only warns if the key is not currently overridden, since accessing
+    overridden keys through get_safe_env is acceptable.
+    
     Args:
         key: The environment variable key being accessed
     """
     if is_test_mode():
-        import warnings
-        warnings.warn(
-            f"Direct os.environ access detected for '{key}' in test mode. "
-            f"Consider using override_env() context manager for test isolation.",
-            UserWarning,
-            stacklevel=3
-        )
+        # Check if we have an active override for this key
+        current_overrides = _env_overrides.get()
+        if key not in current_overrides:
+            import warnings
+            warnings.warn(
+                f"Direct os.environ access detected for '{key}' in test mode. "
+                f"Consider using override_env() context manager for test isolation.",
+                UserWarning,
+                stacklevel=3
+            )
 
 
 def get_env_overrides() -> Dict[str, str]:
