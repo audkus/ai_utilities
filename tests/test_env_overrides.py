@@ -119,7 +119,7 @@ class TestEnvOverrides:
         
         # Test with no overrides - should use defaults
         settings = AiSettings()
-        assert settings.model == 'gpt-3.5-turbo'  # Actual default value
+        assert settings.model is None
         assert settings.temperature == 0.7  # Default value
         
         # Test with overrides - should use override values
@@ -194,7 +194,7 @@ class TestEnvOverrides:
         """Test AiSettings integration with environment overrides."""
         # Don't set any environment variables - test default behavior first
         settings = AiSettings()
-        assert settings.model == 'gpt-3.5-turbo'  # Actual default value
+        assert settings.model is None
         assert settings.temperature == 0.7
         
         # Now set up initial environment using monkeypatch

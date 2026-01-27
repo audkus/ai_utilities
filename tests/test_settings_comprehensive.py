@@ -18,19 +18,19 @@ class TestAiSettingsDefaults:
         # Test true defaults by explicitly disabling .env loading
         settings = AiSettings(_env_file=None)
         
-        # Should default to gpt-3.5-turbo when no environment variable is set
-        assert settings.model == "gpt-3.5-turbo"  # Production default
+        # AiSettings keeps model/provider unset; provider resolution handles defaults.
+        assert settings.model is None
         assert settings.temperature == 0.7
         assert settings.timeout == 30
         assert settings.max_tokens is None
         assert settings.base_url is None
         assert settings.update_check_days == 30
-        assert settings.provider == "openai"
+        assert settings.provider == "auto"
     
     def test_ai_settings_model_validator(self, isolated_env):
         """Test that model validator sets default when None."""
         settings = AiSettings(model=None, _env_file=None)
-        assert settings.model == "gpt-3.5-turbo"  # Should be set by validator
+        assert settings.model is None
 
 
 class TestAiSettingsEnvironmentVariables:
@@ -213,7 +213,7 @@ AI_MODEL=env-file-model
         """Test behavior when .env file doesn't exist."""
         # Should not raise error, just use defaults
         settings = AiSettings(_env_file="/nonexistent/.env")
-        assert settings.model == "gpt-3.5-turbo"  # Should use default
+        assert settings.model is None
 
 
 class TestAiSettingsErrorHandling:
@@ -235,8 +235,7 @@ class TestAiSettingsErrorHandling:
         """Test behavior with invalid model names."""
         # Should accept any string during creation (validation happens at usage)
         settings = AiSettings(model="invalid-model-name", _env_file=None)
-        # The model might be normalized or kept as-is depending on validation
-        assert settings.model in ["invalid-model-name", "gpt-3.5-turbo"]  # Accept actual behavior
+        assert settings.model == "invalid-model-name"
         # This is tested in integration tests
     
     def test_invalid_base_url(self, isolated_env):
@@ -261,8 +260,7 @@ class TestAiSettingsEdgeCases:
         
         # Empty strings should be treated as None/defaults
         assert settings.api_key is None or settings.api_key == ""
-        # Model should use default due to validator
-        assert settings.model == "gpt-3.5-turbo"
+        assert settings.model is None
         assert settings.base_url is None or settings.base_url == ""
     
     def test_whitespace_env_vars(self, monkeypatch):
@@ -274,8 +272,7 @@ class TestAiSettingsEdgeCases:
         
         # Whitespace should be stripped or treated as None
         assert settings.api_key is None or settings.api_key.strip() == ""
-        # Model should use default due to validator
-        assert settings.model == "gpt-3.5-turbo"
+        assert settings.model is None
     
     def test_very_long_env_vars(self, monkeypatch):
         """Test handling of very long environment variable values."""
@@ -299,6 +296,8 @@ class TestAiSettingsIntegration:
     
     def test_settings_with_client(self, fake_settings):
         """Test that settings work correctly with AiClient."""
+        # Client creation requires a configured provider; set hosted provider env.
+        os.environ["OPENAI_API_KEY"] = "test-key"
         client = AiClient(fake_settings)
         assert client.settings.api_key == fake_settings.api_key
         assert client.settings.model == fake_settings.model

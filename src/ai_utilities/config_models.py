@@ -427,10 +427,13 @@ class AiSettings(BaseSettings):
     )
     
     # Provider selection - expanded to support multiple providers
-    provider: Optional[Literal["openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
-        default="openai", 
+    provider: Optional[Literal["auto", "openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
+        default="auto",
         description="AI provider to use (inferred from base_url if not specified)"
     )
+ 
+    ai_log_level: Optional[str] = Field(default=None, description="Optional log level override for ai_utilities (AI_LOG_LEVEL)")
+    ai_auto_select_order: Optional[str] = Field(default=None, description="Comma-separated provider order for auto selection (AI_AUTO_SELECT_ORDER)")
     
     # Core settings
     api_key: Optional[str] = Field(default=None, description="Generic API key override (AI_API_KEY)")
@@ -443,11 +446,32 @@ class AiSettings(BaseSettings):
     fastchat_api_key: Optional[str] = Field(default=None, description="FastChat API key (FASTCHAT_API_KEY)")
     ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
     lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
+ 
+    openai_base_url: Optional[str] = Field(default=None, description="OpenAI base URL (OPENAI_BASE_URL)")
+    groq_base_url: Optional[str] = Field(default=None, description="Groq base URL (GROQ_BASE_URL)")
+    together_base_url: Optional[str] = Field(default=None, description="Together base URL (TOGETHER_BASE_URL)")
+    openrouter_base_url: Optional[str] = Field(default=None, description="OpenRouter base URL (OPENROUTER_BASE_URL)")
+ 
+    ollama_base_url: Optional[str] = Field(default=None, description="Ollama base URL (OLLAMA_BASE_URL)")
+    fastchat_base_url: Optional[str] = Field(default=None, description="FastChat base URL (FASTCHAT_BASE_URL)")
+    text_generation_webui_base_url: Optional[str] = Field(default=None, description="Text generation webui base URL (TEXT_GENERATION_WEBUI_BASE_URL)")
+    lmstudio_base_url: Optional[str] = Field(default=None, description="LM Studio base URL (LMSTUDIO_BASE_URL)")
+ 
+    openai_model: Optional[str] = Field(default=None, description="OpenAI model override (OPENAI_MODEL)")
+    groq_model: Optional[str] = Field(default=None, description="Groq model override (GROQ_MODEL)")
+    together_model: Optional[str] = Field(default=None, description="Together model override (TOGETHER_MODEL)")
+    openrouter_model: Optional[str] = Field(default=None, description="OpenRouter model override (OPENROUTER_MODEL)")
+ 
+    ollama_model: Optional[str] = Field(default=None, description="Ollama model override (OLLAMA_MODEL)")
+    fastchat_model: Optional[str] = Field(default=None, description="FastChat model override (FASTCHAT_MODEL)")
+    text_generation_webui_model: Optional[str] = Field(default=None, description="Text generation webui model override (TEXT_GENERATION_WEBUI_MODEL)")
+    lmstudio_model: Optional[str] = Field(default=None, description="LM Studio model override (LMSTUDIO_MODEL)")
     
     model: Optional[str] = Field(
         default=None,
         description="Model to use (required)"
     )
+    
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
     base_url: Optional[str] = Field(default=None, description="Custom base URL for API (required for openai_compatible)")
@@ -509,7 +533,7 @@ class AiSettings(BaseSettings):
             if env_provider:
                 return env_provider
             
-            return "openai"  # Default fallback
+            return "auto"
         
         # For any explicit value (including "openai"), use it as-is
         if v is not None:
@@ -518,7 +542,23 @@ class AiSettings(BaseSettings):
                 v = v.strip()
             return v
         
-        return "openai"  # Final fallback
+        return "auto"
+
+    @field_validator('ai_log_level', mode='before')
+    @classmethod
+    def get_ai_log_level(cls, v):
+        """Get AI_LOG_LEVEL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_LOG_LEVEL')
+
+    @field_validator('ai_auto_select_order', mode='before')
+    @classmethod
+    def get_ai_auto_select_order(cls, v):
+        """Get AI_AUTO_SELECT_ORDER from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_AUTO_SELECT_ORDER')
     
     @field_validator('base_url', mode='before')
     @classmethod  
@@ -585,6 +625,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OPENAI_API_KEY')
+
+    @field_validator('openai_base_url', mode='before')
+    @classmethod
+    def get_openai_base_url(cls, v):
+        """Get OpenAI base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENAI_BASE_URL')
+
+    @field_validator('openai_model', mode='before')
+    @classmethod
+    def get_openai_model(cls, v):
+        """Get OpenAI model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENAI_MODEL')
     
     @field_validator('groq_api_key', mode='before')
     @classmethod
@@ -593,6 +649,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('GROQ_API_KEY')
+
+    @field_validator('groq_base_url', mode='before')
+    @classmethod
+    def get_groq_base_url(cls, v):
+        """Get Groq base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('GROQ_BASE_URL')
+
+    @field_validator('groq_model', mode='before')
+    @classmethod
+    def get_groq_model(cls, v):
+        """Get Groq model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('GROQ_MODEL')
     
     @field_validator('together_api_key', mode='before')
     @classmethod
@@ -601,6 +673,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('TOGETHER_API_KEY')
+
+    @field_validator('together_base_url', mode='before')
+    @classmethod
+    def get_together_base_url(cls, v):
+        """Get Together base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TOGETHER_BASE_URL')
+
+    @field_validator('together_model', mode='before')
+    @classmethod
+    def get_together_model(cls, v):
+        """Get Together model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TOGETHER_MODEL')
     
     @field_validator('openrouter_api_key', mode='before')
     @classmethod
@@ -609,6 +697,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OPENROUTER_API_KEY')
+
+    @field_validator('openrouter_base_url', mode='before')
+    @classmethod
+    def get_openrouter_base_url(cls, v):
+        """Get OpenRouter base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENROUTER_BASE_URL')
+
+    @field_validator('openrouter_model', mode='before')
+    @classmethod
+    def get_openrouter_model(cls, v):
+        """Get OpenRouter model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENROUTER_MODEL')
     
     @field_validator('fastchat_api_key', mode='before')
     @classmethod
@@ -617,6 +721,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('FASTCHAT_API_KEY')
+
+    @field_validator('fastchat_base_url', mode='before')
+    @classmethod
+    def get_fastchat_base_url(cls, v):
+        """Get FastChat base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('FASTCHAT_BASE_URL')
+
+    @field_validator('fastchat_model', mode='before')
+    @classmethod
+    def get_fastchat_model(cls, v):
+        """Get FastChat model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('FASTCHAT_MODEL')
     
     @field_validator('ollama_api_key', mode='before')
     @classmethod
@@ -625,6 +745,38 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OLLAMA_API_KEY')
+
+    @field_validator('ollama_base_url', mode='before')
+    @classmethod
+    def get_ollama_base_url(cls, v):
+        """Get Ollama base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OLLAMA_BASE_URL')
+
+    @field_validator('ollama_model', mode='before')
+    @classmethod
+    def get_ollama_model(cls, v):
+        """Get Ollama model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OLLAMA_MODEL')
+
+    @field_validator('text_generation_webui_base_url', mode='before')
+    @classmethod
+    def get_text_generation_webui_base_url(cls, v):
+        """Get text-generation-webui base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TEXT_GENERATION_WEBUI_BASE_URL')
+
+    @field_validator('text_generation_webui_model', mode='before')
+    @classmethod
+    def get_text_generation_webui_model(cls, v):
+        """Get text-generation-webui model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TEXT_GENERATION_WEBUI_MODEL')
     
     @field_validator('lmstudio_api_key', mode='before')
     @classmethod
@@ -633,6 +785,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('LMSTUDIO_API_KEY')
+
+    @field_validator('lmstudio_base_url', mode='before')
+    @classmethod
+    def get_lmstudio_base_url(cls, v):
+        """Get LM Studio base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('LMSTUDIO_BASE_URL')
+
+    @field_validator('lmstudio_model', mode='before')
+    @classmethod
+    def get_lmstudio_model(cls, v):
+        """Get LM Studio model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('LMSTUDIO_MODEL')
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""
@@ -644,7 +812,16 @@ class AiSettings(BaseSettings):
             # Map AI_ environment variables to field names
             for key, value in overrides.items():
                 if key.startswith('AI_'):
-                    field_name = key[3:].lower()  # Remove AI_ prefix and lowercase
+                    # Remove AI_ prefix and lowercase
+                    raw_field_name = key[3:].lower()
+
+                    # Special-case a few keys where the field name keeps the ai_ prefix
+                    if raw_field_name == 'log_level':
+                        field_name = 'ai_log_level'
+                    elif raw_field_name == 'auto_select_order':
+                        field_name = 'ai_auto_select_order'
+                    else:
+                        field_name = raw_field_name
                     # Only use override if not explicitly provided in data
                     if field_name not in data:
                         # Convert string values to appropriate types
@@ -738,11 +915,11 @@ class AiSettings(BaseSettings):
     
     @model_validator(mode='after')
     def set_model_default(self) -> 'AiSettings':
-        """Set default model only if no model was explicitly provided."""
-        # Only set default if model is truly None and no explicit value was provided
-        # Don't override if model was set by environment or contextvar
-        if self.model is None:
-            self.model = "gpt-3.5-turbo"
+        """Keep model as-is.
+
+        Model defaults are handled by provider resolution to allow local providers
+        to require explicit model configuration.
+        """
         return self
     
     @field_validator('api_key')

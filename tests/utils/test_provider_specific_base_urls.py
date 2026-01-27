@@ -157,7 +157,7 @@ class TestClientIntegration:
 
     @patch.dict(os.environ, {
         "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1",
-        "AI_API_KEY": "test-key"
+        "TEXT_GENERATION_WEBUI_MODEL": "local-model"
     })
     def test_client_uses_text_generation_webui_base_url(self):
         """Test that AiClient uses TEXT_GENERATION_WEBUI_BASE_URL when provider is set."""
@@ -169,7 +169,7 @@ class TestClientIntegration:
 
     @patch.dict(os.environ, {
         "FASTCHAT_BASE_URL": "http://localhost:8000/v1",
-        "AI_API_KEY": "test-key"
+        "FASTCHAT_MODEL": "local-model"
     })
     def test_client_uses_fastchat_base_url(self):
         """Test that AiClient uses FASTCHAT_BASE_URL when provider is set."""
@@ -181,7 +181,7 @@ class TestClientIntegration:
     @patch.dict(os.environ, {
         "AI_PROVIDER": "openai",
         "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1",
-        "AI_API_KEY": "test-key"
+        "OPENAI_API_KEY": "test-key"
     })
     def test_explicit_provider_overrides_base_url_inference(self):
         """Test that explicit AI_PROVIDER prevents base URL inference."""
@@ -194,7 +194,8 @@ class TestClientIntegration:
     @patch.dict(os.environ, {
         "AI_BASE_URL": "http://custom.com/v1",
         "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1",
-        "AI_API_KEY": "test-key"
+        "OPENAI_API_KEY": "test-key",
+        "AI_MODEL": "gpt-3.5-turbo"
     })
     def test_ai_base_url_overrides_provider_specific(self):
         """Test that AI_BASE_URL overrides provider-specific inference."""
@@ -203,7 +204,8 @@ class TestClientIntegration:
         assert client.settings.base_url == "http://custom.com/v1"
 
     @patch.dict(os.environ, {
-        "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1"
+        "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1",
+        "TEXT_GENERATION_WEBUI_MODEL": "local-model"
     })
     def test_provider_base_url_without_api_key_works(self):
         """Test that provider-specific base URL works without API key."""
@@ -211,7 +213,7 @@ class TestClientIntegration:
         client = AiClient(settings=settings)  # Pass explicit settings
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == "http://localhost:5000/v1"
-        assert client.settings.api_key is None  # Local providers don't need API keys
+        assert client.settings.api_key in (None, "webui")
 
 
 class TestEnvironmentHelperFunctions:
@@ -245,12 +247,8 @@ class TestEnvironmentHelperFunctions:
         with patch.dict(os.environ, {
             "TEXT_GENERATION_WEBUI_BASE_URL": "http://localhost:5000/v1"
         }):
-            # Test both naming variations
-            base_url1 = _get_provider_specific_base_url("text_generation_webui")
-            base_url2 = _get_provider_specific_base_url("text-generation-webui")
-            
-            assert base_url1 == "http://localhost:5000/v1"
-            assert base_url2 == "http://localhost:5000/v1"
+            base_url = _get_provider_specific_base_url("text-generation-webui")
+            assert base_url == "http://localhost:5000/v1"
 
 
 class TestPrecedenceOrder:

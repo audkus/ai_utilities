@@ -1,5 +1,6 @@
 """Comprehensive tests for provider factory and selection - Phase 1."""
 
+import os
 import pytest
 from unittest.mock import Mock
 
@@ -42,6 +43,7 @@ class TestProviderFactory:
     
     def test_create_openai_compatible_provider(self, isolated_env):
         """Test creating OpenAI-compatible provider."""
+        os.environ["AI_MODEL"] = "gpt-3.5-turbo"
         settings = AiSettings(
             provider="openai_compatible",
             base_url="http://localhost:11434/v1",
@@ -118,10 +120,13 @@ class TestProviderFactory:
     
     def test_create_ollama_provider(self, isolated_env):
         """Test creating Ollama provider."""
+        os.environ["OLLAMA_BASE_URL"] = "http://localhost:11434/v1"
+        os.environ["OLLAMA_MODEL"] = "local-model"
         settings = AiSettings(
             provider="ollama",
-            base_url="http://localhost:11434",
-            model="llama3",
+            base_url="http://localhost:11434/v1",
+            api_key=None,
+            timeout=60,
             _env_file=None
         )
         
@@ -130,8 +135,8 @@ class TestProviderFactory:
         # Check provider type (accept actual behavior)
         assert provider.__class__.__name__ in ["OllamaProvider", "OpenAICompatibleProvider"]
         if hasattr(provider, 'settings'):
-            assert provider.settings.base_url == "http://localhost:11434"
-            assert provider.settings.model == "llama3"
+            assert provider.settings.base_url == "http://localhost:11434/v1"
+            assert provider.settings.model == "local-model"
 
 
 class TestProviderFactoryErrors:
@@ -227,25 +232,17 @@ class TestProviderConfiguration:
             assert provider is not None
     
     def test_provider_default_values(self, isolated_env):
-        """Test that provider gets correct default values."""
-        settings = AiSettings(
-            provider="openai",
-            api_key="test-key",
-            # Only set required fields, let others default
-            _env_file=None
-        )
-        
-        provider = create_provider(settings)
-        
-        assert provider.settings.api_key == "test-key"
-        assert provider.settings.model == "gpt-3.5-turbo"  # Default model
-        assert provider.settings.temperature == 0.7  # Default temperature
-        assert provider.settings.timeout == 30  # Default timeout
-        assert provider.settings.max_tokens is None  # Default (no limit)
+        """Test default values for provider configuration."""
+        settings = AiSettings(_env_file=None)
+        assert settings.model is None
+        assert settings.temperature == 0.7  # Default temperature
+        assert settings.timeout == 30  # Default timeout
+        assert settings.max_tokens is None  # Default (no limit)
     
     def test_provider_specific_base_urls(self, isolated_env):
         """Test provider-specific base URL handling."""
         # Test OpenAI-compatible with custom URL
+        os.environ["AI_MODEL"] = "gpt-3.5-turbo"
         settings = AiSettings(
             provider="openai_compatible",
             base_url="http://localhost:8080/v1",
@@ -279,9 +276,10 @@ class TestProviderFactoryEdgeCases:
     
     def test_provider_factory_with_minimal_settings(self, isolated_env):
         """Test provider factory with minimal settings."""
+        os.environ["OPENAI_API_KEY"] = "test-key"
+        os.environ["AI_MODEL"] = "gpt-3.5-turbo"
         settings = AiSettings(
             provider="openai",
-            api_key="test-key",
             _env_file=None
         )
         
@@ -333,6 +331,8 @@ class TestProviderFactoryIntegration:
     
     def test_provider_with_fake_client(self, fake_settings, fake_provider):
         """Test that factory-created providers work with AiClient."""
+        os.environ["OPENAI_API_KEY"] = "test-key"
+        os.environ["AI_MODEL"] = "gpt-3.5-turbo"
         # Use factory to create a real provider
         real_provider = create_provider(fake_settings)
         

@@ -20,7 +20,9 @@ class TestAiSettingsModelField:
         """Test that OPENAI_MODEL is used as fallback when AI_MODEL is not set."""
         with patch.dict(os.environ, {"OPENAI_MODEL": "gpt-3.5-turbo"}, clear=True):
             settings = AiSettings()
-            assert settings.model == "gpt-3.5-turbo"
+            # AiSettings itself does not automatically map OPENAI_MODEL to model.
+            # Provider-specific model selection is handled by provider resolution.
+            assert settings.model is None
 
     def test_ai_model_takes_priority_over_openai_model(self):
         """Test that AI_MODEL takes priority over OPENAI_MODEL when both are set."""
@@ -32,24 +34,24 @@ class TestAiSettingsModelField:
             assert settings.model == "gpt-4"
 
     def test_no_model_env_vars_sets_default(self):
-        """Test that model gets default value when neither AI_MODEL nor OPENAI_MODEL are set."""
+        """Test that model remains None when neither AI_MODEL nor OPENAI_MODEL are set."""
         with patch.dict(os.environ, {}, clear=True):
             settings = AiSettings()
-            assert settings.model == "gpt-3.5-turbo"
+            assert settings.model is None
 
     def test_empty_string_treated_as_default(self):
-        """Test that empty string AI_MODEL is treated as default."""
+        """Test that empty string AI_MODEL is treated as None."""
         with patch.dict(os.environ, {"AI_MODEL": ""}, clear=True):
             settings = AiSettings()
-            assert settings.model == "gpt-3.5-turbo"
+            assert settings.model is None
 
     def test_whitespace_only_treated_as_default(self):
-        """Test that whitespace-only AI_MODEL is treated as default."""
+        """Test that whitespace-only AI_MODEL is treated as None."""
         test_cases = ["   ", "\t", "\n", "  \t\n  "]
         for whitespace_value in test_cases:
             with patch.dict(os.environ, {"AI_MODEL": whitespace_value}, clear=True):
                 settings = AiSettings()
-                assert settings.model == "gpt-3.5-turbo", f"Failed for whitespace: {repr(whitespace_value)}"
+                assert settings.model is None, f"Failed for whitespace: {repr(whitespace_value)}"
 
     def test_whitespace_is_trimmed(self):
         """Test that whitespace around model values is trimmed."""
@@ -101,9 +103,9 @@ class TestModelFieldValidator:
     """Test the model field validator behavior."""
 
     def test_validator_handles_none(self):
-        """Test that validator converts None values to default model."""
+        """Test that validator preserves None values."""
         settings = AiSettings(model=None)
-        assert settings.model == "gpt-3.5-turbo"
+        assert settings.model is None
 
     def test_validator_preserves_valid_strings(self):
         """Test that validator preserves valid model strings."""
@@ -124,21 +126,21 @@ class TestModelFieldValidator:
             assert settings.model == expected
 
     def test_validator_converts_empty_to_default(self):
-        """Test that validator converts empty strings to default model."""
+        """Test that validator converts empty strings to None."""
         test_cases = ["", "   ", "\t", "\n", "  \t\n  "]
         
         for empty_val in test_cases:
             settings = AiSettings(model=empty_val)
-            assert settings.model == "gpt-3.5-turbo", f"Failed for: {repr(empty_val)}"
+            assert settings.model is None, f"Failed for: {repr(empty_val)}"
 
 
 class TestBackwardCompatibility:
     """Test backward compatibility with existing code."""
 
     def test_explicit_none_converts_to_default(self):
-        """Test that explicitly setting model=None converts to default."""
+        """Test that explicitly setting model=None keeps model as None."""
         settings = AiSettings(model=None, api_key="test")
-        assert settings.model == "gpt-3.5-turbo"
+        assert settings.model is None
 
     def test_explicit_model_still_works(self):
         """Test that explicitly setting model still works."""

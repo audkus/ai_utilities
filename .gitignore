@@ -83,6 +83,7 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+coverage_reports/
 
 # Translations
 *.mo

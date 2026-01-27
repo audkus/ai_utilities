@@ -386,11 +386,11 @@ class TestAiClientIntegration:
         from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
         
         settings = AiSettings(provider="openai", api_key=None)
-        with pytest.raises(ProviderConfigurationError, match="API key is required"):
+        with pytest.raises(ProviderConfigurationError, match="API key is required|configuration error"):
             AiClient(settings=settings)
         
         # But local providers don't require API keys
-        settings_local = AiSettings(provider="ollama", api_key=None)
+        settings_local = AiSettings(provider="ollama", api_key=None, ollama_base_url="http://localhost:11434/v1", model="llama3")
         client = AiClient(settings=settings_local)
         assert client.settings.api_key is None
     

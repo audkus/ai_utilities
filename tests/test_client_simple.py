@@ -100,6 +100,28 @@ class TestAiClientBasic:
             mock_settings.temperature = 0.7
             mock_settings.max_tokens = 1000
             mock_settings.timeout = 30
+            # Configure Mock to return proper values for attribute access
+            mock_settings.configure_mock(**{
+                'api_key': "default_key",
+                'model': "gpt-3.5-turbo", 
+                'provider': "openai",
+                'base_url': "https://api.openai.com/v1",
+                'temperature': 0.7,
+                'max_tokens': 1000,
+                'timeout': 30
+            })
+            # Configure model_copy to return a copy with proper string values
+            mock_copy = Mock()
+            mock_copy.configure_mock(**{
+                'api_key': "default_key",
+                'model': "gpt-3.5-turbo", 
+                'provider': "openai",
+                'base_url': "https://api.openai.com/v1",
+                'temperature': 0.7,
+                'max_tokens': 1000,
+                'timeout': 30
+            })
+            mock_settings.model_copy.return_value = mock_copy
             mock_settings_class.return_value = mock_settings
             
             client = AiClient()

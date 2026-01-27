@@ -188,7 +188,8 @@ class TestResolvedConfig:
         assert config.api_key == "sk-env-openai-key"
     
     @patch.dict(os.environ, {
-        'AI_BASE_URL': 'http://localhost:1234/v1'
+        'LMSTUDIO_BASE_URL': 'http://localhost:1234/v1',
+        'LMSTUDIO_MODEL': 'local-model'
     }, clear=True)
     def test_resolve_request_config_local_provider_inference(self):
         """Test local provider inference from base URL."""
@@ -237,7 +238,8 @@ class TestResolvedConfig:
             
             # Test 2: Settings override environment
             config = resolve_request_config(settings)
-            assert config.api_key == "sk-settings-generic"  # AI_API_KEY from settings
+            # Provider-specific keys win over generic AI_API_KEY
+            assert config.api_key == "sk-settings-key"
             assert config.base_url == "http://settings-url:8080/v1"
             
             # Test 3: Environment vendor key used when no settings override
@@ -280,11 +282,19 @@ class TestErrorHandling:
     @patch.dict(os.environ, {}, clear=True)  # Clear all env vars
     def test_local_provider_no_key_required(self):
         """Test local providers don't require API keys."""
-        settings = AiSettings(_env_file=None)  # Don't load from .env
-        
-        # Should not raise error
-        config = resolve_request_config(settings, provider="ollama")
-        assert config.api_key == "ollama"
+        with patch.dict(
+            os.environ,
+            {
+                "OLLAMA_BASE_URL": "http://localhost:11434/v1",
+                "OLLAMA_MODEL": "local-model",
+            },
+            clear=True,
+        ):
+            settings = AiSettings(_env_file=None)
+            config = resolve_request_config(settings)
+
+            assert config.provider == "ollama"
+            assert config.api_key == "ollama"  # Fallback token
 
 
 class TestProviderSpecific:

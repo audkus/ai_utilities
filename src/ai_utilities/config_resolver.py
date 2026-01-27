@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 
+from .provider_resolution import resolve_provider_config
+from .providers.provider_exceptions import ProviderConfigurationError
+
 
 class UnknownProviderError(Exception):
     """Raised when an unknown provider is specified."""
@@ -200,11 +203,10 @@ def _get_provider_specific_base_url(provider: str) -> Optional[str]:
     
     # Mapping of providers to their specific environment variables
     provider_base_url_mapping = {
-        "text_generation_webui": "TEXT_GENERATION_WEBUI_BASE_URL",
         "fastchat": "FASTCHAT_BASE_URL",
         "ollama": "OLLAMA_BASE_URL", 
         "lmstudio": "LMSTUDIO_BASE_URL",
-        "text-generation-webui": "TEXT_GENERATION_WEBUI_BASE_URL",  # Alternative naming
+        "text-generation-webui": "TEXT_GENERATION_WEBUI_BASE_URL",
     }
     
     env_var = provider_base_url_mapping.get(provider.lower())
@@ -472,54 +474,74 @@ def resolve_request_config(
     # Get environment variables
     env_vars = dict(os.environ)
     
-    # Resolve provider
-    # Handle both dict and object settings for base URL and provider
-    if isinstance(settings, dict):
-        settings_base_url_for_provider = settings.get("base_url")
-        settings_provider_for_provider = settings.get("provider")
-    else:
-        settings_base_url_for_provider = getattr(settings, "base_url", None)
-        settings_provider_for_provider = getattr(settings, "provider", None)
-        
-    resolved_provider = resolve_provider(
-        provider=provider,
-        base_url=base_url or settings_base_url_for_provider,
-        env_provider=settings_provider_for_provider or env_vars.get('AI_PROVIDER')
-    )
-    
-    # Resolve API key
-    # Handle both dict and object settings for API key
-    if isinstance(settings, dict):
-        settings_api_key = settings.get("api_key")
-    else:
-        settings_api_key = getattr(settings, "api_key", None)
-        
-    resolved_api_key = resolve_api_key(
-        provider=resolved_provider,
-        api_key=api_key,
-        settings_api_key=settings_api_key,
-        settings=settings,
-        env_vars=env_vars
-    )
-    
-    # Resolve base URL
     try:
-        # Handle both dict and object settings
-        if isinstance(settings, dict):
-            settings_base_url = settings.get("base_url")
+        # If the caller passes an explicit provider override, keep the old behavior
+        # (per-request overrides are authoritative).
+        if provider is not None:
+            # Resolve provider
+            # Handle both dict and object settings for base URL and provider
+            if isinstance(settings, dict):
+                settings_base_url_for_provider = settings.get("base_url")
+                settings_provider_for_provider = settings.get("provider")
+            else:
+                settings_base_url_for_provider = getattr(settings, "base_url", None)
+                settings_provider_for_provider = getattr(settings, "provider", None)
+
+            resolved_provider = resolve_provider(
+                provider=provider,
+                base_url=base_url or settings_base_url_for_provider,
+                env_provider=settings_provider_for_provider or env_vars.get('AI_PROVIDER')
+            )
+
+            # Resolve API key
+            # Handle both dict and object settings for API key
+            if isinstance(settings, dict):
+                settings_api_key = settings.get("api_key")
+            else:
+                settings_api_key = getattr(settings, "api_key", None)
+
+            resolved_api_key = resolve_api_key(
+                provider=resolved_provider,
+                api_key=api_key,
+                settings_api_key=settings_api_key,
+                settings=settings,
+                env_vars=env_vars
+            )
+
+            # Resolve base URL
+            try:
+                # Handle both dict and object settings
+                if isinstance(settings, dict):
+                    settings_base_url = settings.get("base_url")
+                else:
+                    settings_base_url = getattr(settings, "base_url", None)
+
+                resolved_base_url = resolve_base_url(
+                    provider=resolved_provider,
+                    base_url=base_url,
+                    settings_base_url=settings_base_url
+                )
+            except MissingBaseUrlError as e:
+                raise MissingBaseUrlError(str(e))
+
+            resolved_model = model or resolve_model(settings, resolved_provider)
         else:
-            settings_base_url = getattr(settings, "base_url", None)
-            
-        resolved_base_url = resolve_base_url(
-            provider=resolved_provider,
-            base_url=base_url,
-            settings_base_url=settings_base_url
-        )
-    except MissingBaseUrlError as e:
-        raise MissingBaseUrlError(str(e))  # Re-raise so provider_factory can catch it 
-        
-    # Resolve other parameters (per-request wins, then settings, then defaults)
-    resolved_model = model or resolve_model(settings, resolved_provider)
+            resolved = resolve_provider_config(settings)
+            resolved_provider = resolved.provider
+            resolved_api_key = api_key or resolved.api_key
+            resolved_base_url = base_url or resolved.base_url
+            resolved_model = model or resolved.model
+    except ProviderConfigurationError as e:
+        # Keep behavior consistent with provider_factory exception mapping.
+        # We map to existing resolver exceptions to avoid breaking older call sites.
+        msg = str(e)
+        if "api key" in msg.lower():
+            raise MissingApiKeyError(msg)
+        if "base url" in msg.lower():
+            raise MissingBaseUrlError(msg)
+        if "model" in msg.lower():
+            raise MissingModelError(msg)
+        raise UnknownProviderError(msg)
     
     # Handle both dict and object settings for temperature
     if isinstance(settings, dict):

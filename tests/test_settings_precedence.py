@@ -6,6 +6,7 @@ import sys
 import threading
 
 import pytest
+from unittest.mock import patch
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -27,7 +28,7 @@ class TestAiSettingsPrecedence:
         settings = AiSettings()
         
         # Verify defaults
-        assert settings.model == "gpt-3.5-turbo"
+        assert settings.model is None
         assert settings.temperature == 0.7
         assert settings.max_tokens is None
         assert settings.timeout == 30  # Default timeout
@@ -108,8 +109,8 @@ class TestAiSettingsPrecedence:
                 assert settings.temperature == 0.7  # back to default
             
             # After outer exits, everything back to default
-            settings = AiSettings()
-            assert settings.model == "gpt-3.5-turbo"      # default
+            settings = AiSettings(_env_file=None)
+            assert settings.model is None
             assert settings.temperature == 0.7    # default
             
         finally:
@@ -155,7 +156,7 @@ class TestAiSettingsPrecedence:
             with override_env({"AI_DOES_NOT_EXIST": "x"}):
                 settings = AiSettings()
                 # Should use defaults, no exception raised
-                assert settings.model == "gpt-3.5-turbo"
+                assert settings.model is None
                 assert settings.temperature == 0.7
         finally:
             # Cleanup
@@ -281,8 +282,8 @@ class TestAiSettingsPrecedence:
             
             # Clean environment should use defaults
             del os.environ["AI_MODEL"]
-            settings = AiSettings()
-            assert settings.model == "gpt-3.5-turbo"  # 4th priority (defaults)
+            settings = AiSettings(_env_file=None)
+            assert settings.model is None  # 4th priority (defaults)
             
         finally:
             # Restore environment
@@ -337,3 +338,10 @@ class TestEnvironmentIsolation:
         
         # Environment should be exactly as it was
         assert dict(os.environ) == original_env
+
+    def test_defaults_when_nothing_set(self):
+        """Test defaults when nothing set."""
+        with patch.dict(os.environ, {}, clear=True):
+            settings = AiSettings(_env_file=None)
+            assert settings.api_key is None
+            assert settings.model is None
