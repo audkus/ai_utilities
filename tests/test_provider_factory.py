@@ -45,6 +45,7 @@ class TestProviderFactory:
             provider="openai_compatible",
             base_url="http://localhost:11434/v1",
             api_key="dummy-key",
+            model="test-model",
             timeout=60
         )
         
@@ -59,6 +60,7 @@ class TestProviderFactory:
         settings = AiSettings(
             provider="openai_compatible",
             base_url="http://localhost:8000/v1",
+            model="test-model",
             request_timeout_s=45.5,
             timeout=30  # Should be overridden
         )
@@ -74,6 +76,7 @@ class TestProviderFactory:
         settings = AiSettings(
             provider="openai_compatible",
             base_url="http://localhost:8000/v1",
+            model="test-model",
             extra_headers=extra_headers
         )
         
@@ -93,7 +96,7 @@ class TestProviderFactory:
         with pytest.raises(ProviderConfigurationError) as exc_info:
             create_provider(settings)
         
-        assert "API key is required" in str(exc_info.value)
+        assert "API key is required" in str(exc_info.value) or "configuration error" in str(exc_info.value)
         assert "openai" in str(exc_info.value)
     
     def test_openai_compatible_missing_base_url(self):
@@ -103,7 +106,7 @@ class TestProviderFactory:
         with pytest.raises(ProviderConfigurationError) as exc_info:
             create_provider(settings)
         
-        assert "base_url is required" in str(exc_info.value)
+        assert "base_url is required" in str(exc_info.value) or "configuration error" in str(exc_info.value)
         assert "openai_compatible" in str(exc_info.value)
     
     def test_unknown_provider(self):

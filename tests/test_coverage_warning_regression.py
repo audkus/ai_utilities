@@ -76,7 +76,7 @@ def test_coverage_functionality_works():
     assert result.returncode == 0, f"Command failed: {result.stderr}"  # noqa: S101 - Test validation
 
     # Check that HTML report was generated
-    html_report_path = Path(__file__).parent.parent / "coverage_reports" / "index.html"
+    html_report_path = Path(__file__).parent.parent / "htmlcov" / "index.html"
     assert html_report_path.exists(), f"HTML report not found at {html_report_path}"  # noqa: S101 - Test validation
 
     # Check that coverage data was collected

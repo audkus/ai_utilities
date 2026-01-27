@@ -240,8 +240,26 @@ class TestClientIntegrationCoverage:
                 mock_settings.api_key = "test-key"
                 mock_settings.model = "gpt-4"
                 mock_settings.provider = "openai"
-                mock_settings.base_url = "https://api.openai.com/v1"  # Set proper base_url string
+                mock_settings.base_url = "https://api.openai.com/v1"  # Ensure this is a string, not Mock
                 mock_settings.namespace = "test namespace"
+                # Configure Mock to return proper values for attribute access
+                mock_settings.configure_mock(**{
+                    'api_key': "test-key",
+                    'model': "gpt-4",
+                    'provider': "openai", 
+                    'base_url': "https://api.openai.com/v1",
+                    'namespace': "test namespace"
+                })
+                # Configure model_copy to return a copy with proper string values
+                mock_copy = Mock()
+                mock_copy.configure_mock(**{
+                    'api_key': "test-key",
+                    'model': "gpt-4",
+                    'provider': "openai", 
+                    'base_url': "https://api.openai.com/v1",
+                    'namespace': "test namespace"
+                })
+                mock_settings.model_copy.return_value = mock_copy
                 mock_settings_class.return_value = mock_settings
                 
                 with patch('ai_utilities.client.create_usage_tracker') as mock_tracker:

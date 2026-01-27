@@ -1,5 +1,7 @@
 """Comprehensive tests for the AI client - Phase 1."""
 
+import os
+
 import pytest
 from ai_utilities import AiClient, AiSettings, create_client
 from ai_utilities.models import AskResult
@@ -360,8 +362,9 @@ class TestAiClientConfiguration:
         # This should work if environment is set up properly
         # But in our isolated test environment, it should use defaults
         # For testing, we'll use a local provider that doesn't require API key
-        import os
         os.environ['AI_PROVIDER'] = 'ollama'  # Use local provider
+        os.environ['OLLAMA_BASE_URL'] = 'http://localhost:11434/v1'
+        os.environ['OLLAMA_MODEL'] = 'llama3'
         try:
             client = AiClient()
             assert client is not None
@@ -369,6 +372,8 @@ class TestAiClientConfiguration:
         finally:
             # Clean up environment
             os.environ.pop('AI_PROVIDER', None)
+            os.environ.pop('OLLAMA_BASE_URL', None)
+            os.environ.pop('OLLAMA_MODEL', None)
     
     def test_client_with_minimal_settings(self):
         """Test client with minimal required settings."""
@@ -378,7 +383,7 @@ class TestAiClientConfiguration:
         )
         client = AiClient(minimal_settings)
         assert client.settings.api_key == "test-key"
-        assert client.settings.model in ["gpt-3.5-turbo", "vicuna-7b-v1.5"]  # Default or from environment
+        assert client.settings.model is None
 
 
 class TestAiClientPhase7Enhanced:
@@ -589,4 +594,4 @@ class TestAiClientPhase7Enhanced:
         client = AiClient(settings=settings)
         
         # Should use defaults, not environment or .env file
-        assert client.settings.model == "gpt-3.5-turbo"
+        assert client.settings.model is None

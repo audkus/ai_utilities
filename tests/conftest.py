@@ -716,6 +716,7 @@ ROOT_DIR_ALLOWLIST = {
 TRANSIENT_FILES = {
     ".coverage",
     ".coverage.*",  # Coverage files with process IDs
+    "htmlcov",  # Coverage HTML reports (default location)
 }
 
 # Allowed write paths under repo root
@@ -777,7 +778,11 @@ def enforce_repo_root_cleanliness() -> None:
     transient_delete_failures: list[str] = []
     for path in transient_created:
         try:
-            path.unlink(missing_ok=True)
+            if path.is_dir():
+                import shutil
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                path.unlink(missing_ok=True)
         except OSError as exc:  # pragma: no cover
             transient_delete_failures.append(f"{path.name} ({exc})")
 

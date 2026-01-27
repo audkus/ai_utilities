@@ -10,10 +10,10 @@ from ai_utilities import AiSettings
 class TestProviderSettings:
     """Test provider-related settings functionality."""
     
-    def test_default_provider_is_openai(self):
-        """Test default provider is OpenAI."""
+    def test_default_provider_is_auto(self):
+        """Test default provider is auto."""
         settings = AiSettings()
-        assert settings.provider == "openai"
+        assert settings.provider == "auto"
     
     def test_explicit_provider_setting(self):
         """Test explicit provider setting."""

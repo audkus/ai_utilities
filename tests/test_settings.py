@@ -20,8 +20,8 @@ def test_ai_settings_defaults(monkeypatch):
     # Test true defaults by explicitly disabling .env loading
     settings = AiSettings(_env_file=None)
     
-    # Should default to gpt-3.5-turbo when no environment variable is set
-    assert settings.model == "gpt-3.5-turbo"  # Production default
+    # Model defaults are handled by provider resolution; AiSettings keeps model unset.
+    assert settings.model is None
     assert settings.temperature == 0.7
     assert settings.timeout == 30
     assert settings.max_tokens is None
@@ -198,7 +198,7 @@ def test_ai_client_no_config_file_access():
             client = AiClient(provider=fake_provider)
             
             # Should work fine without any config files
-            assert client.settings.model == "gpt-3.5-turbo"  # Default
+            assert client.settings.model is None
             
             # Verify no config.ini was created
             assert not (temp_path / "config.ini").exists()

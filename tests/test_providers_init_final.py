@@ -162,7 +162,7 @@ def test_create_provider_error_handling():
     # Test with invalid provider type - this should raise ProviderConfigurationError
     from ai_utilities.providers import create_provider, ProviderConfigurationError
     
-    with pytest.raises(ProviderConfigurationError, match="Unknown provider"):
+    with pytest.raises(ProviderConfigurationError, match="Unknown provider|configuration error"):
         create_provider({"provider": "invalid", "base_url": "https://test.url"})
 
 

@@ -258,6 +258,7 @@ class TestCreateClientFunction:
             
             mock_settings.assert_called_once_with(
                 model="gpt-4",
+                _env_file=None,
                 base_url="https://custom.url",
                 temperature=0.5
             )

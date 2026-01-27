@@ -1,5 +1,7 @@
 """Provider factory for creating AI providers based on settings."""
 
+from __future__ import annotations
+
 from typing import Optional, TYPE_CHECKING, List
 
 from .base_provider import BaseProvider
@@ -9,6 +11,15 @@ from ..config_resolver import resolve_request_config, MissingApiKeyError, Unknow
 
 if TYPE_CHECKING:
     from ..client import AiSettings
+
+
+def _coerce_timeout_seconds(value: object, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
 
 
 def list_supported_providers() -> List[str]:
@@ -61,6 +72,20 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
     try:
         config = resolve_request_config(settings)
 
+        # Ensure the provider instance sees resolved values (api_key/base_url/model)
+        # without mutating the original settings object.
+        update_data = {
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "base_url": config.base_url,
+            "model": getattr(config, "model", None),
+            "timeout": _coerce_timeout_seconds(getattr(config, "timeout", None), 30),
+        }
+        if hasattr(settings, "model_copy"):
+            provider_settings = settings.model_copy(update=update_data)
+        else:
+            provider_settings = settings.copy(update=update_data)
+
         # Create provider based on resolved provider
         if config.provider == "openai":
             # Lazy import to avoid dependency issues
@@ -70,16 +95,16 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
                 raise MissingOptionalDependencyError(
                     "OpenAI provider requires extra 'openai'. Install with: pip install ai-utilities[openai]"
                 ) from e
-            return OpenAIProvider(settings)
+            return OpenAIProvider(provider_settings)
 
         elif config.provider in ["groq", "together", "openrouter"]:
             # These are all OpenAI-compatible with different base URLs
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
-                timeout=int(config.timeout or 30),
+                timeout=_coerce_timeout_seconds(getattr(config, "timeout", None), 30),
                 extra_headers=settings.extra_headers,
-                model=getattr(settings, 'model', None),
+                model=getattr(config, 'model', None),
             )
 
         elif config.provider in ["ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]:
@@ -87,9 +112,9 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
-                timeout=int(config.timeout or 30),
+                timeout=_coerce_timeout_seconds(getattr(config, "timeout", None), 30),
                 extra_headers=settings.extra_headers,
-                model=getattr(settings, 'model', None),
+                model=getattr(config, 'model', None),
             )
 
         else:

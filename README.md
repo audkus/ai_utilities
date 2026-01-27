@@ -41,9 +41,48 @@ if usage_stats:
 Create a `.env` file:
 
 ```bash
-AI_PROVIDER=openai
-AI_API_KEY=your-api-key-here
-AI_MODEL=gpt-3.5-turbo
+# Option 1: Auto-select among configured providers (recommended)
+AI_PROVIDER=auto
+
+# Option 2: Use specific provider
+# AI_PROVIDER=openai
+
+# Configure one or more providers below
+# OpenAI
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-4
+
+# Groq (fast inference)
+# GROQ_API_KEY=your-groq-key
+# GROQ_MODEL=llama3-70b-8192
+
+# Together AI (open source models)
+# TOGETHER_API_KEY=your-together-key
+# TOGETHER_MODEL=mistral-7b
+
+# OpenRouter (multiple model access)
+# OPENROUTER_API_KEY=your-openrouter-key
+# OPENROUTER_MODEL=anthropic/claude-3-haiku
+
+# Local providers (require model)
+# OLLAMA_BASE_URL=http://localhost:11434/v1
+# OLLAMA_MODEL=llama3.1
+
+# FastChat
+# FASTCHAT_BASE_URL=http://localhost:8000/v1
+# FASTCHAT_MODEL=your-model-name
+
+# Text Generation WebUI
+# TEXT_GENERATION_WEBUI_BASE_URL=http://localhost:5000/v1
+# TEXT_GENERATION_WEBUI_MODEL=your-model-name
+
+# OpenAI Compatible (custom endpoints)
+# AI_BASE_URL=https://your-endpoint.com/v1
+# AI_API_KEY=your-key
+# AI_MODEL=your-model
+
+# Optional: Override auto-selection order
+# AI_AUTO_SELECT_ORDER=openai,groq,openrouter,together,ollama,fastchat,text-generation-webui
 ```
 
 Or run the interactive setup:

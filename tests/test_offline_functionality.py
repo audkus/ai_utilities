@@ -53,7 +53,7 @@ class TestNoNetworkScenarios:
                 
                 # Should be able to instantiate classes without network
                 settings = AiSettings(api_key="test-key")
-                assert settings.model == "gpt-3.5-turbo"  # Default when no env var
+                assert settings.model is None  # Default when no env var
                 
                 # Should be able to create result objects
                 result = AskResult(

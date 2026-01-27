@@ -1830,6 +1830,7 @@ def create_client(
     api_key: Optional[str] = None,
     model: Optional[str] = None,
     show_progress: bool = True,
+    env_file: Optional[str] = None,
     **kwargs,
 ) -> AiClient:
     """Create an AiClient with explicit parameters.
@@ -1838,6 +1839,7 @@ def create_client(
         api_key: API key to use (required for most providers)
         model: Model name to use (required)
         show_progress: Whether to show progress indicators
+        env_file: Optional path to a .env file to load settings from.
         **kwargs: Additional settings parameters
 
                  - base_url: Custom API base URL
@@ -1852,7 +1854,7 @@ def create_client(
         For interactive setup, run 'ai-utilities setup' command instead.
     """
     # Create settings first
-    settings = AiSettings(model=model, **kwargs)
+    settings = AiSettings(model=model, _env_file=env_file, **kwargs)
 
     # If explicit API key is provided, use it
     if api_key is not None:

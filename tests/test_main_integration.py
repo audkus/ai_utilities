@@ -53,7 +53,7 @@ def test_create_client_vs_aiclient_model_difference():
     
     # AiSettings without parameters uses model from environment or default
     settings_default = AiSettings()
-    expected_model = os.environ.get('AI_MODEL', 'gpt-3.5-turbo')
+    expected_model = os.environ.get('AI_MODEL')  # No fallback default anymore
     assert settings_default.model == expected_model
     
     # This demonstrates the issue: default settings use environment models
