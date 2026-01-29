@@ -141,7 +141,7 @@ def get_provider_configs() -> Dict[str, Dict[str, Any]]:
         # Cloud Providers
         'openai': {
             'provider': 'openai',
-            'api_key': os.getenv('AI_API_KEY'),
+            'api_key': os.getenv('OPENAI_API_KEY'),
             'model': 'gpt-3.5-turbo',
             'timeout': 30
         },

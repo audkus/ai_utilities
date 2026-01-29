@@ -288,6 +288,40 @@ class OpenAICompatibleProvider(BaseProvider):
             "openai_compatible"
         )
     
+    def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """List uploaded files from the provider.
+        
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+            
+        Returns:
+            List of UploadedFile objects
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support Files API
+        """
+        raise ProviderCapabilityError(
+            "Files API (list)", 
+            "openai_compatible"
+        )
+    
+    def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file from the provider.
+        
+        Args:
+            file_id: ID of the file to delete
+            
+        Returns:
+            True if deletion was successful
+            
+        Raises:
+            ProviderCapabilityError: Always - OpenAI-compatible providers don't support Files API
+        """
+        raise ProviderCapabilityError(
+            "Files API (delete)", 
+            "openai_compatible"
+        )
+    
     def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1

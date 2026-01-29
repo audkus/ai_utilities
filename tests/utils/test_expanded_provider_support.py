@@ -72,14 +72,17 @@ class TestExpandedProviderSupport:
 
     def test_local_provider_base_urls(self):
         """Test base URLs for local providers."""
+        # Read from environment to match actual configuration
+        import os
+        
         local_providers = {
-            "ollama": "http://localhost:11434/v1",
-            "lmstudio": "http://localhost:1234/v1",
-            "text-generation-webui": "http://localhost:5000/v1",
-            "fastchat": "http://localhost:8000/v1",
-            "vllm": "http://localhost:8000/v1",
-            "oobabooga": "http://localhost:7860/v1",
-            "localai": "http://localhost:8080/v1",
+            "ollama": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+            "lmstudio": os.getenv("LMSTUDIO_BASE_URL", "http://localhost:1234/v1"),
+            "text-generation-webui": os.getenv("TEXT_GENERATION_WEBUI_BASE_URL", "http://localhost:5000/v1"),
+            "fastchat": os.getenv("FASTCHAT_BASE_URL", "http://localhost:8000/v1"),
+            "vllm": os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1"),
+            "oobabooga": os.getenv("OOBABOOGA_BASE_URL", "http://localhost:7860/v1"),
+            "localai": os.getenv("LOCALAI_BASE_URL", "http://localhost:8080/v1"),
         }
         
         for provider, expected_url in local_providers.items():

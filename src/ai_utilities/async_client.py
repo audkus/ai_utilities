@@ -60,6 +60,20 @@ class AsyncOpenAIProvider(AsyncProvider):
             file_id
         )
     
+    async def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """Async list_files implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.list_files,
+            purpose=purpose
+        )
+    
+    async def delete_file(self, file_id: str) -> bool:
+        """Async delete_file implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.delete_file,
+            file_id
+        )
+    
     async def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1
@@ -549,7 +563,72 @@ class AsyncAiClient:
         
         # Return raw bytes
         return content
-    
+
+    async def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """List all uploaded files asynchronously.
+
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+
+        Returns:
+            List of UploadedFile objects
+
+        Raises:
+            ProviderCapabilityError: If provider doesn't support file listing
+            FileTransferError: If listing fails
+
+        Example:
+            >>> files = await client.list_files()
+            >>> assistants_files = await client.list_files(purpose="assistants")
+        """
+        # Delegate to async provider
+        try:
+            return await self.provider.list_files(purpose=purpose)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("list", self.provider.__class__.__name__, e) from e
+
+    async def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file asynchronously.
+
+        Args:
+            file_id: ID of the file to delete
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            ValueError: If file_id is invalid
+            ProviderCapabilityError: If provider doesn't support file deletion
+            FileTransferError: If deletion fails
+
+        Example:
+            >>> success = await client.delete_file("file-123")
+            >>> if success:
+            ...     print("File deleted successfully")
+        """
+        if not file_id:
+            raise ValueError("file_id cannot be empty")
+
+        # Delegate to async provider
+        try:
+            return await self.provider.delete_file(file_id)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("delete", self.provider.__class__.__name__, e) from e
+
     async def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1

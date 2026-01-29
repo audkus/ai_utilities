@@ -1146,6 +1146,75 @@ class AiClient:
         # Return raw bytes
         return content
 
+    def list_files(self, *, purpose: Optional[str] = None) -> list[UploadedFile]:
+        """List all uploaded files.
+
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+
+        Returns:
+            List of UploadedFile objects
+
+        Raises:
+            ProviderCapabilityError: If provider doesn't support file listing
+            FileTransferError: If listing fails
+
+        Example:
+            >>> files = client.list_files()
+            >>> assistants_files = client.list_files(purpose="assistants")
+        """
+        # Delegate to provider
+        try:
+            return self.provider.list_files(purpose=purpose)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError(
+                "list", self.provider.__class__.__name__, e
+            ) from e
+
+    def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file.
+
+        Args:
+            file_id: ID of the file to delete
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            ValueError: If file_id is invalid
+            ProviderCapabilityError: If provider doesn't support file deletion
+            FileTransferError: If deletion fails
+
+        Example:
+            >>> success = client.delete_file("file-123")
+            >>> if success:
+            ...     print("File deleted successfully")
+        """
+        if not file_id:
+            raise ValueError("file_id cannot be empty")
+
+        # Delegate to provider
+        try:
+            return self.provider.delete_file(file_id)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError(
+                "delete", self.provider.__class__.__name__, e
+            ) from e
+
     def generate_image(
         self,
         prompt: str,
