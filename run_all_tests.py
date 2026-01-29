@@ -9,13 +9,34 @@ import sys
 import os
 from pathlib import Path
 
-def run_command(cmd, description, allow_failures=False):
+# Load .env file from repository root
+try:
+    from dotenv import load_dotenv
+    
+    # Get repository root (this script is in repo root)
+    repo_root = Path(__file__).parent
+    env_file = repo_root / ".env"
+    
+    if env_file.exists():
+        load_dotenv(env_file)
+        print(f"📁 Loaded environment from: {env_file}")
+    else:
+        print(f"⚠️  .env file not found at: {env_file}")
+except ImportError:
+    print("⚠️  python-dotenv not installed, environment variables may not be loaded")
+except Exception as e:
+    print(f"⚠️  Error loading .env file: {e}")
+
+def run_command(cmd, description, allow_failures=False, env=None):
     """Run a command and return success status."""
     print(f"\n🔧 {description}")
     print(f"Command: {cmd}")
     print("-" * 60)
     
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    # Use provided environment or current environment
+    cmd_env = env if env is not None else os.environ
+    
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=cmd_env)
     
     # Analyze the output to determine if failures are expected (network issues)
     stdout_lines = result.stdout.strip().split('\n') if result.stdout else []
@@ -146,7 +167,7 @@ def run_all_tests():
     
     # 1. Run current working tests
     print("\n" + "="*60)
-    success = run_command(base_cmd, "Running currently working tests", allow_failures=True)
+    success = run_command(base_cmd, "Running currently working tests", allow_failures=True, env=env)
     
     if not success:
         print("❌ Basic tests failed - stopping here")
@@ -177,7 +198,7 @@ def run_all_tests():
         
         # Run audio tests
         audio_cmd = base_cmd.replace("test_audio_integration.py", "test_audio_integration_temp.py")
-        run_command(audio_cmd, "Running audio integration tests")
+        run_command(audio_cmd, "Running audio integration tests", env=env)
         
         # Clean up
         temp_audio_file.unlink()
@@ -185,17 +206,17 @@ def run_all_tests():
     # 3. Check what external provider tests we can run
     print("\n" + "="*60)
     if os.getenv("GROQ_API_KEY"):
-        run_command(f"{base_cmd} -k groq", "Running Groq tests")
+        run_command(f"{base_cmd} -k groq", "Running Groq tests", env=env)
     else:
         print("⏸️  Groq tests skipped (GROQ_API_KEY not set)")
     
     if os.getenv("TOGETHER_API_KEY"):
-        run_command(f"{base_cmd} -k together", "Running Together tests")
+        run_command(f"{base_cmd} -k together", "Running Together tests", env=env)
     else:
         print("⏸️  Together tests skipped (TOGETHER_API_KEY not set)")
     
     if os.getenv("OPENROUTER_API_KEY"):
-        run_command(f"{base_cmd} -k openrouter", "Running OpenRouter tests")
+        run_command(f"{base_cmd} -k openrouter", "Running OpenRouter tests", env=env)
     else:
         print("⏸️  OpenRouter tests skipped (OPENROUTER_API_KEY not set)")
     
@@ -212,7 +233,7 @@ def run_all_tests():
         try:
             result = subprocess.run(f"curl -s {url}/v1/models", shell=True, capture_output=True, timeout=5)
             if result.returncode == 0:
-                run_command(f"{base_cmd} -k {server}", f"Running {server} tests")
+                run_command(f"{base_cmd} -k {server}", f"Running {server} tests", env=env)
             else:
                 print(f"⏸️  {server} tests skipped (server not running)")
         except:
