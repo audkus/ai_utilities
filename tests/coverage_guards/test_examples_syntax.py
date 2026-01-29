@@ -11,7 +11,7 @@ from pathlib import Path
 
 def test_examples_syntax():
     """Test that all example files have valid Python syntax."""
-    examples_dir = Path(__file__).parent.parent / "examples"
+    examples_dir = Path(__file__).parent.parent.parent / "examples"
     
     # Find all Python files in examples directory
     python_files = list(examples_dir.glob("*.py"))
