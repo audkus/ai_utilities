@@ -97,7 +97,7 @@ def run_all_tests():
     print("🔧 Attempting to run more tests by removing skip markers...")
     
     # Create a temporary version without skip markers for audio tests
-    audio_test_file = Path("tests/test_audio_integration.py")
+    audio_test_file = Path("tests/integration/test_audio_integration.py")
     if audio_test_file.exists():
         # Read the file
         content = audio_test_file.read_text()
@@ -112,7 +112,7 @@ def run_all_tests():
         )
         
         # Write modified version
-        temp_audio_file = Path("tests/test_audio_integration_temp.py")
+        temp_audio_file = Path("tests/integration/test_audio_integration_temp.py")
         temp_audio_file.write_text(modified_content)
         
         # Run audio tests
