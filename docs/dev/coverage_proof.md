@@ -18,6 +18,26 @@ python3 -m coverage run -m pytest
 python3 -m coverage report
 ```
 
+## Coverage Correctness Guard
+
+### Import Path Protection
+The repository includes an import-path guard test (`tests/test_import_path_guard.py`) that prevents coverage measurement regression:
+
+```bash
+# Guard test ensures ai_utilities is imported from repo src/, not site-packages
+pytest tests/test_import_path_guard.py
+```
+
+**What the Guard Detects:**
+- Installed ai_utilities package shadowing repo source
+- Import-path ambiguity that causes misleading "never imported" coverage
+- Python path configuration issues
+
+**Guard Failure Indicates:**
+- Coverage measurement would be incorrect
+- Need to uninstall global package or fix import paths
+- Use canonical coverage command: `python -m coverage run -m pytest`
+
 ### Why This Command is Required
 1. **Timing Issue**: pytest-cov starts coverage AFTER pytest imports modules via conftest.py
 2. **Import Path**: Coverage must start before any imports to track all execution
