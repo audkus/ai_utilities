@@ -543,28 +543,39 @@ def setup_wizard():
 # These fixtures ensure proper test isolation by resetting global state
 
 
-@pytest.fixture(autouse=True)
-def snapshot_restore_environment():
-    """
-    Automatically snapshot and restore os.environ around every test.
-
-    This fixture runs before and after each test to ensure that
-    environment variable mutations in one test don't affect others.
-    """
-    # Snapshot current environment
-    original_env = dict(os.environ)
-
-    yield
-
-    # Restore environment to original state
-    # Clear any added variables
-    added_vars = set(os.environ.keys()) - set(original_env.keys())
-    for var in added_vars:
-        del os.environ[var]
-
-    # Restore original values for existing variables
-    for var, value in original_env.items():
-        os.environ[var] = value
+# @pytest.fixture(autouse=True)
+# def snapshot_restore_environment():
+#     """
+#     Automatically snapshot and restore os.environ around every test.
+#
+#     This fixture runs before and after each test to ensure that
+#     environment variable mutations in one test don't affect others.
+#     """
+#     # Load .env file before taking snapshot to ensure .env variables are included
+#     try:
+#         from dotenv import load_dotenv
+#         load_dotenv()
+#     except ImportError:
+#         pass  # dotenv not available
+#     
+#     # Ensure RUN_LIVE_AI_TESTS is set if provided in shell
+#     if os.getenv("RUN_LIVE_AI_TESTS") == "1":
+#         os.environ["RUN_LIVE_AI_TESTS"] = "1"
+#     
+#     # Snapshot current environment (after .env loading)
+#     original_env = dict(os.environ)
+#
+#     yield
+#
+#     # Restore environment to original state
+#     # Clear any added variables
+#     added_vars = set(os.environ.keys()) - set(original_env.keys())
+#     for var in added_vars:
+#         del os.environ[var]
+#
+#     # Restore original values for existing variables
+#     for var, value in original_env.items():
+#         os.environ[var] = value
 
 
 @pytest.fixture(autouse=True)

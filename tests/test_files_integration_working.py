@@ -24,11 +24,24 @@ import pytest
 from ai_utilities import AiClient, AsyncAiClient, UploadedFile, AiSettings
 from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 
+# Load .env file from repository root (pytest changes working directory)
+try:
+    from dotenv import load_dotenv
+    from pathlib import Path
+    
+    # Get repository root (this file is in tests/, so parent.parent is repo root)
+    repo_root = Path(__file__).parent.parent
+    env_file = repo_root / ".env"
+    
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    pass  # dotenv not available
 
 # Skip integration tests if no API key
 pytest.importorskip("openai")
-has_api_key = bool(os.getenv("AI_API_KEY"))
-pytestmark = pytest.mark.integration if has_api_key else pytest.mark.skip(reason="No AI_API_KEY set")
+has_api_key = bool(os.getenv("OPENAI_API_KEY"))
+pytestmark = pytest.mark.integration if has_api_key else pytest.mark.skip(reason="No OPENAI_API_KEY set")
 
 
 class TestWorkingFilesIntegration:
@@ -37,8 +50,22 @@ class TestWorkingFilesIntegration:
     @pytest.fixture
     def client(self):
         """Create AiClient with real OpenAI provider."""
+        # Load .env file inside fixture (pytest changes working directory)
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            
+            # Get repository root (this file is in tests/, so parent.parent is repo root)
+            repo_root = Path(__file__).parent.parent
+            env_file = repo_root / ".env"
+            
+            if env_file.exists():
+                load_dotenv(env_file)
+        except ImportError:
+            pass  # dotenv not available
+        
         settings = AiSettings(
-            api_key=os.getenv("AI_API_KEY"),
+            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
             provider="openai",
             model="gpt-4o-mini"  # Use a real model for integration tests
         )
@@ -47,8 +74,22 @@ class TestWorkingFilesIntegration:
     @pytest.fixture
     def async_client(self):
         """Create AsyncAiClient with real OpenAI provider."""
+        # Load .env file inside fixture (pytest changes working directory)
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            
+            # Get repository root (this file is in tests/, so parent.parent is repo root)
+            repo_root = Path(__file__).parent.parent
+            env_file = repo_root / ".env"
+            
+            if env_file.exists():
+                load_dotenv(env_file)
+        except ImportError:
+            pass  # dotenv not available
+        
         settings = AiSettings(
-            api_key=os.getenv("AI_API_KEY"),
+            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
             provider="openai",
             model="gpt-4o-mini"  # Use a real model for integration tests
         )
@@ -236,24 +277,36 @@ class TestOpenAICompatibleIntegration:
     def test_compatible_provider_capability_errors(self):
         """Test that OpenAI-compatible provider raises capability errors."""
         from ai_utilities.providers import OpenAICompatibleProvider
+        import tempfile
+        import os
         
-        # Create client with OpenAI-compatible provider
-        provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
-        settings = AiSettings(api_key="fake-key", provider="openai_compatible")
-        client = AiClient(settings=settings, provider=provider)
+        # Create a temporary test file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write("Test content for capability error test")
+            test_file_path = f.name
         
-        # Test upload capability error
-        with pytest.raises(ProviderCapabilityError) as exc_info:
-            client.upload_file("test.txt")
-        
-        assert exc_info.value.capability == "Files API (upload)"
-        assert exc_info.value.provider == "openai_compatible"
-        
-        # Test download capability error
-        with pytest.raises(ProviderCapabilityError) as exc_info:
-            client.download_file("file-123")
-        
-        assert exc_info.value.capability == "Files API (download)"
-        assert exc_info.value.provider == "openai_compatible"
-        
-        print("✅ OpenAI-compatible provider correctly raises capability errors")
+        try:
+            # Create client with OpenAI-compatible provider
+            provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
+            settings = AiSettings(api_key="fake-key", provider="openai_compatible")
+            client = AiClient(settings=settings, provider=provider)
+            
+            # Test upload capability error
+            with pytest.raises(ProviderCapabilityError) as exc_info:
+                client.upload_file(test_file_path)
+            
+            assert exc_info.value.capability == "Files API (upload)"
+            assert exc_info.value.provider == "openai_compatible"
+            
+            # Test download capability error
+            with pytest.raises(ProviderCapabilityError) as exc_info:
+                client.download_file("file-123")
+            
+            assert exc_info.value.capability == "Files API (download)"
+            assert exc_info.value.provider == "openai_compatible"
+            
+            print("✅ OpenAI-compatible provider correctly raises capability errors")
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(test_file_path):
+                os.unlink(test_file_path)

@@ -227,7 +227,75 @@ class OpenAIProvider(BaseProvider):
             if isinstance(e, ValueError) and "file_id cannot be empty" in str(e):
                 raise
             raise FileTransferError("download", "openai", e) from e
-    
+
+    def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """List all uploaded files from OpenAI.
+
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+
+        Returns:
+            List of UploadedFile objects
+
+        Raises:
+            FileTransferError: If listing fails
+        """
+        try:
+            # List files using OpenAI SDK
+            response = self.client.files.list(purpose=purpose)
+            
+            # Convert to our UploadedFile model
+            files = []
+            for file_obj in response.data:
+                files.append(UploadedFile(
+                    file_id=file_obj.id,
+                    filename=file_obj.filename,
+                    bytes=file_obj.bytes,
+                    provider="openai",
+                    purpose=file_obj.purpose,
+                    created_at=(
+                        datetime.fromisoformat(file_obj.created_at.replace("Z", "+00:00"))
+                        if isinstance(file_obj.created_at, str) and file_obj.created_at
+                        else datetime.fromtimestamp(file_obj.created_at)
+                        if isinstance(file_obj.created_at, (int, float)) and file_obj.created_at
+                        else None
+                    )
+                ))
+            
+            return files
+            
+        except (Exception) as e:
+            raise FileTransferError("list", "openai", e) from e
+
+    def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file from OpenAI.
+
+        Args:
+            file_id: ID of the file to delete
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            ValueError: If file_id is invalid
+            FileTransferError: If deletion fails
+        """
+        try:
+            if not file_id:
+                raise ValueError("file_id cannot be empty")
+            
+            # Delete file using OpenAI SDK
+            response = self.client.files.delete(file_id)
+            
+            # OpenAI returns {"deleted": true, "id": "file-123"} on success
+            return getattr(response, 'deleted', False)
+            
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and "file_id cannot be empty" in str(e):
+                raise
+            raise FileTransferError("delete", "openai", e) from e
+
     def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1

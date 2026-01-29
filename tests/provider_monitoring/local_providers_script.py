@@ -4,8 +4,9 @@ Test script for multiple local AI providers.
 Compares performance and compatibility across different local servers.
 """
 
+import os
+import json
 import sys
-import time
 from pathlib import Path
 from typing import Dict, Any
 
@@ -39,7 +40,7 @@ PROVIDERS = {
         "description": "High-performance, CPU/GPU optimized"
     },
     "TextGen WebUI": {
-        "base_url": "http://localhost:5000/v1",
+        "base_url": "http://127.0.0.1:7860/v1",
         "model": "local-model",  # Depends on loaded model
         "description": "Feature-rich, extensible"
     }

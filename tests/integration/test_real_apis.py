@@ -24,7 +24,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 # Load .env file for environment variables
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    from pathlib import Path
+    
+    # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
+    repo_root = Path(__file__).parent.parent.parent
+    env_file = repo_root / ".env"
+    
+    if env_file.exists():
+        load_dotenv(env_file)
 except ImportError:
     pass  # dotenv not available, tests will need manual env setup
 
@@ -37,13 +44,51 @@ class TestRealAPIIntegration:
     @pytest.mark.integration
     @pytest.mark.openai
     @pytest.mark.skipif(
-        not os.getenv("AI_API_KEY"),
-        reason="Requires AI_API_KEY environment variable"
+        not os.getenv("OPENAI_API_KEY"),
+        reason="Requires OPENAI_API_KEY environment variable"
     )
     def test_openai_real_api_call(self):
         """Test real OpenAI API call."""
-        # Use small model for testing
-        settings = AiSettings(api_key=os.getenv("AI_API_KEY"), model="gpt-3.5-turbo")
+        # Load .env file inside test (pytest changes working directory)
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            
+            # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
+            repo_root = Path(__file__).parent.parent.parent
+            env_file = repo_root / ".env"
+            
+            print(f"DEBUG: __file__ = {__file__}")
+            print(f"DEBUG: repo_root = {repo_root}")
+            print(f"DEBUG: env_file = {env_file}")
+            print(f"DEBUG: env_file.exists() = {env_file.exists()}")
+            print(f"DEBUG: cwd = {Path.cwd()}")
+            
+            if env_file.exists():
+                print(f"DEBUG: Loading .env from {env_file}")
+                load_dotenv(env_file)
+            else:
+                print(f"DEBUG: .env file not found at {env_file}")
+        except ImportError:
+            pass  # dotenv not available
+        
+        # Debug: Check if environment is loaded
+        print(f"DEBUG: OPENAI_API_KEY in env: {'OPENAI_API_KEY' in os.environ}")
+        print(f"DEBUG: OPENAI_API_KEY value: {os.getenv('OPENAI_API_KEY', 'NOT_FOUND')[:20]}...")
+        
+        # Use small model for testing with explicit provider
+        settings = AiSettings(
+            provider="openai",  # Explicitly specify provider
+            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
+            model="gpt-3.5-turbo"
+        )
+        
+        api_key = getattr(settings, 'openai_api_key', None)
+        if api_key:
+            print(f"DEBUG: settings.openai_api_key: {api_key[:20]}...")
+        else:
+            print("DEBUG: settings.openai_api_key: NOT_FOUND")
+        
         client = AiClient(settings)
         
         # Simple test call
@@ -61,12 +106,30 @@ class TestRealAPIIntegration:
     @pytest.mark.integration
     @pytest.mark.openai
     @pytest.mark.skipif(
-        not os.getenv("AI_API_KEY"),
-        reason="Requires AI_API_KEY environment variable"
+        not os.getenv("OPENAI_API_KEY"),
+        reason="Requires OPENAI_API_KEY environment variable"
     )
     def test_openai_json_mode_real(self):
         """Test OpenAI JSON mode with real API."""
-        settings = AiSettings(api_key=os.getenv("AI_API_KEY"), model="gpt-3.5-turbo")
+        # Load .env file inside test (pytest changes working directory)
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            
+            # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
+            repo_root = Path(__file__).parent.parent.parent
+            env_file = repo_root / ".env"
+            
+            if env_file.exists():
+                load_dotenv(env_file)
+        except ImportError:
+            pass  # dotenv not available
+        
+        settings = AiSettings(
+            provider="openai",  # Explicitly specify provider
+            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
+            model="gpt-3.5-turbo"
+        )
         client = AiClient(settings)
         
         # Test JSON response
@@ -94,7 +157,7 @@ class TestRealAPIIntegration:
         settings = AiSettings(
             provider="openai_compatible",
             base_url=os.getenv("AI_BASE_URL"),
-            api_key=os.getenv("AI_API_KEY", "dummy-key"),
+            api_key=os.getenv("OPENAI_API_KEY", "dummy-key"),
             model=os.getenv("AI_MODEL", "llama3.2:latest")
         )
         
@@ -110,15 +173,27 @@ class TestRealAPIIntegration:
         
         print(f"✅ OpenAI-compatible API response: {response}")
     
-    @pytest.mark.skipif(
-        not os.getenv("AI_API_KEY"),
-        reason="Requires AI_API_KEY environment variable"
-    )
+    @pytest.mark.integration
+    @pytest.mark.openai
     def test_provider_factory_real_openai(self):
         """Test provider factory with real OpenAI."""
+        # Load .env file inside test (pytest changes working directory)
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            
+            # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
+            repo_root = Path(__file__).parent.parent.parent
+            env_file = repo_root / ".env"
+            
+            if env_file.exists():
+                load_dotenv(env_file)
+        except ImportError:
+            pass  # dotenv not available
+        
         settings = AiSettings(
             provider="openai",
-            api_key=os.getenv("AI_API_KEY"),
+            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
             model="gpt-3.5-turbo"
         )
         
@@ -142,7 +217,7 @@ class TestRealAPIIntegration:
         settings = AiSettings(
             provider="openai_compatible",
             base_url=os.getenv("AI_BASE_URL"),
-            api_key=os.getenv("AI_API_KEY", "dummy-key"),
+            openai_api_key=os.getenv("OPENAI_API_KEY", "dummy-key"),  # Use provider-specific key
             model=os.getenv("AI_MODEL", "llama3.2:latest")
         )
         
