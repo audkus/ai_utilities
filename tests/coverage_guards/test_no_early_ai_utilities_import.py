@@ -27,13 +27,13 @@ def test_target_file_no_early_imports() -> None:
     # Run the target test file with early import detection
     cmd = [
         sys.executable, "-m", "pytest", "-q",
-        "tests/test_environment_modules_simple.py",
+        "tests/unit/test_environment_modules_simple.py",
         "-p", "tests.early_import_detector"
     ]
 
     result = subprocess.run(
         cmd,
-        cwd=Path(__file__).parent.parent,
+        cwd=Path(__file__).parent.parent.parent,
         capture_output=True,
         text=True,
         timeout=30

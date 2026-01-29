@@ -80,8 +80,11 @@ source = ["src/ai_utilities"]
 omit = [
     "*/tests/*",
     "*/test_*",
+    "*/examples/*",
+    "*/coverage_reports/*",
     "setup.py",
 ]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = [

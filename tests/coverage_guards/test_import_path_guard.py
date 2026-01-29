@@ -36,8 +36,8 @@ def test_ai_utilities_imported_from_repo_source():
     # Get the actual file location and resolve to absolute path
     actual_file = pathlib.Path(ai_utilities.__file__).resolve()
     
-    # Determine repository root (this test file's parent's parent)
-    repo_root = pathlib.Path(__file__).parent.parent.resolve()
+    # Determine repository root (this test file's parent's parent's parent)
+    repo_root = pathlib.Path(__file__).parent.parent.parent.resolve()
     expected_src_dir = repo_root / "src" / "ai_utilities"
     
     # The actual file should be under the expected src directory
