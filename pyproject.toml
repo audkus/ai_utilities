@@ -78,9 +78,9 @@ ai-utilities = "ai_utilities.cli:main"
 [tool.coverage.run]
 source = ["src/ai_utilities"]
 omit = [
-  "*/tests/*",
-  "*/test_*",
-  "setup.py",
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
 ]
 
 [tool.coverage.report]
