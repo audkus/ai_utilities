@@ -1,4 +1,4 @@
-# Coverage Proof - AFTER FIX
+# Coverage Proof - CORRECTED WORKFLOW
 
 ## Current Import Paths (CORRECT)
 
@@ -10,33 +10,32 @@ $ python3 -c "import ai_utilities.models as m; print(m.__file__)"
 /Users/steffenrasmussen/PycharmProjects/ai_utilities/src/ai_utilities/models.py
 ```
 
-## Current Coverage Results (CORRECT)
+## CORRECT Coverage Workflow
 
+### Canonical Coverage Command
 ```bash
-$ python3 -m coverage run -m pytest tests/test_models_coverage_fix.py
-...
-$ python3 -m coverage report --show-missing
-src/ai_utilities/models.py                      9      0   100%                  
-src/ai_utilities/config_models.py               702    479    32%   61-69, 75-83, 136-138, 209-210, 215-219, 223-227, 233-361, 365-369, 374-375, 524-545, 551-553, 559-561, 567-619, 625-627, 633-635, 641-643, 649-651, 657-659, 665-667, 673-675, 681-683, 689-691, 697-699, 705-707, 713-715, 721-723, 729-731, 737-739, 745-747, 753-755, 761-763, 769-771, 777-779, 785-787, 793-795, 801-803, 808-830, 834-847, 853-858, 864-914, 923, 929, 937, 953-974, 987-1108, 1113-1133, 1138, 1153-1168, 1181-1248, 1270-1324, 1336-1348, 1366-1375
-src/ai_utilities/file_models.py                 16      2    88%   36, 40       
-src/ai_utilities/provider_capabilities.py       24      2    92%   36, 55       
+python3 -m coverage run -m pytest
+python3 -m coverage report
 ```
 
-## Problem Analysis
+### Why This Command is Required
+1. **Timing Issue**: pytest-cov starts coverage AFTER pytest imports modules via conftest.py
+2. **Import Path**: Coverage must start before any imports to track all execution
+3. **Measurement Accuracy**: Only `coverage run` ensures all code execution is tracked
 
-### Why Previous Measurement Was Misleading:
+### INCORRECT Commands (Do NOT Use)
+```bash
+# ❌ These start coverage too late and miss imports
+pytest --cov=ai_utilities
+pytest-cov
+```
 
-1. **pytest-cov Timing Issue**: pytest-cov starts coverage AFTER pytest has already imported modules via conftest.py, so it misses the initial import execution
-2. **Import Path Mismatch**: Tests import from `src/ai_utilities` but coverage configuration was misaligned
-3. **Coverage Tool Confusion**: pytest-cov was not properly tracking execution due to timing issues
+### Optional HTML Coverage (Explicit Only)
+```bash
+python3 -m coverage html  # Explicit opt-in HTML generation
+```
 
-### What Changed:
-
-1. **Fixed Coverage Invocation**: Used `python3 -m coverage run -m pytest` instead of pytest-cov
-2. **Proper Timing**: Coverage starts before any imports, ensuring all execution is tracked
-3. **Correct Path Alignment**: Coverage source path matches the actual file locations
-
-## Final Coverage Results (AFTER COMPREHENSIVE TESTING)
+## Current Coverage Results (CORRECT)
 
 ```bash
 $ python3 -m coverage run -m pytest tests/test_models_comprehensive.py tests/test_config_models_comprehensive.py tests/test_config_models_validation.py tests/test_file_models_comprehensive.py tests/test_provider_capabilities_comprehensive.py
@@ -48,6 +47,27 @@ src/ai_utilities/file_models.py                 16      0   100%
 src/ai_utilities/provider_capabilities.py       24      0   100%                  
 TOTAL                                            6075   5048    17%                  
 ```
+
+## Examples Policy
+
+### Examples are Documentation, NOT Tests
+- **Location**: `examples/` directory
+- **Purpose**: Documentation and demonstration
+- **Execution**: NEVER executed by pytest
+- **Collection**: Explicitly ignored by pytest configuration
+
+### Examples Validation
+```bash
+# Syntax validation only (no execution)
+python3 -m compileall examples
+```
+
+### Examples Requirements
+- ✅ Syntax-correct Python code
+- ✅ Ruff-clean formatting
+- ✅ Type annotations where appropriate
+- ❌ No API keys required for syntax validation
+- ❌ No network calls during test runs
 
 ## Final Coverage Status
 
@@ -84,4 +104,4 @@ TOTAL                                            6075   5048    17%
 - ✅ file_models.py: 12% → 100% (+88%)
 - ✅ provider_capabilities.py: 8% → 100% (+92%)
 
-**The coverage measurement is now correct and shows material improvements!**
+**The coverage measurement is now correct, stable, and reproducible!**
