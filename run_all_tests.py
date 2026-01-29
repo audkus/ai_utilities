@@ -99,7 +99,7 @@ def check_requirements():
         "Local AI Servers": {
             "Ollama": "curl -s http://localhost:11434/api/tags > /dev/null 2>&1",
             "LM Studio": "curl -s http://localhost:1234/v1/models > /dev/null 2>&1", 
-            "Text Generation WebUI": "curl -s http://localhost:5000/v1/models > /dev/null 2>&1",
+            "Text Generation WebUI": "curl -s http://127.0.0.1:7860/v1/models > /dev/null 2>&1 || curl -s http://127.0.0.1:7860/ > /dev/null 2>&1",
             "FastChat": "curl -s http://localhost:8000/v1/models > /dev/null 2>&1"
         },
         "API Keys": {
