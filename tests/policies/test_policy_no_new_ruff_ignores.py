@@ -27,7 +27,7 @@ except ImportError:
 def load_ruff_config():
     """Load the current ruff configuration from pyproject.toml."""
     test_file = Path(__file__)
-    project_root = test_file.parent.parent
+    project_root = test_file.parent.parent.parent  # tests/policies/ -> tests/ -> project root
     pyproject_path = project_root / "pyproject.toml"
 
     if not pyproject_path.exists():
@@ -250,7 +250,7 @@ def test_policy_documentation_exists():
     """Test that policy documentation exists and is up to date."""
     # Find project root from test file location
     test_file = pathlib.Path(__file__)
-    project_root = test_file.parent.parent
+    project_root = test_file.parent.parent.parent  # tests/policies/ -> tests/ -> project root
     policy_path = project_root / "docs" / "internal" / "ruff-policy.md"
 
     if not policy_path.exists():
