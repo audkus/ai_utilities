@@ -23,7 +23,7 @@ def test_no_coverage_warning_on_target_test():
     # Run the exact command from the user's request
     cmd = [
         sys.executable, "-m", "pytest", "-q",
-        "tests/test_environment_modules_simple.py",
+        "tests/unit/test_environment_modules_simple.py",
         "--cov=ai_utilities",
         "--cov-report=term-missing"
     ]
@@ -31,7 +31,7 @@ def test_no_coverage_warning_on_target_test():
     # Run from the project root
     result = subprocess.run(
         cmd,
-        cwd=Path(__file__).parent.parent,
+        cwd=Path(__file__).parent.parent.parent,  # tests/regression/ -> tests/ -> project root
         capture_output=True,
         text=True,
         timeout=30
@@ -59,14 +59,14 @@ def test_coverage_functionality_works():
     """
     cmd = [
         sys.executable, "-m", "pytest",
-        "tests/test_environment_modules_simple.py",
+        "tests/unit/test_environment_modules_simple.py",
         "--cov=ai_utilities",
         "--cov-report=html"
     ]
 
     result = subprocess.run(
         cmd,
-        cwd=Path(__file__).parent.parent,
+        cwd=Path(__file__).parent.parent.parent,  # tests/regression/ -> tests/ -> project root
         capture_output=True,
         text=True,
         timeout=30
@@ -76,11 +76,17 @@ def test_coverage_functionality_works():
     assert result.returncode == 0, f"Command failed: {result.stderr}"  # noqa: S101 - Test validation
 
     # Check that HTML report was generated
-    html_report_path = Path(__file__).parent.parent / "htmlcov" / "index.html"
+    html_report_path = Path(__file__).parent.parent.parent / "htmlcov" / "index.html"  # tests/regression/ -> tests/ -> project root
     assert html_report_path.exists(), f"HTML report not found at {html_report_path}"  # noqa: S101 - Test validation
 
     # Check that coverage data was collected
     assert "Coverage HTML written" in result.stdout, "Coverage report not generated"  # noqa: S101 - Test validation
+    
+    # Clean up HTML report to avoid repository contamination
+    import shutil
+    htmlcov_dir = html_report_path.parent
+    if htmlcov_dir.exists():
+        shutil.rmtree(htmlcov_dir)
 
 
 def test_makefile_targets_work():
@@ -92,7 +98,7 @@ def test_makefile_targets_work():
     # Test make help target (quick)
     result = subprocess.run(
         ["make", "help"],
-        cwd=Path(__file__).parent.parent,
+        cwd=Path(__file__).parent.parent.parent,  # tests/regression/ -> tests/ -> project root
         capture_output=True,
         text=True,
         timeout=10

@@ -11,7 +11,7 @@ class TestProjectStructure:
     @pytest.fixture
     def project_root(self):
         """Get the project root directory."""
-        return Path(__file__).parent.parent
+        return Path(__file__).parent.parent.parent  # tests/policies/ -> tests/ -> project root
     
     @pytest.fixture
     def tests_dir(self, project_root):
