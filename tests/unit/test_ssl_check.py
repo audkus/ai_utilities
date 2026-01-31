@@ -118,16 +118,25 @@ class TestSSLBackendCheck:
         import ai_utilities.ssl_check
         ai_utilities.ssl_check._warning_emitted = False
         
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        # Force the warning to be emitted by patching to simulate LibreSSL
+        with patch('ai_utilities.ssl_check.get_ssl_backend_info') as mock_info:
+            mock_info.return_value = {
+                "version": "LibreSSL 2.8.3",
+                "version_info": (2, 8, 3),
+                "is_libressl": True,
+                "is_openssl": False,
+            }
             
-            # Call multiple times
-            emit_ssl_compatibility_warning()
-            emit_ssl_compatibility_warning()
-            emit_ssl_compatibility_warning()
-            
-            # Should only have one warning
-            assert len(w) == 1
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                
+                # Call multiple times
+                emit_ssl_compatibility_warning()
+                emit_ssl_compatibility_warning()
+                emit_ssl_compatibility_warning()
+                
+                # Should only have one warning
+                assert len(w) == 1
 
     @patch('ssl.OPENSSL_VERSION', 'LibreSSL 2.8.3')
     def test_real_libressl_detection(self):

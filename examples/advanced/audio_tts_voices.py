@@ -6,20 +6,23 @@ This demo shows how to use the AI Utilities audio processing
 capabilities to generate speech from text using the enhanced setup system.
 """
 
-import sys
 from pathlib import Path
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ai_utilities.audio import AudioProcessor, AudioFormat
 from ai_utilities.client import AiClient
+from _common import check_env_vars, get_outputs_dir, safe_write_audio
 
 
 def main():
     """Demonstrate audio generation capabilities."""
     print("🎤 AI Utilities Audio Generation Demo")
     print("=" * 50)
+    
+    # Check for required environment variables
+    missing_vars = check_env_vars(['OPENAI_API_KEY'])
+    if missing_vars:
+        print("❌ Cannot proceed without API key")
+        return
     
     # Initialize client with existing configuration (no interactive setup)
     print("🔧 Initializing AI client with existing configuration...")
@@ -64,11 +67,14 @@ def main():
                 response_format=AudioFormat.MP3
             )
             
-            # Save the generated audio
+            # Save the generated audio safely
+            outputs_dir = get_outputs_dir()
             output_filename = f"generated_audio_{i}_{demo['voice']}.mp3"
-            output_path = Path(output_filename)
+            output_path = outputs_dir / output_filename
             
-            result.save_to_file(output_path)
+            # Get raw audio data and save safely
+            audio_data = result.get_audio_data()
+            safe_write_audio(output_path, audio_data)
             
             # Display results
             print(f"   ✅ Generated successfully!")
@@ -81,7 +87,7 @@ def main():
             print(f"   ❌ Generation failed: {e}")
     
     print(f"\n🎉 Audio generation demo completed!")
-    print(f"📁 Check the generated audio files in the current directory.")
+    print(f"📁 Check the generated audio files in the outputs/ directory.")
 
     # Run additional demos
     demo_voice_variations(client)
@@ -123,8 +129,10 @@ def demo_voice_variations(client):
                 response_format=AudioFormat.MP3
             )
             
-            output_path = Path(f"voice_comparison_{voice}.mp3")
-            result.save_to_file(output_path)
+            outputs_dir = get_outputs_dir()
+            output_path = outputs_dir / f"voice_comparison_{voice}.mp3"
+            audio_data = result.get_audio_data()
+            safe_write_audio(output_path, audio_data)
             
             print(f"   ✅ Saved to: {output_path}")
             print(f"   📊 Size: {result.file_size_mb:.2f} MB")
@@ -157,8 +165,10 @@ def demo_speed_variations(client):
                 response_format=AudioFormat.MP3
             )
             
-            output_path = Path(f"speed_test_{speed}x.mp3")
-            result.save_to_file(output_path)
+            outputs_dir = get_outputs_dir()
+            output_path = outputs_dir / f"speed_test_{speed}x.mp3"
+            audio_data = result.get_audio_data()
+            safe_write_audio(output_path, audio_data)
             
             print(f"   ✅ Saved to: {output_path}")
             print(f"   📊 Size: {result.file_size_mb:.2f} MB")
@@ -196,8 +206,10 @@ def demo_format_variations(client):
                 response_format=format
             )
             
-            output_path = output_dir / f"format_test_{format.value}.{format.value}"
-            result.save_to_file(output_path)
+            outputs_dir = get_outputs_dir()
+            output_path = outputs_dir / f"format_test_{format.value}.{format.value}"
+            audio_data = result.get_audio_data()
+            safe_write_audio(output_path, audio_data)
             
             print(f"   ✅ Saved to: {output_path}")
             print(f"   📊 Size: {result.file_size_mb:.2f} MB")
@@ -236,8 +248,10 @@ def demo_long_text(client):
             response_format=AudioFormat.MP3
         )
         
-        output_path = Path("long_text_demo.mp3")
-        result.save_to_file(output_path)
+        outputs_dir = get_outputs_dir()
+        output_path = outputs_dir / "long_text_demo.mp3"
+        audio_data = result.get_audio_data()
+        safe_write_audio(output_path, audio_data)
         
         print(f"   ✅ Generated successfully!")
         print(f"   📁 Saved to: {output_path}")

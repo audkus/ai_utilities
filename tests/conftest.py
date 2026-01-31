@@ -716,7 +716,7 @@ ROOT_FILE_ALLOWLIST = {
     ".coveragerc",  # Keep only ONE coverage config file
 }
 
-ROOT_DIR_ALLOWLIST = {
+ROOT_DIR_ALLOWED_DIRECTORIES = {
     ".git",
     ".github",
     "src",
@@ -724,7 +724,6 @@ ROOT_DIR_ALLOWLIST = {
     "docs",
     "scripts",
     "examples",
-    "dev_tools",
     "tools",
     "reports",
     "coverage_reports",
@@ -817,7 +816,7 @@ def enforce_repo_root_cleanliness() -> None:
     final_files, final_dirs = snapshot_root(repo_root)
 
     new_files = final_files - initial_files - ROOT_FILE_ALLOWLIST
-    new_dirs = final_dirs - initial_dirs - ROOT_DIR_ALLOWLIST
+    new_dirs = final_dirs - initial_dirs - ROOT_DIR_ALLOWED_DIRECTORIES
 
     # Remove transient patterns from `new_files` (even if tool recreated them late).
     new_files = {

@@ -189,8 +189,6 @@ ignore = [
 
 # Per-file ignores with minimal, justified exceptions
 per-file-ignores = [
-    # Allow assert statements in dev tools
-    "dev_tools/**:S101",
     # Allow assert statements in diagnostic scripts  
     "tools/diagnostics/**:S101",
     # Benchmark-specific patterns

@@ -1,99 +1,199 @@
 # 📚 AI Utilities Examples
 
-## 🌟 Start Here: Getting Started
+## 🚀 Prerequisites
 
-**File**: `getting_started.py`  
-**Basic usage examples for new users.**
-
-Shows the simplest workflow:
-- Install and import
-- Create a client
-- Ask a question with caching
-- Handle the response
-
-```python
-from ai_utilities import AiClient
-
-client = AiClient()
-result = client.ask(
-    "Explain dependency injection in one paragraph",
-    cache_namespace="docs"
-)
-print(result.text)
-```
-
-## 📈 Progressive Learning Path
-
-### Level 1: Basics
-- `getting_started.py` - **Start here** - Simple Q&A
-- `model_validation.py` - **Test your setup** - Validate AI configuration
-- `simple_image_generation.py` - Basic image generation
-- `files_quickstart.py` - File upload/download
-
-### Level 2: Common Patterns  
-- `ask_parameters_demo.py` - Different response formats
-- `environment_isolation_example.py` - Environment configuration
-- `usage_tracking_example.py` - Monitor token usage
-
-### Level 3: Advanced Features
-- `knowledge_example.py` - Knowledge base integration
-- `document_ai_demo.py` - Document processing
-- `parallel_usage_tracking_example.py` - Concurrent operations
-
-### Level 4: Specialized
-- `audio_*.py` - Audio processing (transcription, generation)
-- `image_generation_demo.py` - Advanced image workflows
-- `complete_content_workflow.py` - Full production pipeline
-
-### Level 5: Development & Debugging
-- `demo_integration.py` - Enhanced setup system integration demo
-- `demo_sqlite_cache.py` - SQLite cache with namespace support demo
-- `complete_flow_demo.py` - Complete setup flow demonstration
-- `setup_examples.py` - Various setup configuration examples
-- `interactive_setup_example.py` - Interactive setup demonstration
-- `smart_setup_example.py` - Smart setup features demo
-
-## 🎯 Quick Reference
-
-| Need | Example | Description |
-|------|---------|-------------|
-| **First steps** | `getting_started.py` | Simple Q&A with caching |
-| **Setup testing** | `model_validation.py` | Validate AI configuration |
-| **Images** | `simple_image_generation.py` | Generate images from text |
-| **Files** | `files_quickstart.py` | Upload/download files |
-| **Audio** | `audio_quickstart.py` | Transcribe/generate audio |
-| **Documents** | `simple_document_ai.py` | Process PDFs/Docs |
-| **Configuration** | `environment_isolation_example.py` | Environment setup |
-| **Monitoring** | `usage_tracking_example.py` | Track token usage |
-| **Setup Integration** | `demo_integration.py` | Enhanced setup system demo |
-| **Cache Demo** | `demo_sqlite_cache.py` | SQLite cache namespaces |
-| **Setup Flow** | `complete_flow_demo.py` | Complete setup demonstration |
-| **Interactive Setup** | `interactive_setup_example.py` | Interactive setup demo |
-
-## 💡 Tips
-
-1. **Always use `cache_namespace`** for examples and documentation
-2. **Check `result.usage`** to monitor token consumption  
-3. **Use `AiSettings`** for explicit configuration
-4. **Handle exceptions** - see error handling examples
-5. **Start simple** - don't jump to advanced examples immediately
-
-## 🔧 Environment Setup
-
-Most examples require:
+### Installation
 ```bash
-# Basic install
-pip install ai-utilities
+# Install the package with development dependencies
+pip install -e ".[dev]"
 
-# With providers (includes all dependencies for examples)
+# Or install with specific providers
 pip install ai-utilities[openai]
-
-# Set your API key
-export OPENAI_API_KEY="your-api-key"
 ```
 
-## 📖 Need More?
+### Required Environment Variables
+Most examples require at least one of these:
+```bash
+# OpenAI (most common)
+export OPENAI_API_KEY="your-openai-api-key"
 
-- Check the main README for detailed documentation
-- Look at individual examples for specific features
-- Each example file has detailed comments and explanations
+# Optional: Specify provider
+export AI_PROVIDER="openai"
+
+# For local providers
+export OLLAMA_BASE_URL="http://localhost:11434"
+export TEXT_GENERATION_WEBUI_BASE_URL="http://localhost:5000"
+```
+
+## 📁 Folder Structure
+
+```
+examples/
+├── quickstarts/          # Basic examples for getting started
+├── advanced/            # Advanced workflows and multi-step processes  
+├── providers/           # Provider-specific examples
+├── assets/              # Sample files (PDFs, audio, etc.)
+├── outputs/             # Generated files (auto-ignored by git)
+├── _common.py           # Shared utilities for all examples
+└── README.md            # This file
+```
+
+## 🎯 Quickstart Examples
+
+### Text Generation
+```bash
+python quickstarts/text_generate_basic.py
+```
+Basic Q&A with AI models.
+
+### Image Generation  
+```bash
+python quickstarts/image_generate_basic.py
+```
+Generate images from text prompts.
+
+### Audio TTS (Text-to-Speech)
+```bash
+python quickstarts/audio_tts_basic.py
+```
+Convert text to speech audio.
+
+### Audio Transcription
+```bash
+python quickstarts/audio_transcribe_basic.py
+```
+Transcribe audio files to text.
+
+### File Operations
+```bash
+python quickstarts/files_upload_basic.py
+```
+Upload and process files.
+
+### Document Processing
+```bash
+python quickstarts/document_basic.py
+```
+Extract and process PDF documents.
+
+### Usage Tracking
+```bash
+python quickstarts/usage_tracking_basic.py
+```
+Monitor API usage and tokens.
+
+## 🔧 Advanced Examples
+
+### Audio Voice Variations
+```bash
+python advanced/audio_tts_voices.py
+```
+Generate speech with different voices.
+
+### Image Generation (Multiple)
+```bash
+python advanced/image_generate_multiple.py
+```
+Generate multiple images with different settings.
+
+### File Operations (Advanced)
+```bash
+python advanced/files_operations.py
+```
+Advanced file processing workflows.
+
+### Document Workflow (Multi-step)
+```bash
+# Step 1: Extract text from PDF
+python advanced/document_step_01_extract.py
+
+# Step 2: Summarize the text  
+python advanced/document_step_02_summarize.py
+
+# Step 3: Transform to different formats
+python advanced/document_step_03_transform.py
+```
+
+## 🤖 Provider Examples
+
+### FastChat
+```bash
+python providers/fastchat_basic.py
+```
+Use AI Utilities with FastChat local models.
+
+### Text-Generation-WebUI
+```bash
+python providers/text_generation_webui_basic.py
+```
+Use AI Utilities with text-generation-webui.
+
+## 📂 Output Files
+
+All generated files are saved to `examples/outputs/`:
+- Audio files: MP3, WAV
+- Images: PNG, JPEG  
+- Text: TXT, JSON
+- Documents: Various formats
+
+The `outputs/` directory is automatically ignored by git to prevent committing generated artifacts.
+
+## 🛡️ Error Prevention
+
+The examples include built-in protections:
+- **Audio validation**: Prevents saving JSON errors as audio files
+- **Format checking**: Validates file headers before saving
+- **Safe writing**: Atomic file writes to prevent corruption
+- **Clear error messages**: Actionable error reporting
+
+## 💡 Tips for Running Examples
+
+1. **Set environment variables first** - Most examples need API keys
+2. **Check outputs/ directory** - Results are saved there, not in the examples folder
+3. **Start with quickstarts** - Begin with basic examples before advanced ones
+4. **Use sample assets** - Sample files are in `examples/assets/`
+5. **Read the comments** - Each example has detailed explanations
+
+## � Troubleshooting
+
+### Common Issues
+
+**"API key required"**
+```bash
+export OPENAI_API_KEY="your-key-here"
+```
+
+**"Cannot import ai_utilities"**
+```bash
+pip install -e ".[dev]"
+```
+
+**"Audio file not found"**
+```bash
+# Check examples/assets/ for sample files
+ls examples/assets/
+```
+
+**"Provider not configured"**
+```bash
+export AI_PROVIDER="openai"
+# Or specify your local provider
+export OLLAMA_BASE_URL="http://localhost:11434"
+```
+
+### Provider Compatibility
+
+| Feature | OpenAI | Local Models | Notes |
+|---------|---------|--------------|-------|
+| Text Generation | ✅ | ✅ | All providers support |
+| Image Generation | ✅ | ❌ | OpenAI only |
+| Audio TTS | ✅ | ❌ | OpenAI only |
+| Audio Transcription | ✅ | ❌ | OpenAI only |
+| File Operations | ✅ | ✅ | All providers support |
+
+## 📖 Need More Help?
+
+- Check individual example files for detailed comments
+- Look at `examples/_common.py` for shared utilities
+- Review the main project README for full documentation
+- Check the project documentation site for comprehensive guides

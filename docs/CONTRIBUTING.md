@@ -120,12 +120,15 @@ pytest
 pytest tests/test_client.py
 
 # With coverage
-pytest --cov=ai_utilities --cov-report=html
+tox -e coverage
 
 # Specific test categories
 pytest -m "unit"          # Unit tests only
 pytest -m "integration"   # Integration tests
 pytest -m "not slow"      # Skip slow tests
+
+# Coverage for specific tests
+tox -e coverage -- tests/test_specific_file.py
 ```
 
 ### Test Structure
@@ -134,6 +137,21 @@ pytest -m "not slow"      # Skip slow tests
 - **Integration tests:** Component interactions
 - **End-to-end tests:** Complete workflows
 - **Provider tests:** Real API calls (requires keys)
+
+### Live Integration Testing
+
+For comprehensive testing with real API calls:
+
+```bash
+export RUN_LIVE_AI_TESTS=1 && python -m pytest -m integration --run-integration -v --timeout=120
+```
+
+**Requirements:**
+- `RUN_LIVE_AI_TESTS=1` environment variable must be set
+- Provider API keys configured in environment or `.env` file
+- Local provider servers running (if testing local providers)
+
+**Note:** Provider-specific tests may skip if their respective API keys or servers are not configured.
 
 ### Writing Tests
 
