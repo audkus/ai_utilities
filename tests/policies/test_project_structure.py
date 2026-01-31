@@ -148,7 +148,7 @@ class TestProjectStructure:
         essential_files = {
             "README.md", "LICENSE", "pyproject.toml", "pytest.ini", 
             "Makefile", "tox.ini", "MANIFEST.in", ".gitignore", 
-            ".pre-commit-config.yaml", "run_all_tests.py"
+            ".pre-commit-config.yaml"
         }
         
         # Essential directories that should be in root
