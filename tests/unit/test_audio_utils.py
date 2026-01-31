@@ -10,13 +10,14 @@ import mimetypes
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+from ai_utilities.exceptions import AudioProcessingError
 from ai_utilities.audio.audio_utils import (
     validate_audio_file,
     get_audio_format,
     load_audio_file,
     get_audio_info,
     save_audio_file,
-    AudioProcessingError,
+    convert_audio_format,
 )
 from ai_utilities.audio.audio_models import AudioFile, AudioFormat
 
@@ -213,16 +214,28 @@ class TestAudioFileOperations:
 class TestAudioConversion:
     """Test audio format conversion."""
     
-    @patch('ai_utilities.audio.audio_utils.PYDUB_AVAILABLE', False)
     def test_convert_audio_format_no_pydub(self, tmp_path):
         """Test conversion fails without pydub."""
-        input_file = tmp_path / "input.wav"
-        input_file.write_bytes(b"fake audio data")
-        output_file = tmp_path / "output.mp3"
+        # Import the function directly to avoid patching issues
+        from ai_utilities.audio.audio_utils import convert_audio_format, PYDUB_AVAILABLE
         
-        with pytest.raises(AudioProcessingError, match="requires pydub"):
-            from ai_utilities.audio.audio_utils import convert_audio_format
-            convert_audio_format(input_file, output_file, AudioFormat.MP3)
+        # Temporarily set PYDUB_AVAILABLE to False
+        original_value = PYDUB_AVAILABLE
+        
+        # Use the module directly to modify the variable
+        import ai_utilities.audio.audio_utils as audio_utils_module
+        audio_utils_module.PYDUB_AVAILABLE = False
+        
+        try:
+            input_file = tmp_path / "input.wav"
+            input_file.write_bytes(b"fake audio data")
+            output_file = tmp_path / "output.mp3"
+            
+            with pytest.raises(AudioProcessingError, match="requires pydub"):
+                convert_audio_format(input_file, output_file, AudioFormat.MP3)
+        finally:
+            # Restore original value
+            audio_utils_module.PYDUB_AVAILABLE = original_value
     
     @pytest.mark.skipif(False, reason="Requires pydub package")
     def test_convert_audio_format_with_pydub(self, tmp_path):

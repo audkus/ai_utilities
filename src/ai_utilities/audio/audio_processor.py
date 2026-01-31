@@ -19,8 +19,8 @@ from .audio_models import (
 )
 from .audio_utils import (
     load_audio_file,
-    AudioProcessingError,
 )
+from ..exceptions import AudioProcessingError
 
 
 class AudioProcessor:

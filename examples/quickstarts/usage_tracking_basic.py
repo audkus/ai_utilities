@@ -1,12 +1,5 @@
 """Example demonstrating optional usage tracking in ai_utilities v1."""
 
-import sys
-from pathlib import Path
-
-# Add src and tests to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
-
 from ai_utilities import AiClient
 
 
@@ -20,15 +13,16 @@ def main():
     client = AiClient(track_usage=True)
     
     # Make some requests (using fake provider for demo)
-    # Add tests to path
-    sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
-    from fake_provider import FakeProvider
-    client.provider = FakeProvider()
-    
+    # Note: For demo purposes, we'll skip the fake provider setup
+    # In real usage, you would configure a real provider
     print("Making some test requests...")
-    response1 = client.ask("What is the capital of France?")
-    response2 = client.ask("Explain quantum computing in simple terms")
-    response3 = client.ask("List 5 benefits of Python")
+    try:
+        response1 = client.ask("What is the capital of France?")
+        response2 = client.ask("Explain quantum computing in simple terms")
+        response3 = client.ask("List 5 benefits of Python")
+    except Exception as e:
+        print(f"   Note: Demo requires real provider setup. Error: {e}")
+        print("   In real usage, configure your API key and provider.")
     
     # Show usage summary
     print("\n2. Usage Summary:")

@@ -276,42 +276,46 @@ Integration tests are automatically skipped if API keys are missing. Other skipp
 - **Audio integration tests**: Require API keys and audio files
 - **Slow tests**: Require `--run-slow` flag (performance/settings tests)
 
+### Live Integration Tests
+
+For comprehensive testing with real API calls, run live integration tests:
+
+```bash
+export RUN_LIVE_AI_TESTS=1 && python -m pytest -m integration --run-integration -v --timeout=120
+```
+
+**Requirements:**
+- `RUN_LIVE_AI_TESTS=1` environment variable must be set
+- Provider API keys configured in environment or `.env` file
+- Local provider servers running (if testing local providers)
+
+**Note:** Provider-specific tests may skip if their respective API keys or servers are not configured.
+
 ### Coverage Testing
 
-This repository uses coverage.py for accurate test coverage measurement. Use the following commands for consistent coverage results.
+This repository uses tox for consistent coverage testing and reporting.
 
 #### Coverage Commands
 
 **Run tests with coverage:**
 ```bash
-COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest -q
+tox -e coverage
 ```
 
-**Generate HTML report:**
-```bash
-coverage html -d coverage_reports/html
-```
+**Coverage Reports:**
+- Terminal report: Displayed during run
+- XML report: `coverage_reports/coverage.xml` (for CI tools)
+- HTML report: `coverage_reports/html/` (detailed browser view)
 
-**Show terminal coverage report:**
+**Run specific tests with coverage:**
 ```bash
-coverage report -m
-```
-
-**Run specific test file with coverage:**
-```bash
-COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest tests/test_specific_file.py -q
-```
-
-**Coverage for specific module:**
-```bash
-COVERAGE_FILE=coverage_reports/.coverage coverage run -m pytest tests/test_specific_file.py -q --cov=ai_utilities.module_name --cov-report=term-missing
+tox -e coverage -- tests/test_specific_file.py
 ```
 
 **Important Notes:**
-- Always use `COVERAGE_FILE=coverage_reports/.coverage` to ensure coverage data is stored in the correct location
-- The `-m` flag shows missing lines in the coverage report
-- HTML reports are generated in `coverage_reports/html/` for detailed viewing
-- Coverage data accumulates - use `coverage erase` to reset if needed
+- Coverage reports are automatically generated in `coverage_reports/`
+- XML report at `coverage_reports/coverage.xml` for CI integration
+- HTML report at `coverage_reports/html/` for detailed viewing
 
 ### Project Structure Protection
 

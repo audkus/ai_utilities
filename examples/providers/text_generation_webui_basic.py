@@ -5,11 +5,7 @@ Demonstrates how to use AI Utilities with text-generation-webui.
 """
 
 import os
-import sys
 from dotenv import load_dotenv
-
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from ai_utilities import create_client
 

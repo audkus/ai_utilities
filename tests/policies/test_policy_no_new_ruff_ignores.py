@@ -138,7 +138,6 @@ def test_ruff_per_file_ignores_baseline():
 
     # BASELINE: Per-file ignores with minimal, justified exceptions
     EXPECTED_PER_FILE_IGNORES = {
-        "dev_tools/**": {"S101"},  # Allow assert statements in dev tools  # noqa: S101 - Test validation
         "tools/diagnostics/**": {"S101"},  # Allow assert statements in diagnostic scripts  # noqa: S101 - Test validation
         "tools/benchmarks.py": {"F841", "E501", "F401", "UP006", "UP035", "RUF059"},  # Benchmark-specific patterns
         "tests/utils/**": {"UP006", "UP035", "F841", "W293"},  # Test utilities compatibility

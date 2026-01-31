@@ -6,13 +6,10 @@ This is a simple quickstart example showing how to use the audio processing
 features of AI Utilities.
 """
 
-import sys
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from ai_utilities import AiClient, AiSettings
+from _common import check_env_vars, get_outputs_dir, safe_write_audio
 
 
 def main():
@@ -20,14 +17,17 @@ def main():
     print("🎤 AI Utilities Audio Processing Quickstart")
     print("=" * 50)
     
+    # Check for required environment variables
+    missing_vars = check_env_vars(['OPENAI_API_KEY'])
+    if missing_vars:
+        print("❌ Cannot proceed without API key")
+        return
+    
     # Initialize the AI client
     print("\n🔧 Initializing AI client...")
     try:
-        # Use explicit settings to avoid interactive setup
-        settings = AiSettings(
-            api_key="your-api-key-here",  # Replace with your actual API key
-            model="test-model-1"
-        )
+        # Use environment-based settings
+        settings = AiSettings()
         client = AiClient(settings)
         print("✅ AI client initialized successfully!")
     except Exception as e:
@@ -84,13 +84,11 @@ def main():
             speed=1.0
         )
         
-        # Save the generated audio
-        output_file = "generated_speech.mp3"
-        with open(output_file, "wb") as f:
-            f.write(audio_data)
+        # Save the generated audio safely
+        outputs_dir = get_outputs_dir()
+        output_file = outputs_dir / "generated_speech.mp3"
+        safe_write_audio(output_file, audio_data)
         
-        print(f"   ✅ Audio generated successfully!")
-        print(f"   📁 Saved to: {output_file}")
         print(f"   📊 Size: {len(audio_data) / 1024:.1f} KB")
         
     except Exception as e:
@@ -112,10 +110,11 @@ def main():
     
     print("\n🎉 Audio Processing Quickstart Complete!")
     print("\n💡 Next Steps:")
-    print("   1. Replace 'your-api-key-here' with your actual API key")
+    print("   1. Set your OPENAI_API_KEY environment variable")
     print("   2. Place an audio file named 'demo_audio.wav' in this directory")
     print("   3. Run the script again to see real results")
-    print("   4. Check out the other audio examples for more advanced features")
+    print("   4. Check outputs/ directory for generated files")
+    print("   5. Check out the other audio examples for more advanced features")
 
 
 def show_api_info():

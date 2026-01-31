@@ -50,6 +50,19 @@ def test_lazy_imports_not_loaded_initially():
 @pytest.mark.skip_openai_global_patch
 def test_lazy_imports_work_on_demand():
     """Test that lazy imports work when accessed."""
+    import sys
+    
+    # Clear any potentially loaded modules first
+    modules_to_clear = [
+        'ai_utilities.audio',
+        'ai_utilities.openai_client',
+        'ai_utilities.rate_limit_fetcher',
+    ]
+    
+    for module in modules_to_clear:
+        if module in sys.modules:
+            del sys.modules[module]
+    
     import ai_utilities
     
     # Initially these modules should not be loaded (except usage_tracker which is loaded by client)

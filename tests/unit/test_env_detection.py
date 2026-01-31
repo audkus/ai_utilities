@@ -220,6 +220,14 @@ class TestSafeInput:
         with patch.object(ai_utilities.env_detection, 'is_interactive_environment', return_value=False):
             result = safe_input("Enter value: ")
             assert result == ""
+    
+    @patch.dict(os.environ, {"CI": "true"})
+    def test_safe_input_never_calls_input_in_ci(self):
+        """Test that safe_input never calls input() in CI environments."""
+        with patch('builtins.input', side_effect=AssertionError("input() must not be called in CI")):
+            # Should return default without calling input()
+            result = safe_input("Enter value: ", "default_value")
+            assert result == "default_value"
 
 
 class TestShouldPromptForReconfigure:

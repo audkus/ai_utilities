@@ -31,9 +31,13 @@ class TestInitModule:
     @patch('ai_utilities.ssl_check.require_ssl_backend')
     def test_ssl_check_called_on_import(self, mock_require_ssl: MagicMock) -> None:
         """Test that SSL check is called during import."""
+        # Get the module from sys.modules to ensure we have the right reference
+        import sys
+        ai_utilities_module = sys.modules['ai_utilities']
+        
         # Re-import to trigger the SSL check
         import importlib
-        importlib.reload(ai_utilities)
+        importlib.reload(ai_utilities_module)
         mock_require_ssl.assert_called_once()
 
     def test_lazy_audio_imports(self) -> None:

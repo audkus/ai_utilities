@@ -153,17 +153,16 @@ class TestProjectStructure:
         
         # Essential directories that should be in root
         essential_dirs = {
-            "src", "tests", "docs", "dev_tools", "examples", "scripts", 
+            "src", "tests", "docs", "examples", "scripts", 
             "tools", ".git", ".github", ".venv", ".pytest_cache", 
             ".coverage", ".ruff_cache", ".mypy_cache", ".windsurf", 
             ".ai_utilities", "coverage_reports"
         }
         
-        # Files/dirs that should NOT be in root (should be in dev_tools or docs)
+        # Files/dirs that should NOT be in root (should be in appropriate locations)
         forbidden_in_root = {
-            # Development utilities that should be in dev_tools/
-            "check_textgen_api.py", "create_test_audio.py", "find_textgen_model.py",
-            "setup_fastchat.sh", "ci_provider_check.sh", "run_all_tests_complete.py",
+            # Development utilities that should be in scripts/ or tools/
+            "run_all_tests_complete.py",
             
             # Documentation that should be in docs/
             "CHANGELOG.md", "CONTRIBUTING.md", "LOCAL_AI_SETUP.md", "MIGRATION.md",
@@ -192,12 +191,10 @@ class TestProjectStructure:
         
         assert len(forbidden_found) == 0, f"Found items that should not be in root: {forbidden_found}"
         
-        # Verify that dev_tools and docs directories exist and contain the moved files
-        dev_tools_dir = project_root / "dev_tools"
+        # Verify that docs and coverage_reports directories exist and contain the right files
         docs_dir = project_root / "docs"
         coverage_reports_dir = project_root / "coverage_reports"
         
-        assert dev_tools_dir.exists(), "dev_tools directory should exist"
         assert docs_dir.exists(), "docs directory should exist"
         assert coverage_reports_dir.exists(), "coverage_reports directory should exist"
         
@@ -209,21 +206,13 @@ class TestProjectStructure:
         assert coverage_xml_dir.exists(), "coverage_reports/xml directory should exist"
         
         # Check that key files are in the right places
-        expected_dev_tools = {
-            "run_all_tests_complete.py", "check_textgen_api.py", "create_test_audio.py",
-            "find_textgen_model.py", "setup_fastchat.sh", "ci_provider_check.sh"
-        }
-        
         expected_docs = {
             "CHANGELOG.md", "CONTRIBUTING.md", "LOCAL_AI_SETUP.md", "MIGRATION.md",
             "SUPPORT.md", "RELEASE.md", "RELEASE_CHECKLIST.md"
         }
         
-        dev_tools_files = {f.name for f in dev_tools_dir.iterdir() if f.is_file()}
         docs_files = {f.name for f in docs_dir.iterdir() if f.is_file()}
         
-        missing_dev_tools = expected_dev_tools - dev_tools_files
         missing_docs = expected_docs - docs_files
         
-        assert len(missing_dev_tools) == 0, f"Missing files in dev_tools/: {missing_dev_tools}"
         assert len(missing_docs) == 0, f"Missing files in docs/: {missing_docs}"
