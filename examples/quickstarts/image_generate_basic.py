@@ -10,8 +10,25 @@ import requests
 from ai_utilities import AiClient
 
 
-def generate_and_download_image():
-    """Generate an image and download it."""
+def check_env_vars(vars):
+    missing_vars = []
+    for var in vars:
+        if var not in os.environ:
+            missing_vars.append(var)
+    return missing_vars
+
+
+def main() -> int:
+    """Basic image generation example."""
+    print("🎨 AI Utilities Image Generation Quickstart")
+    print("=" * 50)
+    
+    # Check for required environment variables
+    missing_vars = check_env_vars(['OPENAI_API_KEY'])
+    if missing_vars:
+        print("❌ Cannot proceed without API key")
+        print("💡 Set OPENAI_API_KEY environment variable")
+        return 2
 
     # 1. Initialize AI client
     client = AiClient()
@@ -35,7 +52,9 @@ def generate_and_download_image():
         print(f"✅ Image saved as {output_path}")
     else:
         print("❌ No images generated")
+    
+    return 0
 
 
 if __name__ == "__main__":
-    generate_and_download_image()
+    raise SystemExit(main())

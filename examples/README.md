@@ -1,5 +1,7 @@
 # 📚 AI Utilities Examples
 
+> **Note**: Examples are tutorial scripts; lint rules may be relaxed for this folder to improve readability and educational value.
+
 ## 🚀 Prerequisites
 
 ### Installation
@@ -197,3 +199,32 @@ export OLLAMA_BASE_URL="http://localhost:11434"
 - Look at `examples/_common.py` for shared utilities
 - Review the main project README for full documentation
 - Check the project documentation site for comprehensive guides
+
+## 🧪 Testing Examples
+
+### Syntax Validation
+```bash
+# Compile all examples to check for syntax errors
+python -m compileall examples
+
+# Or run the dedicated test suite
+pytest -q tests/examples/test_examples_compile.py
+```
+
+### Smoke Tests
+```bash
+# Run smoke tests to ensure examples fail gracefully without API keys
+pytest -q tests/examples/test_examples_smoke.py
+```
+
+### All Example Tests
+```bash
+# Run all example-related tests
+pytest -q tests/examples/
+```
+
+The tests ensure:
+- All examples compile without syntax errors
+- Examples fail gracefully when environment variables are missing
+- No files are modified outside `examples/outputs/` during execution
+- Examples follow the expected exit code conventions (0 for success, 2 for missing config)
