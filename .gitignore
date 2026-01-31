@@ -181,3 +181,4 @@ artifacts/
 .tmp/
 temp/
 test_artifacts/
+test_audio/
