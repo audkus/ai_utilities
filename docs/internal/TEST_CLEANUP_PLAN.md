@@ -46,8 +46,8 @@ Out of **153 total test files**, **36 are script-like files** that don't belong 
 
 ### **Category 4: Development/Debug Tools** (6 files)
 **Location:** `tests/` → `dev_tools/`
-- `test_knowledge_sources_fixed.py` → `dev_tools/debug_knowledge_sources.py`
-- `test_knowledge_sources_working.py` → `dev_tools/test_knowledge_sources.py`
+- `test_knowledge_sources_fixed.py` → `dev_tools/test_knowledge_sources_dev.py`
+- `test_knowledge_sources_working.py` → `dev_tools/test_knowledge_sources_dev.py`
 - `test_model_resolution.py` → `dev_tools/debug_model_resolution.py`
 - `test_non_blocking_fix.py` → `dev_tools/test_non_blocking.py`
 - `test_provider_specific_base_urls.py` → `dev_tools/test_provider_urls.py`

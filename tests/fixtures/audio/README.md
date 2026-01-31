@@ -11,17 +11,17 @@ This directory contains committed binary audio fixtures for integration tests.
 
 ## File descriptions
 
-- `test_short.wav` - 1 second sine wave at 440Hz (16KB)
-- `test_long.wav` - 3 seconds sine wave at 880Hz (48KB)
-- `test_short.mp3` - 1 second sine wave, low bitrate MP3 (2KB)
-- `test_speech.mp3` - 2 seconds speech-like tone, low bitrate MP3 (3KB)
+- `test_short.wav` - 1 second sine wave at 440Hz (~32KB)
+- `test_long.wav` - 3 seconds sine wave at 880Hz (~96KB)
+- `test_short.mp3` - 1 second sine wave, low bitrate MP3 (~2KB)
+- `test_speech.mp3` - 2 seconds speech-like tone, low bitrate MP3 (~3KB)
 
 ## Size expectations
 
 All fixtures are intentionally small:
 - WAV files: uncompressed but short duration
 - MP3 files: mono, low bitrate (32kbps), short duration
-- Total repository impact: <100KB
+- Total repository impact: ~150KB
 
 ## How to replace/regenerate
 

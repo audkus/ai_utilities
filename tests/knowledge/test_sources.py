@@ -29,8 +29,19 @@ class TestFileSourceLoader:
         for ext in supported_extensions:
             assert loader.is_supported_file(Path(f"test{ext}"))
         
-        assert not loader.is_supported_file(Path("test.pdf"))
-        assert not loader.is_supported_file(Path("test.doc"))
+        # Test unsupported extensions
+        unsupported_files = [
+            Path('test.pdf'), Path('test.doc'), Path('test.exe'),
+            Path('test.zip'), Path('test.jpg'), Path('test.mp3')
+        ]
+        
+        for file_path in unsupported_files:
+            assert not loader.is_supported_file(file_path), f"Should not support {file_path.suffix}"
+        
+        # Test case insensitivity
+        assert loader.is_supported_file(Path('test.MD'))
+        assert loader.is_supported_file(Path('test.TXT'))
+        assert loader.is_supported_file(Path('test.PY'))
     
     def test_load_source_valid_file(self, tmp_path) -> None:
         """Test loading a valid source file."""
@@ -52,9 +63,10 @@ class TestFileSourceLoader:
     def test_load_source_nonexistent_file(self) -> None:
         """Test loading a non-existent file raises error."""
         loader = FileSourceLoader()
+        non_existent_file = Path("/non/existent/file.txt")
         
         with pytest.raises(FileNotFoundError):
-            loader.load_source(Path("/nonexistent/file.txt"))
+            loader.load_source(non_existent_file)
     
     def test_load_source_directory(self, tmp_path) -> None:
         """Test loading a directory raises error."""
@@ -70,18 +82,99 @@ class TestFileSourceLoader:
         test_file = tmp_path / "test.pdf"
         test_file.write_bytes(b"fake pdf content")
         
-        with pytest.raises(KnowledgeValidationError):
+        with pytest.raises(KnowledgeValidationError, match="Unsupported file type"):
             loader.load_source(test_file)
     
-    def test_load_source_too_large(self, tmp_path) -> None:
-        """Test loading a file that's too large raises error."""
-        loader = FileSourceLoader(max_file_size=100)
+    def test_load_source_file_too_large(self, tmp_path) -> None:
+        """Test loading a file that exceeds size limit."""
+        small_loader = FileSourceLoader(max_file_size=100)  # Very small limit
         
         test_file = tmp_path / "test.txt"
-        test_file.write_text("x" * 200)  # Larger than max_file_size
+        content = "This content is definitely larger than 100 bytes. " * 10
+        test_file.write_text(content)
         
-        with pytest.raises(KnowledgeValidationError):
-            loader.load_source(test_file)
+        with pytest.raises(KnowledgeValidationError, match="File too large"):
+            small_loader.load_source(test_file)
+    
+    def test_load_source_empty_file(self, tmp_path) -> None:
+        """Test loading an empty file."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "empty.txt"
+        test_file.write_text("")
+        
+        source = loader.load_source(test_file)
+        
+        assert isinstance(source, type(source))  # Source object created
+        assert source.source_id is not None
+        assert source.path == test_file
+        assert source.file_size == 0
+        assert source.sha256_hash is not None  # Empty file should still have hash
+        assert source.file_extension == "txt"
+    
+    def test_sha256_hash_stability(self, tmp_path) -> None:
+        """Test that SHA256 hash is stable and consistent."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.txt"
+        content = "Test content for hash stability"
+        test_file.write_text(content)
+        
+        # Load the same file twice
+        source1 = loader.load_source(test_file)
+        source2 = loader.load_source(test_file)
+        
+        # Hash should be the same for same content
+        assert source1.sha256_hash == source2.sha256_hash
+        assert source1.sha256_hash is not None
+        assert len(source1.sha256_hash) == 64  # SHA256 hex length
+        
+        # Change content and verify hash changes
+        test_file.write_text(content + " modified")
+        source3 = loader.load_source(test_file)
+        assert source3.sha256_hash != source1.sha256_hash
+    
+    def test_source_key_fields_populated(self, tmp_path) -> None:
+        """Test that Source model key fields are properly populated."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.py"
+        content = "def test(): pass"
+        test_file.write_text(content)
+        
+        source = loader.load_source(test_file)
+        
+        # Test key fields are populated
+        assert source.source_id is not None
+        assert source.path == test_file
+        assert source.file_size == len(content.encode('utf-8'))
+        assert source.mime_type == "text/x-python"
+        assert source.sha256_hash is not None
+        assert source.file_extension == "py"
+        assert source.is_text_file is True
+        assert source.indexed_at is not None  # Should be set to current time
+    
+    def test_mime_type_detection(self, tmp_path) -> None:
+        """Test mime type detection for different file types."""
+        loader = FileSourceLoader()
+        
+        test_cases = [
+            ("test.md", "text/markdown"),
+            ("test.txt", "text/plain"),
+            ("test.py", "text/x-python"),
+            ("test.log", "text/plain"),
+            ("test.rst", "text/x-rst"),
+            ("test.yaml", "text/x-yaml"),
+            ("test.yml", "text/x-yaml"),
+            ("test.json", "application/json"),
+        ]
+        
+        for filename, expected_mime in test_cases:
+            test_file = tmp_path / filename
+            test_file.write_text("Test content")
+            
+            source = loader.load_source(test_file)
+            assert source.mime_type == expected_mime, f"Mime type mismatch for {filename}"
     
     def test_extract_text_plain(self, tmp_path) -> None:
         """Test extracting text from plain text files."""
