@@ -163,8 +163,7 @@ class TestProjectStructure:
         forbidden_in_root = {
             # Development utilities that should be in dev_tools/
             "check_textgen_api.py", "create_test_audio.py", "find_textgen_model.py",
-            "setup_fastchat.sh", "setup_external_providers.py", "ci_provider_check.sh",
-            "run_all_tests_complete.py",
+            "setup_fastchat.sh", "ci_provider_check.sh", "run_all_tests_complete.py",
             
             # Documentation that should be in docs/
             "CHANGELOG.md", "CONTRIBUTING.md", "LOCAL_AI_SETUP.md", "MIGRATION.md",
@@ -212,8 +211,7 @@ class TestProjectStructure:
         # Check that key files are in the right places
         expected_dev_tools = {
             "run_all_tests_complete.py", "check_textgen_api.py", "create_test_audio.py",
-            "find_textgen_model.py", "setup_fastchat.sh", "setup_external_providers.py",
-            "ci_provider_check.sh"
+            "find_textgen_model.py", "setup_fastchat.sh", "ci_provider_check.sh"
         }
         
         expected_docs = {

@@ -365,3 +365,98 @@ features:
         text = loader.extract_text(source)
         
         assert text == ""
+    
+    def test_source_from_path_unknown_extension(self, tmp_path) -> None:
+        """Test Source.from_path with unknown extension gets fallback mime type."""
+        from ai_utilities.knowledge.models import Source
+        
+        test_file = tmp_path / "test.unknown"
+        test_file.write_text("Some content")
+        
+        source = Source.from_path(test_file)
+        
+        # Should get default mime type for unknown extensions
+        assert source.mime_type == "application/octet-stream"
+        assert source.file_extension == "unknown"
+        assert source.is_text_file is False
+    
+    def test_file_size_calculation(self, tmp_path) -> None:
+        """Test that file size is calculated correctly."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "size_test.txt"
+        content = "Test content for size calculation"
+        test_file.write_text(content)
+        
+        source = loader.load_source(test_file)
+        
+        # File size should match actual bytes
+        expected_size = len(content.encode('utf-8'))
+        assert source.file_size == expected_size
+    
+    def test_git_commit_detection_non_failing(self, tmp_path) -> None:
+        """Test git commit detection doesn't fail outside git repos."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("Test content")
+        
+        source = loader.load_source(test_file)
+        
+        # Git commit should be None if not in git repo (or could be set if in git)
+        # The important thing is that it doesn't fail
+        assert source.git_commit is None or isinstance(source.git_commit, str)
+    
+    @pytest.mark.parametrize("content,expected_substrings", [
+        ("Héllo wörld! ñoño", ["Héllo", "wörld", "ñoño"]),
+        ("🚀 Rocket launch! 🌟", ["🚀", "Rocket", "🌟"]),
+        ("Café naïve résumé", ["Café", "naïve", "résumé"]),
+    ])
+    def test_unicode_content_handling(self, tmp_path, content, expected_substrings) -> None:
+        """Test loading files with unicode content."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "unicode.txt"
+        test_file.write_text(content)
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        # Check that unicode characters are preserved
+        for substring in expected_substrings:
+            assert substring in text
+    
+    @pytest.mark.parametrize("content", [
+        "Special chars: !@#$%^&*()",
+        "Quotes: 'single' and \"double\"",
+        "Math: 2 + 2 = 4, π ≈ 3.14159",
+        "Tabs\tand\nnewlines",
+    ])
+    def test_special_characters_content(self, tmp_path, content) -> None:
+        """Test loading files with special characters."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "special.txt"
+        test_file.write_text(content)
+        
+        source = loader.load_source(test_file)
+        text = loader.extract_text(source)
+        
+        # For tabs/newlines, check that the content is preserved (may be normalized)
+        if "\t" in content or "\n" in content:
+            # Check that tabs and newlines are present in some form
+            assert "Tabs" in text and "and" in text and "newlines" in text
+        else:
+            assert content in text
+    
+    def test_file_path_with_spaces(self, tmp_path) -> None:
+        """Test loading files with spaces in path."""
+        loader = FileSourceLoader()
+        
+        test_file = tmp_path / "test file with spaces.txt"
+        content = "Content in file with spaces in path"
+        test_file.write_text(content)
+        
+        source = loader.load_source(test_file)
+        assert source.path == test_file
+        assert content in loader.extract_text(source)
