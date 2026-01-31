@@ -84,7 +84,8 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
         if hasattr(settings, "model_copy"):
             provider_settings = settings.model_copy(update=update_data)
         else:
-            provider_settings = settings.copy(update=update_data)
+            provider_settings = settings.copy()
+            provider_settings.update(update_data)
 
         # Create provider based on resolved provider
         if config.provider == "openai":
@@ -99,21 +100,23 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
 
         elif config.provider in ["groq", "together", "openrouter"]:
             # These are all OpenAI-compatible with different base URLs
+            extra_headers = getattr(settings, 'extra_headers', None) if hasattr(settings, 'extra_headers') else None
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
                 timeout=_coerce_timeout_seconds(getattr(config, "timeout", None), 30),
-                extra_headers=settings.extra_headers,
+                extra_headers=extra_headers,
                 model=getattr(config, 'model', None),
             )
 
         elif config.provider in ["ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]:
             # Local providers
+            extra_headers = getattr(settings, 'extra_headers', None) if hasattr(settings, 'extra_headers') else None
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
                 timeout=_coerce_timeout_seconds(getattr(config, "timeout", None), 30),
-                extra_headers=settings.extra_headers,
+                extra_headers=extra_headers,
                 model=getattr(config, 'model', None),
             )
 

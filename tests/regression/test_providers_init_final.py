@@ -157,7 +157,7 @@ def test_openai_compatible_provider_structure():
     assert issubclass(OpenAICompatibleProvider, BaseProvider)
 
 
-def test_create_provider_error_handling():
+def test_create_provider_error_handling(isolated_env):
     """Test create_provider error handling."""
     # Test with invalid provider type - this should raise ProviderConfigurationError
     from ai_utilities.providers import create_provider, ProviderConfigurationError

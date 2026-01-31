@@ -328,7 +328,14 @@ def isolated_env(monkeypatch):
         monkeypatch.delenv(var, raising=False)
 
     # Also clear common provider-specific vars that might interfere
-    provider_vars = ["OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL"]
+    provider_vars = [
+        "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
+        "TEXT_GENERATION_WEBUI_BASE_URL", "TEXT_GENERATION_WEBUI_MODEL",
+        "FASTCHAT_BASE_URL", "FASTCHAT_MODEL",
+        "OLLAMA_BASE_URL", "OLLAMA_MODEL",
+        "LMSTUDIO_BASE_URL", "LMSTUDIO_MODEL",
+        "VLLM_BASE_URL", "OOBABOOGA_BASE_URL"
+    ]
     for var in provider_vars:
         monkeypatch.delenv(var, raising=False)
 

@@ -37,7 +37,7 @@ class TestProviderSpecificBaseUrls:
     @patch.dict(os.environ, {
         "FASTCHAT_BASE_URL": "http://localhost:8000/v1"
     })
-    def test_infers_provider_from_fastchat_base_url(self):
+    def test_infers_provider_from_fastchat_base_url(self, isolated_env):
         """Test that provider is inferred from FASTCHAT_BASE_URL."""
         provider = resolve_provider()
         assert provider == "fastchat"
@@ -45,7 +45,7 @@ class TestProviderSpecificBaseUrls:
     @patch.dict(os.environ, {
         "LMSTUDIO_BASE_URL": "http://localhost:1234/v1"
     })
-    def test_infers_provider_from_lmstudio_base_url(self):
+    def test_infers_provider_from_lmstudio_base_url(self, isolated_env):
         """Test that provider is inferred from LMSTUDIO_BASE_URL."""
         provider = resolve_provider()
         assert provider == "lmstudio"

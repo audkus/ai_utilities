@@ -211,7 +211,7 @@ class TestOpenAIConfig:
 class TestAiSettings:
     """Test AiSettings comprehensively."""
 
-    def test_minimal_creation(self) -> None:
+    def test_minimal_creation(self, isolated_env) -> None:
         """Test creating AiSettings with minimal required fields."""
         settings = AiSettings(api_key="test-key")
         

@@ -37,12 +37,12 @@ class TestSyncProvider:
         assert 'text' in str(return_format_param.annotation)
         assert 'json' in str(return_format_param.annotation)
 
-    def test_sync_provider_runtime_checkable(self) -> None:
+    def test_sync_provider_runtime_checkable(self, isolated_env) -> None:
         """Test that SyncProvider is runtime_checkable."""
         from typing import runtime_checkable
         
         # Should be able to use isinstance with runtime_checkable
-        class ConcreteSyncProvider:
+        class ConcreteSyncProvider(SyncProvider):
             def ask(self, prompt: str, *, return_format: str = "text", **kwargs) -> Union[str, Dict[str, Any]]:
                 return f"Response to: {prompt}"
         
@@ -121,9 +121,11 @@ class TestAsyncProvider:
         assert 'text' in str(return_format_param.annotation)
         assert 'json' in str(return_format_param.annotation)
 
-    def test_async_provider_runtime_checkable(self) -> None:
+    def test_async_provider_runtime_checkable(self, isolated_env) -> None:
         """Test that AsyncProvider is runtime_checkable."""
-        class ConcreteAsyncProvider:
+        from typing import runtime_checkable
+        
+        class ConcreteAsyncProvider(AsyncProvider):
             async def ask(self, prompt: str, *, return_format: str = "text", **kwargs) -> Union[str, Dict[str, Any]]:
                 return f"Async response to: {prompt}"
         

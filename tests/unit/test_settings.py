@@ -10,13 +10,8 @@ from ai_utilities import AiClient, AiSettings
 from tests.fake_provider import FakeProvider
 
 
-def test_ai_settings_defaults(monkeypatch):
+def test_ai_settings_defaults(isolated_env):
     """Test that AiSettings loads correct defaults when no .env file."""
-    # Clear all AI_ environment variables to test true defaults
-    env_vars_to_clear = [k for k in os.environ.keys() if k.startswith('AI_')]
-    for var in env_vars_to_clear:
-        monkeypatch.delenv(var, raising=False)
-    
     # Test true defaults by explicitly disabling .env loading
     settings = AiSettings(_env_file=None)
     

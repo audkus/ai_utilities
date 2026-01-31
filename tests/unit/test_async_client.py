@@ -31,7 +31,7 @@ class TestAsyncOpenAIProvider:
     @pytest.fixture
     def async_provider(self, mock_settings):
         """Create AsyncOpenAIProvider instance."""
-        with patch('ai_utilities.providers.openai_provider.OpenAIProvider') as mock_sync_provider:
+        with patch('ai_utilities.providers.OpenAIProvider') as mock_sync_provider:
             mock_sync_instance = MagicMock()
             mock_sync_provider.return_value = mock_sync_instance
 
