@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Script to create test audio files for audio integration tests.
-Creates simple WAV files with test audio content using only standard library.
+Script to create local test audio files for development.
+Creates simple WAV files using only standard library.
+
+Note: For tests, use committed fixtures in tests/fixtures/audio/
+This script is for local development only.
 """
 
 import os
@@ -10,11 +13,11 @@ import math
 from pathlib import Path
 
 def create_test_audio_files():
-    """Create test audio files for integration testing."""
+    """Create local test audio files for development."""
     
-    # Create test_audio directory
-    audio_dir = Path("test_audio")
-    audio_dir.mkdir(exist_ok=True)
+    # Create gitignored directory for generated files
+    audio_dir = Path("tests/.generated/audio")
+    audio_dir.mkdir(parents=True, exist_ok=True)
     
     # Create a simple sine wave audio file
     def create_sine_wave(filename, duration=1.0, frequency=440.0, sample_rate=16000):
@@ -55,33 +58,15 @@ def create_test_audio_files():
     create_sine_wave(speech_file, duration=2.0, frequency=200.0)  # Lower frequency
     files_created.append(speech_file)
     
-    print(f"✅ Created {len(files_created)} test audio files:")
+    print(f"✅ Created {len(files_created)} local test audio files:")
     for file in files_created:
         size = file.stat().st_size
         print(f"   - {file.name} ({size} bytes)")
     
     return files_created
 
-def create_mp3_placeholder():
-    """Create placeholder MP3 files (since creating real MP3s requires additional libraries)."""
-    audio_dir = Path("test_audio")
-    
-    # Create simple text files with .mp3 extension as placeholders
-    # The audio tests will check for file existence but may not actually process the content
-    mp3_files = [
-        audio_dir / "test.mp3",
-        audio_dir / "speech.mp3"
-    ]
-    
-    for mp3_file in mp3_files:
-        if not mp3_file.exists():
-            mp3_file.write_text(f"Placeholder MP3 file: {mp3_file.name}")
-    
-    print(f"✅ Created {len(mp3_files)} placeholder MP3 files")
-    return mp3_files
-
 if __name__ == "__main__":
-    print("🎵 Creating test audio files for integration tests...")
+    print("🎵 Creating local test audio files for development...")
+    print("Note: For tests, committed fixtures are in tests/fixtures/audio/")
     create_test_audio_files()
-    create_mp3_placeholder()
-    print("✅ Audio file creation complete!")
+    print("✅ Local audio file creation complete!")

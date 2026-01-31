@@ -12,6 +12,11 @@ from ai_utilities.audio.audio_models import AudioFormat, TranscriptionResult, Au
 from ai_utilities.audio.audio_utils import AudioProcessingError
 
 
+def get_fixture_path(filename: str) -> Path:
+    """Get path to audio fixture file."""
+    return Path(__file__).resolve().parent.parent / "fixtures" / "audio" / filename
+
+
 class TestAudioClientIntegration:
     """Test audio processing integration with AiClient."""
     
@@ -295,11 +300,12 @@ class TestAudioProcessingRealAPI:
         
         client = AiClient()
         
-        # Use the existing demo audio file for integration testing
-        # Note: demo_audio.wav contains a sine wave, so transcription may be empty
+        # Use fixture audio file for integration testing
+        fixture_path = get_fixture_path("test_short.wav")
+        # Note: test_short.wav contains a sine wave, so transcription may be empty
         # but this tests the API connectivity and response structure
         try:
-            result = client.transcribe_audio("examples/demo_audio.wav")
+            result = client.transcribe_audio(str(fixture_path))
             print(f"\\n🎤 Transcription Result: {result}")
             
             # Verify the response structure
@@ -385,13 +391,14 @@ class TestAudioProcessingRealAPI:
         # Create audio processor with client
         processor = AudioProcessor(client=AiClient())
         
-        # Use the existing demo audio file for integration testing
+        # Use fixture audio file for integration testing
         # This tests the complex workflow: transcribe -> modify -> generate
         print(f"\\n🔄 Testing transcribe and generate workflow...")
         
         try:
+            fixture_path = get_fixture_path("test_short.wav")
             transcription, audio_result = processor.transcribe_and_generate(
-                "examples/demo_audio.wav", 
+                str(fixture_path), 
                 target_voice="nova"
             )
             
@@ -414,3 +421,51 @@ class TestAudioProcessingRealAPI:
             print("✅ Multi-API workflow connectivity tested successfully")
             # Don't fail the test - this validates the API works
             return {"error": str(e)}
+
+
+class TestAudioFixtures:
+    """Test that audio fixtures are valid and accessible."""
+    
+    def test_fixture_files_exist(self):
+        """Test that all fixture files exist and are valid."""
+        fixture_files = [
+            "test_short.wav",
+            "test_long.wav", 
+            "test_short.mp3",
+            "test_speech.mp3"
+        ]
+        
+        for filename in fixture_files:
+            fixture_path = get_fixture_path(filename)
+            assert fixture_path.exists(), f"Fixture file {filename} does not exist"
+            assert fixture_path.stat().st_size > 0, f"Fixture file {filename} is empty"
+    
+    def test_fixture_files_are_valid_audio(self):
+        """Test that fixture files have valid audio headers."""
+        import wave
+        
+        # Test WAV files
+        wav_files = ["test_short.wav", "test_long.wav"]
+        for filename in wav_files:
+            fixture_path = get_fixture_path(filename)
+            try:
+                with wave.open(str(fixture_path), 'rb') as wav_file:
+                    assert wav_file.getnchannels() > 0, f"WAV file {filename} has no channels"
+                    assert wav_file.getsampwidth() > 0, f"WAV file {filename} has no sample width"
+                    assert wav_file.getframerate() > 0, f"WAV file {filename} has no frame rate"
+            except Exception as e:
+                pytest.fail(f"WAV file {filename} is not valid: {e}")
+    
+    def test_mp3_fixtures_have_valid_headers(self):
+        """Test that MP3 fixtures have valid MP3 headers."""
+        mp3_files = ["test_short.mp3", "test_speech.mp3"]
+        
+        for filename in mp3_files:
+            fixture_path = get_fixture_path(filename)
+            with open(fixture_path, 'rb') as f:
+                header = f.read(10)
+                # Check for MP3 ID3 tag or MPEG sync
+                assert len(header) >= 10, f"MP3 file {filename} is too small"
+                # Very basic check - should have ID3 or MPEG sync
+                is_valid = header.startswith(b'ID3') or (header[0] == 0xFF and header[1] & 0xE0 == 0xE0)
+                assert is_valid, f"MP3 file {filename} does not have valid MP3 header"
