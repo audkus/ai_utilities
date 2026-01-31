@@ -48,7 +48,7 @@
 - `test_provider_change_detector.py` → `detect_provider_changes.py`
 
 #### Development Tools → `dev_tools/` (6 files)
-- `test_knowledge_sources_fixed.py` → `debug_knowledge_sources.py`
+- `test_knowledge_sources_fixed.py` → `test_knowledge_sources_dev.py`
 - `test_knowledge_sources_working.py` → `test_knowledge_sources_dev.py`
 - `test_model_resolution.py` → `debug_model_resolution.py`
 - `test_non_blocking_fix.py` → `test_non_blocking.py`
