@@ -94,6 +94,20 @@ pre-commit install
 # hooks run automatically on commit
 ```
 
+#### Pre-commit Hooks
+
+This repository uses pre-commit hooks to maintain code quality:
+
+- **Ruff**: Automatic linting and formatting
+- **Block .env writes**: Prevents accidental mutation of .env files
+
+The .env write protection hook blocks commits that contain patterns like:
+- `open(".env", "w")` or `open(".env", "a")`
+- `fs.writeFileSync(".env", ...)` (Node.js)
+- `echo "KEY=VALUE" > .env` (shell)
+
+This prevents scripts from accidentally overwriting secrets or configuration files. If you need to modify .env files, do so manually or use `.env.local` for user-specific changes.
+
 ## Testing
 
 ### Running Tests
