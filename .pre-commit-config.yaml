@@ -7,3 +7,12 @@ repos:
       # Run the linter
       - id: ruff
         args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: block-dotenv-writes
+        name: Block .env file writes
+        language: python
+        entry: python3 tools/precommit/block_dotenv_writes.py
+        stages: [pre-commit]
+        pass_filenames: false
