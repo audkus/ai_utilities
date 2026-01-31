@@ -151,7 +151,7 @@ class TestConfigModelsValidation:
         assert "timeout" in error_msg
         assert "Input should be greater than or equal to 1" in error_msg
 
-    def test_ai_settings_url_validation(self) -> None:
+    def test_ai_settings_url_validation(self, isolated_env) -> None:
         """Test AiSettings base URL validation."""
         # Test various URL formats
         urls = [
