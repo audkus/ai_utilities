@@ -83,7 +83,14 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
-coverage_reports/
+
+# Coverage report contents (but keep the directory structure)
+coverage_reports/*.xml
+coverage_reports/*.html
+coverage_reports/html/*.html
+coverage_reports/html/*.js
+coverage_reports/html/*.css
+coverage_reports/html/*.json
 
 # Translations
 *.mo

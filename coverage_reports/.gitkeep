@@ -1,0 +1,2 @@
+# This file ensures the coverage_reports directory is tracked by git
+# The directory is used by tox coverage environment to store coverage reports

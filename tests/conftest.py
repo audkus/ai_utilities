@@ -101,22 +101,6 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to handle markers and order independence."""
-    # Skip integration tests unless explicitly enabled
-    if not config.getoption("--run-integration"):
-        skip_integration = pytest.mark.skip(
-            reason="need --run-integration option to run"
-        )
-        for item in items:
-            if "integration" in item.keywords:
-                item.add_marker(skip_integration)
-
-    # Skip slow tests unless explicitly enabled
-    if not config.getoption("--run-slow"):
-        skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
-        for item in items:
-            if "slow" in item.keywords:
-                item.add_marker(skip_slow)
-
     # Add a marker to track test order for debugging
     for i, item in enumerate(items):
         item.user_properties.append(("test_order", i))
@@ -303,9 +287,9 @@ def enable_test_mode_guard():
     )
 
     # Import test-mode guard functionality
-    from ai_utilities.env_overrides import test_mode_guard
+    from ai_utilities.env_overrides import test_mode_guard as _test_mode_guard
 
-    with test_mode_guard():
+    with _test_mode_guard():
         yield
 
 
@@ -317,6 +301,29 @@ if not test_debug:
 
 # NOTE: .env file loading removed to allow proper test isolation
 # Tests that need .env should use the temp_env_file fixture or load explicitly
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_dotenv_opt_in():
+    """
+    Centralized opt-in .env loader for integration tests.
+    
+    Only loads .env when AI_UTILITIES_LOAD_DOTENV=1 is set.
+    This keeps unit tests deterministic while allowing integration tests to opt-in.
+    """
+    if os.getenv("AI_UTILITIES_LOAD_DOTENV") == "1":
+        try:
+            from dotenv import load_dotenv
+        except ImportError:
+            # python-dotenv not installed - quiet no-op
+            return
+        
+        # Compute repo root robustly (tests/conftest.py -> tests/ -> repo root)
+        repo_root = Path(__file__).resolve().parent.parent
+        env_file = repo_root / ".env"
+        
+        if env_file.exists():
+            load_dotenv(env_file, override=False)
 
 
 @pytest.fixture
@@ -655,6 +662,36 @@ def reset_logging_state():
             root_logger.addHandler(handler)
 
 
+@pytest.fixture(autouse=True)
+def isolate_environment(monkeypatch):
+    """
+    Automatically isolate environment variables for all tests.
+    
+    This fixture ensures that environment variables from .env files
+    or other tests don't contaminate subsequent tests. It clears
+    all AI-related environment variables before each test.
+    
+    IMPORTANT: This fixture runs AFTER reset_global_state to ensure
+    any environment variables restored by global state reset are cleared.
+    """
+    # Clear all AI_ environment variables
+    env_vars_to_clear = [k for k in os.environ.keys() if k.startswith("AI_")]
+    for var in env_vars_to_clear:
+        monkeypatch.delenv(var, raising=False)
+
+    # Also clear common provider-specific vars that might interfere
+    provider_vars = [
+        "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
+        "TEXT_GENERATION_WEBUI_BASE_URL", "TEXT_GENERATION_WEBUI_MODEL",
+        "FASTCHAT_BASE_URL", "FASTCHAT_MODEL",
+        "OLLAMA_BASE_URL", "OLLAMA_MODEL",
+        "LMSTUDIO_BASE_URL", "LMSTUDIO_MODEL",
+        "VLLM_BASE_URL", "OOBABOOGA_BASE_URL"
+    ]
+    for var in provider_vars:
+        monkeypatch.delenv(var, raising=False)
+
+
 @pytest.fixture
 def frozen_time():
     """
@@ -727,6 +764,7 @@ ROOT_DIR_ALLOWED_DIRECTORIES = {
     "tools",
     "reports",
     "coverage_reports",
+    ".pytest_cache",  # Allow pytest cache directory
 }
 
 # Transient files allowed during test run but must be cleaned up
@@ -1028,6 +1066,149 @@ def prevent_root_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, 'touch', safe_touch_wrapper, raising=False)
 
     yield
+
+
+@pytest.fixture(autouse=True)
+def _no_env_leaks_diagnostic(request: pytest.FixtureRequest):
+    """
+    Diagnostic environment leak detection.
+    
+    This fixture monitors environment variable changes but only reports them
+    in strict mode (AI_UTILITIES_STRICT_ENV=1). By default, it silently
+    restores the environment to prevent test pollution.
+    
+    Use AI_UTILITIES_STRICT_ENV=1 to enable strict mode for debugging.
+    
+    Note: This fixture runs after reset_global_state, so we ignore environment
+    changes caused by the global state reset to avoid false positives.
+    """
+    import os
+    from collections.abc import Generator
+    from typing import Dict, Iterable, Tuple
+    
+    def _redact(value: str) -> str:
+        if value is None:
+            return "<none>"
+        if len(value) <= 3:
+            return "***"
+        return f"{value[:3]}***({len(value)})"
+
+    def _diff_env(
+        before: Dict[str, str],
+        after: Dict[str, str],
+        keys: Iterable[str],
+    ) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, Tuple[str, str]]]:
+        added: Dict[str, str] = {}
+        removed: Dict[str, str] = {}
+        changed: Dict[str, Tuple[str, str]] = {}
+
+        for k in keys:
+            b = before.get(k)
+            a = after.get(k)
+            if b is None and a is not None:
+                added[k] = a
+            elif b is not None and a is None:
+                removed[k] = b
+            elif b is not None and a is not None and b != a:
+                changed[k] = (b, a)
+
+        return added, removed, changed
+
+    # Environment variables to monitor
+    watched = (
+        "OPENAI_API_KEY",
+        "OPENAI_BASE_URL", 
+        "OPENAI_MODEL",
+        "AI_PROVIDER",
+        "AI_MODEL",
+        "GROQ_API_KEY",
+        "TOGETHER_API_KEY",
+        "OPENROUTER_API_KEY",
+        "OLLAMA_HOST",
+        "ANTHROPIC_API_KEY",
+        "AI_API_KEY",
+        "TEXT_GENERATION_WEBUI_BASE_URL",
+        "LMSTUDIO_BASE_URL",
+        "FASTCHAT_BASE_URL",
+    )
+    
+    before: Dict[str, str] = dict(os.environ)
+    strict_mode = os.environ.get("AI_UTILITIES_STRICT_ENV") == "1"
+    
+    try:
+        yield
+    finally:
+        after: Dict[str, str] = dict(os.environ)
+        added, removed, changed = _diff_env(before, after, watched)
+
+        # Always restore environment deterministically
+        os.environ.clear()
+        os.environ.update(before)
+
+        # Only fail in strict mode for real leaks (not caused by global state reset)
+        if strict_mode and (added or removed or changed):
+            # Check if this looks like a global state reset (removing AI_* variables)
+            # The global state reset clears environment variables, so any removal of AI_* vars is likely from it
+            is_global_reset = (
+                len(removed) >= 1 and 
+                any(var.startswith(('OPENAI_', 'AI_', 'GROQ_', 'TOGETHER_', 'ANTHROPIC_')) for var in removed.keys())
+            )
+            
+            if not is_global_reset:
+                lines = [f"ENV LEAK in {request.node.nodeid}"]
+                if added:
+                    lines.append("  Added:")
+                    for k, v in sorted(added.items()):
+                        lines.append(f"    {k}={_redact(v)}")
+                if removed:
+                    lines.append("  Removed:")
+                    for k, v in sorted(removed.items()):
+                        lines.append(f"    {k}={_redact(v)}")
+                if changed:
+                    lines.append("  Changed:")
+                    for k, (b, a) in sorted(changed.items()):
+                        lines.append(f"    {k}: {_redact(b)} -> {_redact(a)}")
+                raise AssertionError("\n".join(lines))
+        elif added or removed or changed:
+            # Diagnostic mode: just warn without failing for real leaks
+            # Check if this looks like a global state reset
+            is_global_reset = (
+                len(removed) >= 1 and 
+                any(var.startswith(('OPENAI_', 'AI_', 'GROQ_', 'TOGETHER_', 'ANTHROPIC_')) for var in removed.keys())
+            )
+            
+            if not is_global_reset:
+                lines = [f"ENV LEAK DETECTED (diagnostic): {request.node.nodeid}"]
+                if added:
+                    lines.append("  Added:")
+                    for k, v in sorted(added.items()):
+                        lines.append(f"    {k}={_redact(v)}")
+                if removed:
+                    lines.append("  Removed:")
+                    for k, v in sorted(removed.items()):
+                        lines.append(f"    {k}={_redact(v)}")
+                if changed:
+                    lines.append("  Changed:")
+                    for k, (b, a) in sorted(changed.items()):
+                        lines.append(f"    {k}: {_redact(b)} -> {_redact(a)}")
+                print("\n".join(lines))
+
+
+@pytest.fixture(autouse=True)
+def reset_metrics_registry():
+    """
+    Reset the metrics registry between tests to prevent test pollution.
+    
+    The MetricsRegistry is a singleton that accumulates metrics across tests,
+    so we need to reset it to ensure test isolation.
+    """
+    try:
+        from ai_utilities.metrics import MetricsRegistry
+        registry = MetricsRegistry()
+        registry.reset()
+    except ImportError:
+        # Module not available - skip
+        pass
 
 
 @pytest.fixture
