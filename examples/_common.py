@@ -2,6 +2,7 @@
 Common utilities for examples.
 
 Provides shared functionality for all example scripts including:
+- Bootstrap system for running from any location
 - Output directory management
 - Safe file writing with error detection
 - Environment variable validation
@@ -12,23 +13,108 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import List
 
 
-def get_outputs_dir() -> Path:
-    """Get or create the outputs directory.
+# === BOOTSTRAP SYSTEM ===
+def _bootstrap_ai_utilities():
+    """Ensure ai_utilities is importable from any location."""
+    # Get the script's file path
+    script_path = Path(__file__).resolve()
     
+    # Find repo root (examples/_common.py -> examples/ -> repo root)
+    repo_root = script_path.parent.parent
+    
+    # Add src directory to sys.path if not already there
+    src_dir = repo_root / "src"
+    src_dir_str = str(src_dir)
+    if src_dir_str not in sys.path:
+        sys.path.insert(0, src_dir_str)
+    
+    # Add repo root to sys.path for examples import
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+    
+    return repo_root
+
+
+# Execute bootstrap immediately
+_repo_root = _bootstrap_ai_utilities()
+
+
+def repo_root() -> Path:
+    """Get the repository root directory."""
+    return _repo_root
+
+
+def assets_dir() -> Path:
+    """Get the examples assets directory."""
+    return repo_root() / "examples" / "assets"
+
+
+def output_dir(script_path: Path) -> Path:
+    """Get output directory for a specific script.
+    
+    Args:
+        script_path: Path to the script file
+        
     Returns:
-        Path to the examples/outputs directory
+        Path to the script's output directory
     """
-    examples_dir = Path(__file__).parent
-    outputs_dir = examples_dir / "outputs"
-    outputs_dir.mkdir(exist_ok=True)
-    return outputs_dir
+    # Allow override for tests
+    override_dir = os.getenv("AI_UTILITIES_EXAMPLES_OUTPUT_DIR")
+    if override_dir:
+        base_dir = Path(override_dir)
+    else:
+        base_dir = repo_root() / "examples" / "_output"
+    
+    # Use script name as subdirectory
+    script_name = script_path.stem
+    script_output_dir = base_dir / script_name
+    script_output_dir.mkdir(parents=True, exist_ok=True)
+    return script_output_dir
 
 
-def write_bytes(path: Path, data: bytes) -> None:
+def print_header(title: str) -> None:
+    """Print a formatted header.
+    
+    Args:
+        title: Header title
+    """
+    print("=" * 60)
+    print(f"  {title}")
+    print("=" * 60)
+
+
+def require_env(var_names: List[str]) -> bool:
+    """Check for required environment variables and print helpful message.
+    
+    Args:
+        var_names: List of required environment variable names
+        
+    Returns:
+        True if all required variables are present, False otherwise
+    """
+    missing = [var for var in var_names if not os.getenv(var)]
+    
+    if missing:
+        print("❌ CONFIGURATION REQUIRED")
+        print("Missing required environment variables:")
+        for var in missing:
+            print(f"   {var}")
+        
+        print("\n💡 To fix this:")
+        print("   export OPENAI_API_KEY='your-key-here'")
+        print("   # Or create a .env file with these variables")
+        return False
+    
+    return True
+
+
+def safe_write_bytes(path: Path, data: bytes) -> None:
     """Write bytes to file with atomic-ish behavior.
     
     Args:
@@ -48,6 +134,31 @@ def write_bytes(path: Path, data: bytes) -> None:
         if temp_path.exists():
             temp_path.unlink()
         raise
+
+
+# === LEGACY FUNCTIONS (deprecated, use new ones above) ===
+def get_outputs_dir() -> Path:
+    """Get or create the outputs directory.
+    
+    Returns:
+        Path to the examples/outputs directory
+    """
+    print("⚠️  get_outputs_dir() is deprecated, use output_dir(__file__) instead")
+    examples_dir = Path(__file__).parent
+    outputs_dir = examples_dir / "outputs"
+    outputs_dir.mkdir(exist_ok=True)
+    return outputs_dir
+
+
+def write_bytes(path: Path, data: bytes) -> None:
+    """Write bytes to file with atomic-ish behavior.
+    
+    Args:
+        path: Output file path
+        data: Bytes to write
+    """
+    print("⚠️  write_bytes() is deprecated, use safe_write_bytes() instead")
+    safe_write_bytes(path, data)
 
 
 def looks_like_json_error(data: bytes) -> bool:
@@ -141,12 +252,12 @@ def safe_write_audio(path: Path, data: bytes) -> None:
         is_audio = looks_like_wav(data)
     
     if is_audio:
-        write_bytes(path, data)
+        safe_write_bytes(path, data)
         print(f"✅ Saved audio to {path}")
     else:
         # Write as .bin file with warning
         bin_path = path.with_suffix('.bin')
-        write_bytes(bin_path, data)
+        safe_write_bytes(bin_path, data)
         print(f"⚠️  Data doesn't look like {expected_format} audio")
         print(f"   Saved raw bytes to {bin_path}")
         print(f"   Check if this is expected audio format")
@@ -180,6 +291,7 @@ def check_env_vars(required: List[str]) -> List[str]:
     Returns:
         List of missing environment variable names
     """
+    print("⚠️  check_env_vars() is deprecated, use require_env() instead")
     missing = [var for var in required if not os.getenv(var)]
     if missing:
         print_env_hint(missing)
