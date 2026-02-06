@@ -1,0 +1,744 @@
+[
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "cache_hits_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache hits"
+  },
+  {
+    "name": "memory_usage_bytes",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Memory usage in bytes"
+  },
+  {
+    "name": "memory_usage",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "component": "application"
+    },
+    "unit": "",
+    "description": "Gauge metric memory_usage"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "table": "users",
+      "query": "select"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "cache": "redis"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "cache_size",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Current cache size"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "rate_limit_hits_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total rate limit hits"
+  },
+  {
+    "name": "active_users",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "service": "web"
+    },
+    "unit": "",
+    "description": "Gauge metric active_users"
+  },
+  {
+    "name": "provider_errors_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "provider": ""
+    },
+    "unit": "",
+    "description": "Total provider errors"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "endpoint": "/login"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "provider_request_duration_seconds",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Provider request duration"
+  },
+  {
+    "name": "ai_requests_successful",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total successful AI requests"
+  },
+  {
+    "name": "cache_misses_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache misses"
+  },
+  {
+    "name": "ai_response_tokens",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "AI response token count"
+  },
+  {
+    "name": "active_clients",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Number of active clients"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "type": "image",
+      "size": "large"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "ai_response_duration_seconds",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "AI response duration in seconds"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "endpoint": "/logout"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "operations_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "ai_requests_failed",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total failed AI requests"
+  },
+  {
+    "name": "tokens_used_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": ""
+    },
+    "unit": "",
+    "description": "Total tokens used"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_requests_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total number of AI requests"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "cache_hits_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache hits"
+  },
+  {
+    "name": "ai_requests_successful",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total successful AI requests"
+  },
+  {
+    "name": "memory_usage_bytes",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Memory usage in bytes"
+  },
+  {
+    "name": "cache_misses_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache misses"
+  },
+  {
+    "name": "ai_response_tokens",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "AI response token count"
+  },
+  {
+    "name": "memory_usage",
+    "value": 512,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "component": "application"
+    },
+    "unit": "",
+    "description": "Gauge metric memory_usage"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "table": "users",
+      "query": "select"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "active_clients",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Number of active clients"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "cache": "redis"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "cache_size",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Current cache size"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "type": "image",
+      "size": "large"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "ai_response_duration_seconds",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "AI response duration in seconds"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_requests_failed",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total failed AI requests"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "endpoint": "/logout"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "rate_limit_hits_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total rate limit hits"
+  },
+  {
+    "name": "active_users",
+    "value": 127,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "service": "web"
+    },
+    "unit": "",
+    "description": "Gauge metric active_users"
+  },
+  {
+    "name": "provider_errors_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "provider": ""
+    },
+    "unit": "",
+    "description": "Total provider errors"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "endpoint": "/login"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "operations_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Counter metric operations_total"
+  },
+  {
+    "name": "tokens_used_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": ""
+    },
+    "unit": "",
+    "description": "Total tokens used"
+  },
+  {
+    "name": "ai_operations",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "provider_request_duration_seconds",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Provider request duration"
+  },
+  {
+    "name": "ai_requests_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {},
+    "unit": "",
+    "description": "Total number of AI requests"
+  },
+  {
+    "name": "ai_operations_count",
+    "value": 1,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_sum_seconds",
+    "value": 1.2,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_min_seconds",
+    "value": 1.2,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_max_seconds",
+    "value": 1.2,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_last_seconds",
+    "value": 1.2,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-4",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_count",
+    "value": 1,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_sum_seconds",
+    "value": 3.5,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_min_seconds",
+    "value": 3.5,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_max_seconds",
+    "value": 3.5,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_last_seconds",
+    "value": 3.5,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "dall-e-3",
+      "endpoint": "/generate"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_count",
+    "value": 1,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_sum_seconds",
+    "value": 0.9,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_min_seconds",
+    "value": 0.9,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_max_seconds",
+    "value": 0.9,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  },
+  {
+    "name": "ai_operations_last_seconds",
+    "value": 0.9,
+    "metric_type": "gauge",
+    "timestamp": 1770397599.070973,
+    "labels": {
+      "model": "gpt-3.5-turbo",
+      "endpoint": "/chat"
+    },
+    "unit": "",
+    "description": "Timer metric ai_operations"
+  }
+]
