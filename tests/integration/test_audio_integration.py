@@ -11,6 +11,8 @@ from ai_utilities import AiClient, AudioProcessor
 from ai_utilities.audio.audio_models import AudioFormat, TranscriptionResult, AudioGenerationResult
 from ai_utilities.audio.audio_utils import AudioProcessingError
 
+pytestmark = pytest.mark.integration
+
 
 def get_fixture_path(filename: str) -> Path:
     """Get path to audio fixture file."""
@@ -279,24 +281,12 @@ class TestAudioProcessingRealAPI:
     @pytest.mark.integration
     def test_real_transcription(self):
         """Test real audio transcription with API."""
-        # Load .env file (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/, so parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent
-            env_file = repo_root / ".env"
-            
-            if env_file.exists():
-                load_dotenv(env_file)
-        except ImportError:
-            pass  # dotenv not available
+        import os
         
         # Check if we have an OpenAI API key
-        import os
-        if not os.getenv("OPENAI_API_KEY"):
-            pytest.skip("OPENAI_API_KEY not set for audio transcription test")
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY")
+        if not api_key:
+            pytest.skip("No OpenAI API key set for audio transcription test")
         
         client = AiClient()
         
@@ -327,24 +317,11 @@ class TestAudioProcessingRealAPI:
     @pytest.mark.integration
     def test_real_audio_generation(self):
         """Test real audio generation with API."""
-        # Load .env file (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/, so parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent
-            env_file = repo_root / ".env"
-            
-            if env_file.exists():
-                load_dotenv(env_file)
-        except ImportError:
-            pass  # dotenv not available
+        import os
         
         # Check if we have an OpenAI API key
-        import os
-        if not os.getenv("OPENAI_API_KEY"):
-            pytest.skip("OPENAI_API_KEY not set for audio generation test")
+        if not (os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY")):
+            pytest.skip("No OpenAI API key set for audio generation test")
         
         client = AiClient()
         
@@ -367,24 +344,11 @@ class TestAudioProcessingRealAPI:
     @pytest.mark.integration
     def test_real_transcribe_and_generate(self):
         """Test real transcribe and generate workflow with API."""
-        # Load .env file (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/, so parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent
-            env_file = repo_root / ".env"
-            
-            if env_file.exists():
-                load_dotenv(env_file)
-        except ImportError:
-            pass  # dotenv not available
+        import os
         
         # Check if we have an OpenAI API key
-        import os
-        if not os.getenv("OPENAI_API_KEY"):
-            pytest.skip("OPENAI_API_KEY not set for transcribe and generate test")
+        if not (os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY")):
+            pytest.skip("No OpenAI API key set for transcribe and generate test")
         
         from ai_utilities.audio.audio_processor import AudioProcessor
         

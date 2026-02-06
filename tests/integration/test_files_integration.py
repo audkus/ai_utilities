@@ -15,24 +15,12 @@ import pytest
 from ai_utilities import AiClient, AsyncAiClient, UploadedFile, AiSettings
 from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
 
-# Load .env file from repository root (pytest changes working directory)
-try:
-    from dotenv import load_dotenv
-    from pathlib import Path
-    
-    # Get repository root (this file is in tests/, so parent.parent is repo root)
-    repo_root = Path(__file__).parent.parent
-    env_file = repo_root / ".env"
-    
-    if env_file.exists():
-        load_dotenv(env_file)
-except ImportError:
-    pass  # dotenv not available
-
 # Skip integration tests if no API key
-pytest.importorskip("openai")
-has_api_key = bool(os.getenv("OPENAI_API_KEY"))
-pytestmark = pytest.mark.integration if has_api_key else pytest.mark.skip(reason="No OPENAI_API_KEY set")
+has_api_key = bool(os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY"))
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(not has_api_key, reason="No OpenAI API key set")
+]
 
 
 class TestFilesIntegration:
@@ -68,22 +56,8 @@ class TestFilesIntegration:
     @pytest.fixture
     def client(self):
         """Create AiClient with real OpenAI provider."""
-        # Load .env file inside fixture (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/, so parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent
-            env_file = repo_root / ".env"
-            
-            if env_file.exists():
-                load_dotenv(env_file)
-        except ImportError:
-            pass  # dotenv not available
-        
         settings = AiSettings(
-            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
+            openai_api_key=os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY"),  # Use provider-specific key
             provider="openai",
             model="gpt-4o-mini"  # Use a real model for integration tests
         )
@@ -92,22 +66,8 @@ class TestFilesIntegration:
     @pytest.fixture
     def async_client(self):
         """Create AsyncAiClient with real OpenAI provider."""
-        # Load .env file inside fixture (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/, so parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent
-            env_file = repo_root / ".env"
-            
-            if env_file.exists():
-                load_dotenv(env_file)
-        except ImportError:
-            pass  # dotenv not available
-        
         settings = AiSettings(
-            openai_api_key=os.getenv("OPENAI_API_KEY"),  # Use provider-specific key
+            openai_api_key=os.getenv("OPENAI_API_KEY") or os.getenv("AI_OPENAI_API_KEY"),  # Use provider-specific key
             provider="openai",
             model="gpt-4o-mini"  # Use a real model for integration tests
         )

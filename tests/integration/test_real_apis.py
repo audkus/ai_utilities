@@ -21,21 +21,9 @@ import sys
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-# Load .env file for environment variables
-try:
-    from dotenv import load_dotenv
-    from pathlib import Path
-    
-    # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
-    repo_root = Path(__file__).parent.parent.parent
-    env_file = repo_root / ".env"
-    
-    if env_file.exists():
-        load_dotenv(env_file)
-except ImportError:
-    pass  # dotenv not available, tests will need manual env setup
-
 from ai_utilities import AiClient, AiSettings, create_provider, ProviderConfigurationError
+
+pytestmark = pytest.mark.integration
 
 
 class TestRealAPIIntegration:
@@ -49,29 +37,6 @@ class TestRealAPIIntegration:
     )
     def test_openai_real_api_call(self):
         """Test real OpenAI API call."""
-        # Load .env file inside test (pytest changes working directory)
-        try:
-            from dotenv import load_dotenv
-            from pathlib import Path
-            
-            # Get repository root (this file is in tests/integration/, so parent.parent.parent is repo root)
-            repo_root = Path(__file__).parent.parent.parent
-            env_file = repo_root / ".env"
-            
-            print(f"DEBUG: __file__ = {__file__}")
-            print(f"DEBUG: repo_root = {repo_root}")
-            print(f"DEBUG: env_file = {env_file}")
-            print(f"DEBUG: env_file.exists() = {env_file.exists()}")
-            print(f"DEBUG: cwd = {Path.cwd()}")
-            
-            if env_file.exists():
-                print(f"DEBUG: Loading .env from {env_file}")
-                load_dotenv(env_file)
-            else:
-                print(f"DEBUG: .env file not found at {env_file}")
-        except ImportError:
-            pass  # dotenv not available
-        
         # Debug: Check if environment is loaded
         print(f"DEBUG: OPENAI_API_KEY in env: {'OPENAI_API_KEY' in os.environ}")
         print(f"DEBUG: OPENAI_API_KEY value: {os.getenv('OPENAI_API_KEY', 'NOT_FOUND')[:20]}...")

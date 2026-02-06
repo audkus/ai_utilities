@@ -146,6 +146,120 @@ async def main():
 asyncio.run(main())
 ```
 
+## Metrics and Monitoring
+
+AI Utilities provides comprehensive metrics collection and monitoring capabilities for production use cases. Track performance, usage, and latency across all AI providers.
+
+### Basic Metrics Collection
+
+```python
+from ai_utilities.metrics import MetricsCollector
+
+# Create a metrics collector
+collector = MetricsCollector()
+
+# Record different types of metrics
+collector.increment_counter("api_requests", labels={"provider": "openai"})
+collector.set_gauge("active_connections", 5, labels={"service": "ai-api"})
+collector.observe_histogram("response_time", 1.5, labels={"endpoint": "/chat"})
+collector.record_timer("request_latency", 0.8, labels={"model": "gpt-4"})
+
+# Get all metrics for monitoring
+all_metrics = collector.get_all_metrics()
+for metric in all_metrics:
+    print(f"{metric.name}: {metric.value} ({metric.metric_type})")
+```
+
+### Timer Metrics for Latency Tracking
+
+Timer metrics automatically generate comprehensive latency snapshots:
+
+```python
+from ai_utilities.metrics import MetricsCollector
+
+collector = MetricsCollector()
+
+# Record timer values (perfect for latency tracking)
+collector.record_timer("api_latency", 1.2, labels={"endpoint": "/chat"})
+collector.record_timer("api_latency", 0.8, labels={"endpoint": "/chat"})
+collector.record_timer("api_latency", 1.5, labels={"endpoint": "/chat"})
+
+# Timer snapshots are automatically exported as 5 metrics:
+# - api_latency_count: 3 (number of events)
+# - api_latency_sum_seconds: 3.5 (total duration)
+# - api_latency_min_seconds: 0.8 (minimum duration)
+# - api_latency_max_seconds: 1.5 (maximum duration)
+# - api_latency_last_seconds: 1.5 (last duration)
+
+metrics = collector.get_all_metrics()
+timer_metrics = {m.name: m.value for m in metrics if "api_latency" in m.name}
+print(timer_metrics)
+```
+
+### Export Metrics to Monitoring Systems
+
+```python
+from ai_utilities.metrics import MetricsCollector, PrometheusExporter, JSONExporter
+
+collector = MetricsCollector()
+# ... record metrics ...
+
+# Prometheus format (perfect for Grafana/Prometheus)
+prometheus_exporter = PrometheusExporter(collector)
+prometheus_output = prometheus_exporter.export()
+print(prometheus_output)
+
+# JSON format (perfect for APIs and dashboards)
+json_exporter = JSONExporter(collector)
+json_output = json_exporter.export()
+print(json_output)
+```
+
+### Context Manager for Easy Timing
+
+```python
+from ai_utilities.metrics import MetricsCollector
+
+collector = MetricsCollector()
+
+# Use context manager for automatic timing
+with collector.timer("database_query", labels={"table": "users"}):
+    # Your code here - automatically timed
+    result = some_database_operation()
+
+# Timer automatically records the duration
+```
+
+### Available Metric Types
+
+- **Counters**: Incrementing values (request counts, error counts)
+- **Gauges**: Current values (active connections, memory usage)
+- **Histograms**: Value distributions (response times)
+- **Timers**: Duration tracking with automatic statistics (latency, processing time)
+
+### Integration with AI Clients
+
+```python
+from ai_utilities import AiClient
+from ai_utilities.metrics import MetricsCollector, PrometheusExporter
+
+# Set up metrics collection
+collector = MetricsCollector()
+
+# Monitor AI client usage
+client = AiClient()
+
+# Manually track usage
+collector.increment_counter("ai_requests", labels={"provider": "openai"})
+collector.record_timer("ai_response_time", 2.1, labels={"model": "gpt-4"})
+
+response = client.ask("What is machine learning?")
+
+# Export for monitoring
+exporter = PrometheusExporter(collector)
+print(exporter.export())
+```
+
 ## Supported Providers
 
 - **OpenAI** - GPT-4, GPT-3.5-turbo, audio processing
@@ -227,28 +341,36 @@ export AI_CACHE_BACKEND=sqlite
 
 This project uses pytest with timeout protection to prevent hanging tests.
 
-#### Unit Tests (Fast)
+#### Unit Tests (Fast, No .env Required)
 ```bash
-# Run unit tests only (no external API calls)
+# Run unit tests only (no external API calls, deterministic)
+tox -e py311
+# or
 pytest -m "not integration" --timeout=30
 ```
 
-#### Integration Tests (Requires API Keys)
+#### Integration Tests (Requires API Keys, Opt-in .env Loading)
 
-Integration tests automatically load environment variables from the `.env` file, so you only need to set up the `.env` file:
+Integration tests require explicit opt-in to load `.env` files and need API keys:
 
 ```bash
-# Option 1: Use .env file (recommended)
-# Create .env file with your API key
-echo "AI_API_KEY=your-api-key" >> .env
+# Option 1: Use tox with opt-in .env loading (recommended)
+tox -e integration
 
-# Run integration tests (will automatically use .env)
-pytest -m "integration" --timeout=120
+# Option 2: Manual opt-in with environment variable
+AI_UTILITIES_LOAD_DOTENV=1 pytest -m integration --timeout=120
 
-# Option 2: Export manually (alternative to .env)
-export AI_API_KEY=your-api-key
-pytest -m "integration" --timeout=120
+# Option 3: Export API keys manually (alternative to .env)
+export OPENAI_API_KEY=your-openai-key
+export AI_OPENAI_API_KEY=your-alt-openai-key
+pytest -m integration --timeout=120
 ```
+
+**Key Points:**
+- Unit tests never load `.env` files and remain deterministic
+- Integration tests only load `.env` when `AI_UTILITIES_LOAD_DOTENV=1` is set
+- Integration tests check both `OPENAI_API_KEY` and `AI_OPENAI_API_KEY` environment variables
+- Use tox environments for consistent testing across Python versions
 
 **Note**: Integration tests are automatically skipped if API keys are missing.
 
@@ -454,6 +576,7 @@ pip install -e ".[dev]"
 - [Configuration Guide](docs/user/configuration.md) - All environment variables
 - [Provider Setup](docs/user/providers.md) - Provider-specific configuration
 - [Smart Caching](docs/user/caching.md) - Reduce API costs with caching
+- [Metrics and Monitoring](docs/user/metrics.md) - Track performance and usage
 - [Troubleshooting Guide](docs/user/troubleshooting.md) - Common issues and solutions
 
 ### Development
