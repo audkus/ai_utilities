@@ -169,7 +169,7 @@ jobs:
     
     - name: Check for security vulnerabilities
       run: |
-        safety check
+        safety scan --full-report --exit-code
     
     - name: Run bandit security linter
       run: |
