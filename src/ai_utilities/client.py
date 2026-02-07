@@ -12,11 +12,11 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal, Optional, TypeVar, Union
 
-# OpenAI imports for embeddings functionality - patchable symbols for tests
-import openai
+# OpenAI imports for embeddings functionality - lazy import to avoid import-time side effects
+# import openai
 from pydantic import BaseModel
 
-OpenAI = openai.OpenAI
+# OpenAI = openai.OpenAI
 
 from pydantic import ValidationError
 
@@ -27,7 +27,7 @@ from .json_parsing import JsonParseError, create_repair_prompt, parse_json_from_
 from .models import AskResult
 from .progress_indicator import ProgressIndicator
 from .providers.base_provider import BaseProvider
-from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError
+from .providers.provider_exceptions import FileTransferError, ProviderCapabilityError, MissingOptionalDependencyError
 from .usage_tracker import UsageScope, UsageStats, create_usage_tracker
 
 # Generic type for typed responses
@@ -160,6 +160,10 @@ class AiClient:
                 settings = AiSettings()
 
         self.settings = settings
+
+        # SSL Backend Compatibility Check - only check when client is actually used
+        from .ssl_check import require_ssl_backend
+        require_ssl_backend()
 
         # Create provider using factory
         from .providers.provider_factory import create_provider
@@ -1005,8 +1009,16 @@ class AiClient:
             raise ValueError("API key is required for embeddings")
 
         with progress:
-            # OpenAI is already imported at module level
-            openai_client = OpenAI(
+            # Lazy import OpenAI to avoid import-time side effects
+            try:
+                import openai
+            except ImportError as e:
+                raise MissingOptionalDependencyError(
+                    "OpenAI embeddings require the openai package. "
+                    "Install with: pip install ai-utilities[openai]"
+                ) from e
+            
+            openai_client = openai.OpenAI(
                 api_key=self.settings.api_key,
                 base_url=self.settings.base_url,
                 timeout=self.settings.timeout,

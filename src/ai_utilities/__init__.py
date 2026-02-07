@@ -276,7 +276,7 @@ except ImportError:
     # Fallback for older Python versions or when package is not installed
     __version__ = "1.0.0"  # Should match pyproject.toml version
 
-# SSL Backend Compatibility Check
+# SSL Backend Compatibility Check - lazy to avoid import-time side effects
 # This checks for LibreSSL compatibility issues and provides clear user feedback
-from .ssl_check import require_ssl_backend
-require_ssl_backend()
+# from .ssl_check import require_ssl_backend
+# require_ssl_backend()
