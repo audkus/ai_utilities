@@ -4,8 +4,11 @@
 .ruff_cache/
 ai_usage.json
 
-# Duplicate venv (keeping .venv/)
+# Virtual environments
 venv/
+.venv/
+env/
+.env/
 
 # Manual test outputs
 .manual_venvs/
