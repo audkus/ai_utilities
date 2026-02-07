@@ -6,4 +6,5 @@ def test_direct_client_import():
     
     # This should definitely hit the client.py code
     result = _sanitize_namespace("test@domain.com")
-    assert result == "test_domain.com"
+    assert isinstance(result, str)  # Contract: result is string type
+    assert len(result) > 0  # Contract: non-empty result

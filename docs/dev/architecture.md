@@ -6,14 +6,14 @@ AI Utilities follows a layered architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────┐
-│              User API                    │
+│              User API                   │
 │  AiClient, AsyncAiClient, convenience   │
 ├─────────────────────────────────────────┤
 │            Configuration                │
-│  AiSettings, config resolver, env vars │
+│  AiSettings, config resolver, env vars  │
 ├─────────────────────────────────────────┤
 │           Provider Layer                │
-│  OpenAI, Groq, Ollama, etc.            │
+│  OpenAI, Groq, Ollama, etc.             │
 ├─────────────────────────────────────────┤
 │           Infrastructure                │
 │  Caching, rate limiting, error handling │

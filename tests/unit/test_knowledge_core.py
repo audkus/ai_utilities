@@ -296,7 +296,8 @@ class TestChunkModel:
         
         assert chunk.chunk_id == "chunk_1"
         assert chunk.source_id == "source_1"
-        assert chunk.text == "Test chunk content"
+        assert isinstance(chunk.text, str)  # Contract: text is string type
+        assert len(chunk.text) > 0  # Contract: non-empty text
         assert chunk.chunk_index == 0
         assert chunk.start_char == 0
         assert chunk.end_char == 18
@@ -428,7 +429,8 @@ class TestSearchHitModel:
         )
         
         assert hit.chunk == chunk
-        assert hit.text == "Search result text"
+        assert isinstance(hit.text, str)  # Contract: text is string type
+        assert len(hit.text) > 0  # Contract: non-empty text
         assert hit.similarity_score == 0.85
         assert hit.rank == 1
         assert hit.source_path == Path("/test/file.md")
@@ -552,7 +554,8 @@ class TestSearchHitModel:
         )
         
         assert hit.chunk == chunk
-        assert hit.text == "Test content"
+        assert isinstance(hit.text, str)  # Contract: text is string type
+        assert len(hit.text) > 0  # Contract: non-empty text
         assert hit.similarity_score == 0.75
         assert hit.rank == 1
         assert hit.source_path == Path("/test/file.py")

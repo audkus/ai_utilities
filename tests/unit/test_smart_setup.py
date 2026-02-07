@@ -185,7 +185,10 @@ class TestSmartSetup:
             assert result.get("cached") is True
             assert isinstance(result.get("current_models"), list)
             assert isinstance(result.get("new_models"), list)
-            assert "has_updates" in result
+            # Contract: verify update check result structure (provider contract)
+            assert len(result) >= 4  # Should have at least 4 keys: cached, current_models, new_models, has_updates
+            expected_keys = {"cached", "current_models", "new_models", "has_updates"}
+            assert expected_keys.issubset(result.keys())
 
     def test_ai_client_reconfigure(self):
         """Test AiClient.reconfigure method."""
@@ -250,7 +253,6 @@ class TestSmartSetup:
             
             assert result['has_updates'] is True
             assert result['cached'] is True
-            assert 'last_check' in result
-            assert 'new_models' in result
-            assert 'current_models' in result
-            assert 'total_models' in result
+            # Contract: verify cache structure contains expected fields (provider contract)
+            expected_keys = {'last_check', 'new_models', 'current_models', 'total_models'}
+            assert expected_keys.issubset(result.keys())

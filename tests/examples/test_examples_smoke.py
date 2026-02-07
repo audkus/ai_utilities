@@ -22,6 +22,7 @@ SMOKE_TEST_ALLOWLIST = [
     "examples/quickstarts/files_upload_basic.py",
     "examples/quickstarts/text_generate_basic.py",
     "examples/quickstarts/usage_tracking_basic.py",
+    "examples/quickstarts/metrics_monitoring_basic.py",
 ]
 
 

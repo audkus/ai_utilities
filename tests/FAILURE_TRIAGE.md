@@ -17,9 +17,6 @@
 | test_client_core.py | 29 | AssertionError/TypeError | Core Regression | client |
 | test_main_script.py | 27 | AssertionError/TypeError | Core Regression | cli |
 | test_webui_api_helper.py | 20 | ImportError | Broken Imports | webui |
-| test_daily_provider_check.py | 20 | AssertionError | Integration | providers |
-| test_provider_change_detector.py | 19 | AssertionError | Integration | providers |
-| test_provider_diagnostic.py | 18 | AssertionError | Integration | providers |
 | test_performance_benchmarks.py | 18 | AssertionError | Integration | providers |
 | test_openai_client.py | 17 | ImportError/AssertionError | Broken Imports | client |
 | test_env_detection.py | 14 | AssertionError | Environment Config | settings |
@@ -156,9 +153,6 @@
 
 | Test File | Count | Issue | Action |
 |-----------|-------|-------|--------|
-| test_provider_change_detector.py | 19 | Network calls | Mock HTTP layer |
-| test_provider_diagnostic.py | 18 | External services | Mark as integration |
-| test_daily_provider_check.py | 20 | Provider monitoring | Mock or mark |
 | test_performance_benchmarks.py | 18 | Performance tests | Separate suite |
 
 **Action**: Mock external dependencies or mark as integration tests.

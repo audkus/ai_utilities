@@ -1,12 +1,15 @@
 """Integration test for main.py to ensure real model usage works."""
 
 import os
+import pytest
 
 # Add src to path for imports
 import sys
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+pytestmark = pytest.mark.integration
 
 def test_main_uses_real_models():
     """Test that main.py uses real OpenAI models, not test models."""

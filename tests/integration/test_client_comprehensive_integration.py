@@ -21,14 +21,11 @@ from ai_utilities.providers.provider_exceptions import (
     FileTransferError, ProviderCapabilityError, ProviderConfigurationError
 )
 
+pytestmark = pytest.mark.integration
+
 
 class TestClientIntegrationWorkflows:
     """Integration tests for complete client workflows."""
-    
-    def test_complete_ask_workflow_with_caching(self):
-        """Test complete ask workflow with caching enabled."""
-        # Skip this test - complex cache mocking issues
-        pytest.skip("Cache integration test has complex mocking requirements")
     
     def test_ask_many_with_concurrency_and_fail_fast(self):
         """Test ask_many with concurrency control and fail_fast."""
@@ -104,11 +101,6 @@ class TestClientIntegrationWorkflows:
             assert result.name == "Alice"
             assert result.age == 30
             assert result.email == "alice@test.com"
-    
-    def test_usage_tracking_integration(self):
-        """Test usage tracking integration across operations."""
-        # Skip this test - complex usage tracking integration issues
-        pytest.skip("Usage tracking integration test has complex requirements")
 
 
 class TestClientFileOperationsIntegration:
@@ -339,11 +331,6 @@ class TestClientAudioProcessingIntegration:
 
 class TestClientKnowledgeBaseIntegration:
     """Integration tests for knowledge base functionality."""
-    
-    def test_knowledge_base_workflow(self):
-        """Test complete knowledge base workflow."""
-        # Skip this test - KnowledgeConfig class doesn't exist in config_models
-        pytest.skip("KnowledgeConfig class not implemented")
     
     def test_knowledge_base_disabled_handling(self):
         """Test knowledge base functionality when disabled."""

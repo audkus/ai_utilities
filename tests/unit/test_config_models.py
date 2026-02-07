@@ -5,13 +5,9 @@ Tests for Pydantic configuration models with validation, type safety, and immuta
 """
 
 import os
-import sys
-
 import pytest
 from pydantic import ValidationError
-
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+from unittest.mock import patch, mock_open
 
 from ai_utilities.config_models import AIConfig, ModelConfig, OpenAIConfig
 

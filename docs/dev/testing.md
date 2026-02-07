@@ -71,6 +71,7 @@ tests/
 - Fast execution (< 1 second per test)
 - No external dependencies
 - Mock external services
+- Unit tests must follow contract-first principles and must not assert AI-generated content.
 
 ```python
 import pytest
@@ -149,6 +150,64 @@ def test_cli_setup_wizard():
 
 ## Writing Tests
 
+### Contract-First Testing
+
+This project follows a **contract-first testing** approach.
+
+#### What is the “contract”?
+
+The contract is the set of behaviors **explicitly guaranteed by the public API**, as determined by:
+- Public method signatures
+- Documented behavior
+- Actual code paths (returns, exceptions, side effects)
+
+Tests must assert **only** what the code provably guarantees.
+Tests must not assert assumptions about AI models, providers, or internal implementations.
+
+---
+
+#### What tests MUST NOT assume
+
+Tests must never assume that:
+- AI responses contain the prompt text
+- AI responses are deterministic
+- AI responses are strings (they may be dicts, streams, or other structures)
+- A specific model name (e.g. `gpt-3.5-turbo`, `gpt-4`, etc.) affects output behavior
+- Providers echo input or follow a specific output format unless explicitly documented
+
+If a test would fail when switching provider or model **without changing code**, the test is invalid.
+
+---
+
+#### What tests MAY assert
+
+Tests may assert:
+- Correct provider method calls and parameters
+- Correct propagation of configuration (model, temperature, base URL, etc.)
+- Correct error handling and exception behavior
+- Correct handling of return formats (e.g. JSON parsing success/failure)
+- Explicit side effects implemented in code (metrics, counters, timers, logging)
+
+---
+
+#### When tests fail
+
+If a test fails, contributors must choose **one** of the following:
+
+1. **The test is wrong**  
+   Update or remove the test to match the existing contract.
+
+2. **The contract is incomplete**  
+   Update the code to explicitly support the behavior, then update the tests.
+
+There is no third option.
+
+---
+
+#### Guiding principle
+
+> **Tests validate contracts — they do not define them.**
+> 
 ### Test Structure Guidelines
 
 1. **Use descriptive test names**

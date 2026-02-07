@@ -22,7 +22,8 @@ class TestTypeSignatures:
         
         response = client.ask("test prompt", return_format="text")
         assert isinstance(response, str)
-        assert "fake response" in response
+        # Contract: verify provider was called with expected parameters
+        assert fake_provider.last_prompt == "test prompt"
     
     def test_ask_returns_dict_for_json_format(self):
         """Test ask() returns dict for JSON format."""
@@ -31,7 +32,9 @@ class TestTypeSignatures:
         
         response = client.ask("test prompt", return_format="json")
         assert isinstance(response, dict)
-        assert "answer" in response
+        # Contract: verify JSON response structure (provider contract)
+        assert len(response) == 1  # Should have exactly one key
+        assert list(response.keys())[0] == "answer"  # Key should be "answer"
         assert isinstance(response["answer"], str)
     
     def test_ask_returns_list_for_multiple_prompts_text(self):
@@ -59,7 +62,9 @@ class TestTypeSignatures:
         assert len(responses) == 3
         for response in responses:
             assert isinstance(response, dict)
-            assert "answer" in response
+            # Contract: verify JSON response structure (provider contract)
+            assert len(response) == 1  # Should have exactly one key
+            assert list(response.keys())[0] == "answer"  # Key should be "answer"
     
     def test_ask_json_returns_dict_or_list(self):
         """Test ask_json() returns dict or list."""
@@ -69,7 +74,9 @@ class TestTypeSignatures:
         response = client.ask_json("test prompt")
         assert isinstance(response, (dict, list))
         if isinstance(response, dict):
-            assert "test" in response
+            # Contract: verify parsed JSON structure (provider contract)
+            assert len(response) == 1  # Should have exactly one key
+            assert list(response.keys())[0] == "test"  # Key should be "test"
 
 
 class TestParameterFiltering:
@@ -183,7 +190,8 @@ class TestAsyncTypeSignatures:
         
         response = await client.ask("test prompt", return_format="text")
         assert isinstance(response, str)
-        assert "fake response" in response
+        # Contract: verify provider was called with expected parameters
+        assert fake_provider.last_prompt == "test prompt"
     
     @pytest.mark.asyncio
     async def test_async_ask_returns_dict_for_json_format(self):
@@ -199,5 +207,7 @@ class TestAsyncTypeSignatures:
         
         response = await client.ask("test prompt", return_format="json")
         assert isinstance(response, dict)
-        assert "answer" in response
+        # Contract: verify async JSON response structure (provider contract)
+        assert len(response) == 1  # Should have exactly one key
+        assert list(response.keys())[0] == "answer"  # Key should be "answer"
         assert isinstance(response["answer"], str)

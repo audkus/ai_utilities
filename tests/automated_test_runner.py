@@ -101,10 +101,7 @@ class AutomatedTestRunner:
             "test_text_generation_webui_setup_script.py",
             "test_coverage_summary_script.py",
             "test_dashboard.py",
-            "test_provider_health_monitor.py",
-            "test_provider_diagnostic.py",
-            "test_daily_provider_check.py",
-            "test_provider_change_detector.py",
+            "test_provider_tools.py",
             "test_webui_api_helper.py",
             "test_main_script.py",
             "test_ci_provider_check.py"
@@ -133,7 +130,7 @@ class AutomatedTestRunner:
         # Run a subset of critical tests for CI
         ci_test_files = [
             "test_examples_comprehensive.py",
-            "test_provider_health_monitor.py",
+            "test_provider_tools.py",
             "test_ci_provider_check.py"
         ]
         
