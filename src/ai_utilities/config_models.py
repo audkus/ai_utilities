@@ -13,9 +13,9 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# OpenAI imports for validation - patchable symbols for tests
-import openai
-OpenAI = openai.OpenAI
+# OpenAI imports for validation - lazy import to avoid import-time side effects
+# import openai
+# OpenAI = openai.OpenAI
 
 
 class ModelConfig(BaseModel):
@@ -1154,7 +1154,8 @@ class AiSettings(BaseSettings):
             return False
 
         try:
-            client: Any = OpenAI(api_key=api_key)
+            import openai
+            client: Any = openai.OpenAI(api_key=api_key)
             models: Any = client.models.list()
 
             # Avoid shadowing the `model` parameter.
@@ -1202,7 +1203,8 @@ class AiSettings(BaseSettings):
         
         # Perform actual model check (costs tokens!)
         try:
-            client = OpenAI(api_key=api_key)
+            import openai
+            client = openai.OpenAI(api_key=api_key)
             
             # Get available models
             models = client.models.list()
