@@ -28,6 +28,7 @@ class AutomatedTestRunner:
     """Automated test runner for AI Utilities."""
     
     def __init__(self):
+        self.project_root = Path(__file__).resolve().parents[1]
         self.test_results = {}
         self.start_time = None
         self.end_time = None

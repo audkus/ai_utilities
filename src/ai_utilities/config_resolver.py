@@ -528,8 +528,8 @@ def resolve_request_config(
         else:
             resolved = resolve_provider_config(settings)
             resolved_provider = resolved.provider
-            resolved_api_key = api_key or resolved.api_key
-            resolved_base_url = base_url or resolved.base_url
+            resolved_api_key = api_key or resolved.api_key or ""
+            resolved_base_url = base_url or resolved.base_url or ""
             resolved_model = model or resolved.model
     except ProviderConfigurationError as e:
         # Keep behavior consistent with provider_factory exception mapping.

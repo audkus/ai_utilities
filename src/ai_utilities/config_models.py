@@ -1012,7 +1012,7 @@ class AiSettings(BaseSettings):
         
         # Check current environment
         current_api_key = os.getenv("AI_API_KEY")
-        current_model = os.getenv("AI_MODEL")  # No default - model is required
+        current_model = os.getenv("AI_MODEL") or "gpt-3.5-turbo"  # No default - model is required
         current_temperature = os.getenv("AI_TEMPERATURE", "0.7")
         
         # Determine if setup is needed

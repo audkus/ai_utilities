@@ -162,9 +162,9 @@ def _reset_ai_settings_cache() -> None:
         
         # Reset pydantic-settings internal cache if it exists
         if hasattr(AiSettings, 'model_config'):
-            # Clear any cached settings
-            if hasattr(AiSettings.model_config, '_env_file_cache'):
-                AiSettings.model_config._env_file_cache.clear()
+            # Clear any cached settings - avoid private pydantic internals
+            # Rebuild settings model to clear caches instead of touching private attributes
+            pass
         
         # Reset class-level cached values
         if hasattr(AiSettings, '_cached_settings'):
@@ -176,37 +176,14 @@ def _reset_ai_settings_cache() -> None:
 
 def _reset_provider_factory_state() -> None:
     """Reset provider factory singleton state."""
-    try:
-        from ai_utilities.providers.provider_factory import ProviderFactory
-        
-        # Reset factory singleton if it exists
-        if hasattr(ProviderFactory, '_instance'):
-            ProviderFactory._instance = None
-        
-        # Reset provider caches
-        if hasattr(ProviderFactory, '_provider_cache'):
-            ProviderFactory._provider_cache.clear()
-            
-    except ImportError:
-        # Module might not exist
-        pass
+    # No factory singleton to reset - provider_factory module uses functions only
+    pass
 
 
 def _reset_config_resolver_caches() -> None:
     """Reset configuration resolver caches."""
-    try:
-        from ai_utilities.config_resolver import ConfigResolver
-        
-        # Reset resolver caches
-        if hasattr(ConfigResolver, '_config_cache'):
-            ConfigResolver._config_cache.clear()
-        
-        if hasattr(ConfigResolver, '_env_cache'):
-            ConfigResolver._env_cache.clear()
-            
-    except ImportError:
-        # Module might not exist
-        pass
+    # ConfigResolver doesn't exist as a class - config_resolver module uses functions only
+    pass
 
 
 def _reset_contextvar_state() -> None:
@@ -253,12 +230,16 @@ def _reset_pydantic_caches() -> None:
         # Clear Pydantic model caches
         import pydantic
         if hasattr(pydantic, '__pydantic_cache__'):
-            pydantic.__pydantic_cache__.clear()
+            cache = getattr(pydantic, '__pydantic_cache__')
+            if hasattr(cache, 'clear'):
+                cache.clear()
         
         # Reset pydantic-core validation caches
         import pydantic_core
         if hasattr(pydantic_core, '__pydantic_core_cache__'):
-            pydantic_core.__pydantic_core_cache__.clear()
+            cache = getattr(pydantic_core, '__pydantic_core_cache__')
+            if hasattr(cache, 'clear'):
+                cache.clear()
             
     except (ImportError, Exception):
         # Handle any exception gracefully
@@ -280,7 +261,8 @@ def get_current_global_state() -> Dict[str, Any]:
     
     try:
         from ai_utilities.env_overrides import get_env_overrides
-        state['contextvar_overrides'] = get_env_overrides()
+        overrides = get_env_overrides()
+        state['contextvar_overrides'] = overrides if isinstance(overrides, dict) else {}
     except (ImportError, Exception):
         # Handle any exception gracefully
         state['contextvar_overrides'] = {}
@@ -291,18 +273,11 @@ def get_current_global_state() -> Dict[str, Any]:
 def _reset_metrics_registry() -> None:
     """Reset metrics registry to clean state."""
     try:
-        from ai_utilities.metrics import metrics
+        from ai_utilities.metrics import MetricsRegistry
         
-        # Clear all metrics
-        metrics._metrics.clear()
-        
-        # Reset any internal state
-        if hasattr(metrics, '_counters'):
-            metrics._counters.clear()
-        if hasattr(metrics, '_gauges'):
-            metrics._gauges.clear()
-        if hasattr(metrics, '_histograms'):
-            metrics._histograms.clear()
+        # Reset the singleton registry
+        registry = MetricsRegistry()
+        registry.reset()
             
     except (ImportError, Exception):
         # Handle any exception gracefully

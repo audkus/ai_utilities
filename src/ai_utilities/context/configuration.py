@@ -25,7 +25,7 @@ class ConfigurationContext:
     """
     
     # Context variables for thread-local storage
-    _config_context: contextvars.ContextVar[ConfigurationContext] = contextvars.ContextVar(
+    _config_context: contextvars.ContextVar[Optional[ConfigurationContext]] = contextvars.ContextVar(
         "config_context",
         default=None
     )
@@ -52,8 +52,8 @@ class ConfigurationContext:
         self.additional_config = kwargs
         
         # Store previous context for restoration
-        self._previous_context = None
-        self._token = None
+        self._previous_context: Optional[ConfigurationContext] = None
+        self._token: Optional[contextvars.Token[Optional[ConfigurationContext]]] = None
     
     def __enter__(self) -> ConfigurationContext:
         """Enter the configuration context."""
