@@ -58,6 +58,7 @@ _LAZY_SUBMODULES: dict[str, str] = {
     "cache": "ai_utilities.cache",
     "cli": "ai_utilities.cli",
     "client": "ai_utilities.client",
+    "demo": "ai_utilities.demo",
     "config_models": "ai_utilities.config_models",
     "config_resolver": "ai_utilities.config_resolver",
     "context": "ai_utilities.context",
@@ -75,6 +76,7 @@ _LAZY_SUBMODULES: dict[str, str] = {
     "openai_client": "ai_utilities.openai_client",
     "openai_model": "ai_utilities.openai_model",
     "progress_indicator": "ai_utilities.progress_indicator",
+    "provider_resolution": "ai_utilities.provider_resolution",
     "providers": "ai_utilities.providers",
     "rate_limit_fetcher": "ai_utilities.rate_limit_fetcher",
     "rate_limiter": "ai_utilities.rate_limiter",
@@ -207,6 +209,10 @@ def __getattr__(name: str) -> Any:
         )
         return locals()[name]
     
+    # Main module
+    elif name == '__main__':
+        return importlib.import_module('.__main__', __name__)
+    
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
@@ -268,7 +274,7 @@ try:
     __version__ = version("ai-utilities")
 except ImportError:
     # Fallback for older Python versions or when package is not installed
-    __version__ = "1.0.0b2"  # Should match pyproject.toml version
+    __version__ = "1.0.0"  # Should match pyproject.toml version
 
 # SSL Backend Compatibility Check
 # This checks for LibreSSL compatibility issues and provides clear user feedback
