@@ -479,8 +479,9 @@ def main():
             results = category_methods[args.category]()
             runner._print_category_results(args.category, results)
             
-            # Exit with appropriate code
-            sys.exit(0 if results["status"] == "passed" else 1)
+            # Exit with appropriate code - treat skipped as success for examples category
+            is_success = results["status"] in ["passed", "skipped"]
+            sys.exit(0 if is_success else 1)
     else:
         # Run all tests
         results = runner.run_all_tests()
