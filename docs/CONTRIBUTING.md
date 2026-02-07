@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing to AI Utilities! This guide covers development setup, contribution guidelines, and technical details.
 
+**AI-Assisted Contributions**: If you're using AI tools (ChatGPT, WindSurf, etc.), please read the [AI Contribution Contract](AI_CONTRACT.md) first - it defines non-negotiable rules for AI-generated changes.
+
 ## Quick Start
 
 ### Prerequisites
