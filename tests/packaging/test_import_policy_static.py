@@ -9,6 +9,8 @@ from typing import Set
 
 import pytest
 
+pytestmark = pytest.mark.packaging
+
 
 def _find_python_files(src_dir: Path) -> Set[Path]:
     """Find all Python files in source directory."""
@@ -98,7 +100,6 @@ def _get_core_modules() -> Set[str]:
     }
 
 
-@pytest.mark.packaging
 def test_no_optional_dependency_imports_at_module_level() -> None:
     """
     Test that optional dependencies are not imported at module level in core modules.
@@ -108,8 +109,6 @@ def test_no_optional_dependency_imports_at_module_level() -> None:
     
     Only checks core modules - provider modules can import their dependencies directly.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -140,15 +139,12 @@ def test_no_optional_dependency_imports_at_module_level() -> None:
     )
 
 
-@pytest.mark.packaging
 def test_init_module_imports_are_safe() -> None:
     """
     Test that __init__.py doesn't import optional dependencies.
     
     The main __init__.py should be especially careful about imports.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent

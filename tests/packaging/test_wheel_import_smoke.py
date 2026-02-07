@@ -11,6 +11,8 @@ from typing import Optional
 
 import pytest
 
+pytestmark = pytest.mark.packaging
+
 
 def _create_temp_venv(venv_dir: Path) -> Path:
     """Create a temporary virtual environment."""
@@ -55,7 +57,6 @@ def _test_cli_help_in_venv(python_exe: Path) -> None:
     assert "ai-utilities" in result.stdout.lower()
 
 
-@pytest.mark.packaging
 def test_wheel_import_smoke_test() -> None:
     """
     Test wheel install + import smoke test.
@@ -69,8 +70,6 @@ def test_wheel_import_smoke_test() -> None:
     - Broken entry points
     - Import-time side effects
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -93,7 +92,6 @@ def test_wheel_import_smoke_test() -> None:
         _test_cli_help_in_venv(python_exe)
 
 
-@pytest.mark.packaging
 def test_wheel_minimal_contents() -> None:
     """
     Test that wheel contains only essential files.
@@ -101,8 +99,6 @@ def test_wheel_minimal_contents() -> None:
     Wheel should be minimal - no tests/, docs/, examples/ paths.
     Only runtime code and essential metadata.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     import zipfile
 
@@ -126,15 +122,12 @@ def test_wheel_minimal_contents() -> None:
     )
 
 
-@pytest.mark.packaging 
 def test_entry_point_exists_and_runs() -> None:
     """
     Test that console script entry point exists and runs.
     
     This catches broken console scripts or renamed CLI modules.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -166,15 +159,12 @@ def test_entry_point_exists_and_runs() -> None:
             _test_cli_help_in_venv(python_exe)
 
 
-@pytest.mark.packaging
 def test_optional_dependency_import_policy() -> None:
     """
     Test that base import doesn't require optional packages.
     
     This ensures optional providers remain truly optional.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
