@@ -6,9 +6,24 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-# OpenAI imports for OpenAI-compatible API - patchable symbols for tests
-import openai
-OpenAI = openai.OpenAI
+# OpenAI imports for OpenAI-compatible API - lazy loaded to avoid import-time dependencies
+_openai = None
+OpenAI = None
+
+def _get_openai():
+    """Lazy import of openai module."""
+    global _openai, OpenAI
+    if _openai is None:
+        try:
+            import openai
+            _openai = openai
+            OpenAI = openai.OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is required for OpenAI-compatible providers. "
+                "Install it with: pip install 'ai-utilities[openai]'"
+            )
+    return _openai
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -68,6 +83,7 @@ class OpenAICompatibleProvider(BaseProvider):
         })()
         
         # Initialize OpenAI client with custom base_url
+        _get_openai()  # Ensure openai is imported
         client_kwargs = {
             "api_key": api_key or "dummy-key",  # OpenAI SDK requires API key
             "base_url": self.base_url,

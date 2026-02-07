@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, List
 
 from .base_provider import BaseProvider
-from .openai_compatible_provider import OpenAICompatibleProvider
 from .provider_exceptions import ProviderConfigurationError, MissingOptionalDependencyError
 from ..config_resolver import resolve_request_config, MissingApiKeyError, UnknownProviderError, MissingBaseUrlError, MissingModelError
 
@@ -100,17 +99,19 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
 
         elif config.provider in ["groq", "together", "openrouter"]:
             # These are all OpenAI-compatible with different base URLs
+            from .openai_compatible_provider import OpenAICompatibleProvider
             extra_headers = getattr(settings, 'extra_headers', None) if hasattr(settings, 'extra_headers') else None
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
-                timeout=_coerce_timeout_seconds(getattr(config, "timeout", None), 30),
+                timeout=_coerce_timeout_seconds(getattr(settings, "timeout", None), 30),
                 extra_headers=extra_headers,
                 model=getattr(config, 'model', None),
             )
 
         elif config.provider in ["ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]:
             # Local providers
+            from .openai_compatible_provider import OpenAICompatibleProvider
             extra_headers = getattr(settings, 'extra_headers', None) if hasattr(settings, 'extra_headers') else None
             return OpenAICompatibleProvider(
                 api_key=config.api_key,
