@@ -42,7 +42,12 @@ python scripts/provider_tools.py --all
 ### Monitoring Scripts (`monitoring/`)
 - `monitor_providers.py` - Multi-provider testing
 - `monitor_providers_system.py` - System-level monitoring
-- `test_*.py` - Integration tests for various providers
+- `probe_*.py` - Integration probes for various providers:
+  - `probe_free_apis.py` - Free cloud API probing
+  - `probe_fastchat_integration.py` - FastChat local server probing
+  - `probe_local_providers.py` - Local AI provider probing
+  - `probe_simple_free_api.py` - Simple free API probing
+  - `probe_text_generation_webui_integration.py` - Text Generation WebUI probing
 - `validate_*.py` - Bug prevention and critical validation
 
 ### Utilities
@@ -61,6 +66,21 @@ python scripts/provider_tools.py --health-check
 ### Full Diagnostics
 ```bash
 python scripts/provider_tools.py --diagnose
+```
+
+### Provider Probing
+```bash
+# Probe free APIs
+python scripts/monitoring/probe_free_apis.py
+
+# Probe local providers
+python scripts/monitoring/probe_local_providers.py
+
+# Probe FastChat integration
+python scripts/monitoring/probe_fastchat_integration.py
+
+# Probe Text Generation WebUI
+python scripts/monitoring/probe_text_generation_webui_integration.py
 ```
 
 ### CI/CD Integration

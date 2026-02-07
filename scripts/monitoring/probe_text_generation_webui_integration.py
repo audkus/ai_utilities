@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Text-Generation-WebUI Integration Test
-Tests connectivity, model discovery, and chat functionality.
+Text Generation WebUI Integration Probe
+Probes connectivity, model discovery, and generation functionality.
 """
 
 import os
