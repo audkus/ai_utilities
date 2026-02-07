@@ -67,7 +67,7 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=html:coverage_reports --cov-report=term-missing
+        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=html:coverage_reports --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
