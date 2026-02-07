@@ -778,7 +778,7 @@ TRANSIENT_FILES = {
 ALLOWED_WRITE_PATHS = {
     "coverage_reports/**",
     "reports/**",
-    ".pytest_cache/**",
+    # Note: .pytest_cache handled by pytest.ini ignore patterns
 }
 
 
