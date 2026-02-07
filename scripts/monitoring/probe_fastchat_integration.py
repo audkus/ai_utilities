@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FastChat Integration Test
-Tests connectivity, model discovery, and chat functionality.
+FastChat Integration Probe
+Probes connectivity, model discovery, and chat functionality.
 """
 
 import os
@@ -19,10 +19,10 @@ from ai_utilities import create_client
 
 
 @pytest.mark.integration
-def test_fastchat():
-    """Comprehensive test for FastChat integration."""
+def probe_fastchat():
+    """Comprehensive probe for FastChat integration."""
     
-    print("🤖 FASTCHAT INTEGRATION TEST")
+    print("🤖 FASTCHAT INTEGRATION PROBE")
     print("=" * 50)
     
     # Configuration
@@ -224,4 +224,4 @@ def main():
     print(f"\n⏰ Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
-    main()
+    probe_fastchat()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Test script for free online AI APIs.
-Tests various free cloud providers for compatibility and performance.
+Probe script for free online AI APIs.
+Probes various free cloud providers for compatibility and performance.
 """
 
 import sys
