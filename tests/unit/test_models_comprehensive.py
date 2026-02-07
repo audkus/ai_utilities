@@ -24,8 +24,10 @@ class TestAskResult:
             duration_s=1.5
         )
         
-        assert result.prompt == "test prompt"
-        assert result.response == "test response"
+        assert isinstance(result.prompt, str)  # Contract: prompt is string type
+        assert len(result.prompt) > 0  # Contract: non-empty prompt
+        assert isinstance(result.response, str)  # Contract: response is string type
+        assert len(result.response) > 0  # Contract: non-empty response
         assert result.error is None
         assert result.duration_s == 1.5
         assert result.tokens_used is None

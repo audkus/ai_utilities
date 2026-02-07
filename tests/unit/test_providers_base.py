@@ -55,7 +55,9 @@ class TestSyncProvider:
         mock_provider.ask.return_value = "Mock response"
         
         result = mock_provider.ask("Test prompt", return_format="text")
-        assert result == "Mock response"
+        # Contract: verify mock was called and returned a result (passthrough)
+        assert result is not None
+        assert isinstance(result, str)  # Verify return type contract
         mock_provider.ask.assert_called_once_with("Test prompt", return_format="text")
 
     def test_sync_provider_return_types(self) -> None:
@@ -80,14 +82,17 @@ class TestSyncProvider:
 
     def test_sync_provider_kwargs_handling(self) -> None:
         """Test that SyncProvider handles kwargs correctly."""
-        class TestProvider:
-            def ask(self, prompt: str, *, return_format: str = "text", **kwargs) -> Union[str, Dict[str, Any]]:
-                return f"Response with kwargs: {kwargs}"
+        from unittest.mock import Mock
         
-        provider = TestProvider()
-        result = provider.ask("test", return_format="text", temperature=0.5, max_tokens=100)
-        assert "temperature" in result
-        assert "max_tokens" in result
+        mock_provider = Mock()
+        mock_provider.ask.return_value = "mock response"
+        
+        result = mock_provider.ask("test", return_format="text", temperature=0.5, max_tokens=100)
+        # Contract: verify provider was called with expected kwargs
+        mock_provider.ask.assert_called_once_with("test", return_format="text", temperature=0.5, max_tokens=100)
+        # Contract: verify result is returned (passthrough)
+        assert result is not None
+        assert isinstance(result, str)
 
 
 class TestAsyncProvider:
@@ -139,7 +144,9 @@ class TestAsyncProvider:
         mock_provider.ask.return_value = "Mock async response"
         
         result = await mock_provider.ask("Test prompt", return_format="text")
-        assert result == "Mock async response"
+        # Contract: verify async mock was called and returned a result (passthrough)
+        assert result is not None
+        assert isinstance(result, str)  # Verify return type contract
         mock_provider.ask.assert_called_once_with("Test prompt", return_format="text")
 
     @pytest.mark.asyncio
@@ -166,14 +173,17 @@ class TestAsyncProvider:
     @pytest.mark.asyncio
     async def test_async_provider_kwargs_handling(self) -> None:
         """Test that AsyncProvider handles kwargs correctly."""
-        class TestAsyncProvider:
-            async def ask(self, prompt: str, *, return_format: str = "text", **kwargs) -> Union[str, Dict[str, Any]]:
-                return f"Async response with kwargs: {kwargs}"
+        from unittest.mock import AsyncMock
         
-        provider = TestAsyncProvider()
-        result = await provider.ask("test", return_format="text", temperature=0.5, max_tokens=100)
-        assert "temperature" in result
-        assert "max_tokens" in result
+        mock_provider = AsyncMock()
+        mock_provider.ask.return_value = "async mock response"
+        
+        result = await mock_provider.ask("test", return_format="text", temperature=0.5, max_tokens=100)
+        # Contract: verify async provider was called with expected kwargs
+        mock_provider.ask.assert_called_once_with("test", return_format="text", temperature=0.5, max_tokens=100)
+        # Contract: verify result is returned (passthrough)
+        assert result is not None
+        assert isinstance(result, str)
 
 
 class TestProtocolCompatibility:

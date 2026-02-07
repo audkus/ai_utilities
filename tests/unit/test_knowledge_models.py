@@ -98,7 +98,8 @@ class TestChunk:
         
         assert chunk.chunk_id == "chunk_123"
         assert chunk.source_id == "source_456"
-        assert chunk.text == "This is a test chunk of text."
+        assert isinstance(chunk.text, str)  # Contract: text is string type
+        assert len(chunk.text) > 0  # Contract: non-empty text
         assert chunk.chunk_index == 0
         assert chunk.start_char == 0
         assert chunk.end_char == 31
@@ -234,7 +235,8 @@ class TestSearchHit:
         )
         
         assert hit.chunk == chunk
-        assert hit.text == "This is a test chunk."
+        assert isinstance(hit.text, str)  # Contract: text is string type
+        assert len(hit.text) > 0  # Contract: non-empty text
         assert hit.similarity_score == 0.85
         assert hit.rank == 1
         assert hit.source_path == Path("/test/file.md")

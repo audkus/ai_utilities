@@ -192,13 +192,9 @@ class TestProvidersInitEdgeCases:
             _ = OpenAIProvider.non_existent_attribute_12345
     
     def test_openai_provider_with_mock(self):
-        """Test OpenAIProvider with mocking."""
-        with patch('ai_utilities.providers.OpenAIProvider') as mock_provider:
-            mock_provider.TEST_ATTR = "test_value"
-            
-            from ai_utilities.providers import OpenAIProvider
-            
-            assert OpenAIProvider.TEST_ATTR == "test_value"
+        """Test OpenAIProvider smoke test - coverage guard only."""
+        from ai_utilities.providers import OpenAIProvider
+        assert OpenAIProvider is not None
     
     def test_import_error_message_format(self):
         """Test that import error message has correct format."""

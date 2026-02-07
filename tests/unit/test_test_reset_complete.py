@@ -295,9 +295,9 @@ class TestTestResetComplete:
             from ai_utilities._test_reset import get_current_global_state
             result = get_current_global_state()
             
-            # Verify result
-            assert 'ai_environment_vars' in result
-            assert 'contextvar_overrides' in result
+            # Contract: verify global state structure (provider contract)
+            expected_keys = {'ai_environment_vars', 'contextvar_overrides'}
+            assert expected_keys.issubset(result.keys())
             
             # Check AI environment variables
             ai_env = result['ai_environment_vars']

@@ -61,10 +61,12 @@ class TestAiClientNonBlocking:
         with patch.dict(os.environ, {"CI": "true"}):
             with patch('builtins.input', side_effect=AssertionError("input() must not be called in CI")):
                 # Should raise ProviderConfigurationError without blocking or calling input()
+                # New invariant: ProviderConfigurationError is acceptable in CI/non-interactive
                 with pytest.raises(Exception) as exc_info:
                     client = AiClient()
                 # Should be a configuration error, not an input-related error
                 assert "configuration" in str(exc_info.value).lower() or "provider" in str(exc_info.value).lower()
+                # input() should not have been called (otherwise AssertionError would be raised)
 
     def test_client_with_explicit_settings_never_blocks(self):
         """Test that explicit settings never cause blocking."""
@@ -109,10 +111,12 @@ class TestInputPreventionEnforcement:
         with patch.dict(os.environ, {"CI": "true"}):
             with patch('builtins.input', side_effect=AssertionError("input() must not be called in CI")):
                 # Should raise ProviderConfigurationError without calling input()
+                # New invariant: ProviderConfigurationError is acceptable in CI/non-interactive
                 with pytest.raises(Exception) as exc_info:
                     client = AiClient()
                 # Should be a configuration error, not an input-related error
                 assert "configuration" in str(exc_info.value).lower() or "provider" in str(exc_info.value).lower()
+                # input() should not have been called (otherwise AssertionError would be raised)
 
     def test_input_call_raises_assertion_in_interactive_setup(self):
         """Test that calling input() during interactive_setup raises AssertionError."""

@@ -305,33 +305,29 @@ class TestProvidersInitCompleteIntegration:
             # Should be either a module or have special meaning
             assert inspect.ismodule(obj) or item in ['openai_provider', 'LazyOpenAIProvider', 'LazyOpenAICompatibleProvider'], f"Unexpected public export: {item}"
     
-    def test_integration_with_actual_provider_modules(self):
-        """Test integration with actual provider submodules."""
+    def test_submodule_imports_consistency(self):
+        """Test that submodule imports are consistent with __init__ exports."""
         # Test that we can import from submodules
-        try:
-            from ai_utilities.providers.base_provider import BaseProvider
-            from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
-            from ai_utilities.providers.provider_factory import create_provider
-            from ai_utilities.providers.provider_capabilities import ProviderCapabilities
-            from ai_utilities.providers.provider_exceptions import (
-                ProviderCapabilityError, ProviderConfigurationError,
-                FileTransferError, MissingOptionalDependencyError
-            )
-            
-            # Verify they're the same objects as imported from __init__
-            import ai_utilities.providers as providers
-            
-            assert providers.BaseProvider is BaseProvider
-            assert providers.OpenAICompatibleProvider is OpenAICompatibleProvider
-            assert providers.create_provider is create_provider
-            assert providers.ProviderCapabilities is ProviderCapabilities
-            assert providers.ProviderCapabilityError is ProviderCapabilityError
-            assert providers.ProviderConfigurationError is ProviderConfigurationError
-            assert providers.FileTransferError is FileTransferError
-            assert providers.MissingOptionalDependencyError is MissingOptionalDependencyError
-            
-        except ImportError as e:
-            pytest.skip(f"Cannot import provider submodules: {e}")
+        from ai_utilities.providers.base_provider import BaseProvider
+        from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
+        from ai_utilities.providers.provider_factory import create_provider
+        from ai_utilities.providers.provider_capabilities import ProviderCapabilities
+        from ai_utilities.providers.provider_exceptions import (
+            ProviderCapabilityError, ProviderConfigurationError,
+            FileTransferError, MissingOptionalDependencyError
+        )
+        
+        # Verify they're the same objects as imported from __init__
+        import ai_utilities.providers as providers
+        
+        assert providers.BaseProvider is BaseProvider
+        assert providers.OpenAICompatibleProvider is OpenAICompatibleProvider
+        assert providers.create_provider is create_provider
+        assert providers.ProviderCapabilities is ProviderCapabilities
+        assert providers.ProviderCapabilityError is ProviderCapabilityError
+        assert providers.ProviderConfigurationError is ProviderConfigurationError
+        assert providers.FileTransferError is FileTransferError
+        assert providers.MissingOptionalDependencyError is MissingOptionalDependencyError
     
     def test_error_message_quality(self):
         """Test quality and consistency of error messages."""

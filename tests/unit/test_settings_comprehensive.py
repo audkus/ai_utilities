@@ -294,10 +294,10 @@ class TestAiSettingsEdgeCases:
 class TestAiSettingsIntegration:
     """Test AiSettings integration with other components."""
     
-    def test_settings_with_client(self, fake_settings):
+    def test_settings_with_client(self, fake_settings, monkeypatch):
         """Test that settings work correctly with AiClient."""
         # Client creation requires a configured provider; set hosted provider env.
-        os.environ["OPENAI_API_KEY"] = "test-key"
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         client = AiClient(fake_settings)
         assert client.settings.api_key == fake_settings.api_key
         assert client.settings.model == fake_settings.model

@@ -107,14 +107,10 @@ class TestAudioFileLoading:
         assert audio_file.file_size_bytes == len(b"fake audio data")
         assert audio_file.metadata == {}
     
-    @pytest.mark.skipif(False, reason="Requires mutagen package")
+    @pytest.mark.optional_dep
     def test_load_audio_file_with_mutagen(self, tmp_path):
         """Test loading with mutagen metadata extraction."""
-        # Import mutagen to check if available
-        try:
-            import mutagen
-        except ImportError:
-            pytest.skip("mutagen package not available")
+        mutagen = pytest.importorskip("mutagen")
         
         # Create a test audio file
         test_file = tmp_path / "test.mp3"
@@ -237,14 +233,10 @@ class TestAudioConversion:
             # Restore original value
             audio_utils_module.PYDUB_AVAILABLE = original_value
     
-    @pytest.mark.skipif(False, reason="Requires pydub package")
+    @pytest.mark.optional_dep
     def test_convert_audio_format_with_pydub(self, tmp_path):
         """Test conversion with pydub available."""
-        # Import pydub to check if available
-        try:
-            import pydub
-        except ImportError:
-            pytest.skip("pydub package not available")
+        pydub = pytest.importorskip("pydub")
         
         input_file = tmp_path / "input.wav"
         input_file.write_bytes(b"fake audio data")

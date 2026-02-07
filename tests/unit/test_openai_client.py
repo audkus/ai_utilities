@@ -181,8 +181,10 @@ class TestOpenAIClient:
         constructor_mock, client_mock = openai_mocks
         # Mock setup handled by fixture
         
-        # Mock API exception
-        from openai import OpenAIError
+        # Create a real exception class for testing
+        class OpenAIError(Exception):
+            pass
+        
         client_mock.chat.completions.create.side_effect = OpenAIError("API Error")
         
         client = openai_client_mod.OpenAIClient(api_key="test-key")
@@ -227,7 +229,10 @@ class TestOpenAIClient:
         constructor_mock, client_mock = openai_mocks
         # Mock setup handled by fixture
         
-        from openai import OpenAIError
+        # Create a real exception class for testing
+        class OpenAIError(Exception):
+            pass
+        
         client_mock.models.list.side_effect = OpenAIError("Models API Error")
         
         client = openai_client_mod.OpenAIClient(api_key="test-key")
