@@ -28,10 +28,36 @@ class AutomatedTestRunner:
     """Automated test runner for AI Utilities."""
     
     def __init__(self):
-        self.project_root = project_root
         self.test_results = {}
         self.start_time = None
         self.end_time = None
+        self.categories = {
+            "core_library": self._run_core_library_tests,
+            "examples": self._run_example_tests,
+            "scripts": self._run_script_tests,
+            "integration": self._run_integration_tests,
+            "performance": self._run_performance_tests,
+            "ci": self._run_ci_tests,
+        }
+    
+    def _new_results(self, status: str = "passed") -> Dict[str, Any]:
+        """Create a new results dict with stable schema.
+        
+        Args:
+            status: Initial status ("passed", "failed", "skipped")
+            
+        Returns:
+            Results dict with all required keys for consistent schema
+        """
+        return {
+            "status": status,
+            "tests_run": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "errors": [],
+            "duration": 0,
+            "details": {}
+        }
         
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all tests and return comprehensive results."""
@@ -41,18 +67,8 @@ class AutomatedTestRunner:
         print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 60)
         
-        # Test categories
-        test_categories = {
-            "core_library": self._run_core_library_tests,
-            "examples": self._run_example_tests,
-            "scripts": self._run_script_tests,
-            "integration": self._run_integration_tests,
-            "performance": self._run_performance_tests,
-            "ci_pipeline": self._run_ci_tests
-        }
-        
         # Run each test category
-        for category, test_func in test_categories.items():
+        for category, test_func in self.categories.items():
             print(f"\n🧪 Running {category.upper()} tests...")
             try:
                 results = test_func()
@@ -60,15 +76,10 @@ class AutomatedTestRunner:
                 self._print_category_results(category, results)
             except Exception as e:
                 print(f"❌ {category} tests failed with error: {e}")
-                self.test_results[category] = {
-                    "status": "failed",
-                    "error": str(e),
-                    "tests_run": 0,
-                    "tests_passed": 0,
-                    "tests_failed": 0
-                }
-        
-        self.end_time = time.time()
+                error_results = self._new_results(status="failed")
+                error_results["errors"].append(str(e))
+                self.test_results[category] = error_results
+                self._print_category_results(category, error_results)
         
         # Generate final report
         final_report = self._generate_final_report()
@@ -90,13 +101,9 @@ class AutomatedTestRunner:
     def _run_example_tests(self) -> Dict[str, Any]:
         """Run example tests."""
         # Skip examples test - file doesn't exist
-        return {
-            "status": "skipped",
-            "tests_run": 0,
-            "tests_passed": 0,
-            "tests_failed": 0,
-            "message": "No example tests found"
-        }
+        results = self._new_results(status="skipped")
+        results["details"]["message"] = "No example tests found"
+        return results
     
     def _run_script_tests(self) -> Dict[str, Any]:
         """Run script tests."""
@@ -138,15 +145,7 @@ class AutomatedTestRunner:
     
     def _run_test_files(self, test_files: List[str], category: str) -> Dict[str, Any]:
         """Run a list of test files and return results."""
-        results = {
-            "status": "passed",
-            "tests_run": 0,
-            "tests_passed": 0,
-            "tests_failed": 0,
-            "errors": [],
-            "duration": 0,
-            "details": {}
-        }
+        results = self._new_results(status="passed")
         
         start_time = time.time()
         
