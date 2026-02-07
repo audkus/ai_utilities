@@ -13,48 +13,58 @@ recursive-include src/ai_utilities py.typed
 recursive-include docs *.md
 recursive-include docs *.rst
 
-# Exclude temporary/internal documentation from release
-exclude docs/internal/*
-exclude docs/analysis/*
-exclude docs/dev/*
+# Exclude internal / temporary docs from release
+prune docs/internal
+prune docs/analysis
+prune docs/dev
 exclude docs/v1.0_migration_baseline.md
 exclude docs/LOCAL_AI_SETUP.md
 exclude docs/MIGRATION.md
 
-# Include examples (but not generated artifacts)
+# Include examples (code + lightweight assets)
 recursive-include examples *.py
 recursive-include examples *.md
 recursive-include examples *.pdf
-recursive-include examples *.wav
-recursive-include examples *.mp3
+
+# Include audio examples ONLY from examples/assets
+recursive-include examples/assets *.wav *.mp3
+
+# Prevent accidental audio elsewhere in examples/
+exclude examples/**/*.wav
+exclude examples/**/*.mp3
 
 # Include test files (for sdist, not wheel)
 recursive-include tests *.py
 recursive-include tests *.md
 
+# Prune common build/cache artifacts (recommended)
+prune .git
+prune .venv
+prune .tox
+prune build
+prune dist
+prune .pytest_cache
+prune .mypy_cache
+prune .ruff_cache
+prune .idea
+
 # Exclude cache and build artifacts
 global-exclude __pycache__
-global-exclude *.pyc
-global-exclude *.pyo
+global-exclude *.py[cod]
 global-exclude *.pyd
-global-exclude .git*
-global-exclude .DS_Store
 global-exclude *.so
+global-exclude .DS_Store
 global-exclude .coverage
-global-exclude .pytest_cache
-global-exclude .mypy_cache
-global-exclude .ruff_cache
-global-exclude .idea
 global-exclude *.bak
 global-exclude *.tmp
+global-exclude *.log
 
 # Exclude large binary files from repo root
 exclude *.wav
 exclude *.mp3
-exclude *.log
 exclude bandit-report.json
 
-# Exclude development and CI files
+# Exclude development and CI generated artifacts
 exclude .github/workflows/README.md
 exclude .ai_utilities/
 exclude provider_health.json
