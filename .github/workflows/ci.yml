@@ -144,8 +144,8 @@ jobs:
     
     - name: Test examples
       run: |
-        python examples/getting_started.py || echo "Expected failure without API key"
-        python examples/model_validation.py || echo "Expected failure without API key"
+        python examples/quickstarts/minimal_openai.py || echo "Expected failure without API key"
+        python examples/tutorial/step_01_setup.py || echo "Expected failure without API key"
 
   security-scan:
     name: Security Scan (Optional)
@@ -197,8 +197,8 @@ jobs:
       run: |
         # Test that all examples can be imported
         python -c "
-        import examples.getting_started
-        import examples.model_validation
+        import examples.quickstarts.minimal_openai
+        import examples.tutorial.step_01_setup
         print('OK: All examples import successfully')
         "
 

@@ -82,7 +82,7 @@ class AutomatedTestRunner:
             "unit/test_client.py",
             "unit/test_config_models.py",
             "utils/test_caching.py",
-            "integration/test_audio_integration.py"
+            # Skip integration tests from core library - they require external dependencies
         ]
         
         return self._run_test_files(core_test_files, "Core Library")
