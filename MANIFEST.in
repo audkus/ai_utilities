@@ -13,6 +13,14 @@ recursive-include src/ai_utilities py.typed
 recursive-include docs *.md
 recursive-include docs *.rst
 
+# Exclude temporary/internal documentation from release
+exclude docs/internal/*
+exclude docs/analysis/*
+exclude docs/dev/*
+exclude docs/v1.0_migration_baseline.md
+exclude docs/LOCAL_AI_SETUP.md
+exclude docs/MIGRATION.md
+
 # Include examples (but not generated artifacts)
 recursive-include examples *.py
 recursive-include examples *.md
