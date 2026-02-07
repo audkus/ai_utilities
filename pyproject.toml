@@ -198,7 +198,7 @@ per-file-ignores = [
     # Test-specific allowances
     "tests/**:S101,B018,S105,S106,S108,S311,S603,S607,B011,B017,E501,SIM117,SIM105",
     # CLI tools - print statements appropriate
-    "src/ai_utilities/cli.py:",
+    # "src/ai_utilities/cli.py:",  # Disabled - empty pattern
     # Conditional OpenAI import handling
     "src/ai_utilities/client.py:E402",
     "src/ai_utilities/providers/openai_provider.py:E402",
