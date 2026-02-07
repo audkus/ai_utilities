@@ -778,6 +778,7 @@ TRANSIENT_FILES = {
 ALLOWED_WRITE_PATHS = {
     "coverage_reports/**",
     "reports/**",
+    ".pytest_cache/**",
 }
 
 
