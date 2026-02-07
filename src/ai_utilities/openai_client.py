@@ -7,11 +7,28 @@ Pure OpenAI API client with single responsibility for API communication.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-import openai
-from openai.types.chat import ChatCompletion
 
-# Patchable symbol that tests can target
-OpenAI = openai.OpenAI
+# OpenAI imports - lazy loaded to avoid import-time dependencies
+_openai = None
+ChatCompletion = None
+OpenAI = None
+
+def _get_openai():
+    """Lazy import of openai module."""
+    global _openai, ChatCompletion, OpenAI
+    if _openai is None:
+        try:
+            import openai
+            from openai.types.chat import ChatCompletion
+            _openai = openai
+            ChatCompletion = ChatCompletion
+            OpenAI = openai.OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is required for OpenAI client. "
+                "Install it with: pip install 'ai-utilities[openai]'"
+            )
+    return _openai
 
 
 class OpenAIClient:
@@ -34,6 +51,7 @@ class OpenAIClient:
         self.api_key = api_key
         self.base_url = base_url
         self.timeout = timeout
+        _get_openai()  # Ensure openai is imported
         self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(

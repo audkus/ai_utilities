@@ -8,11 +8,27 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-import openai
-from openai.types.chat import ChatCompletion
+# OpenAI imports - lazy loaded to avoid import-time dependencies
+_openai = None
+ChatCompletion = None
+OpenAI = None
 
-# Patchable symbol for tests
-OpenAI = openai.OpenAI
+def _get_openai():
+    """Lazy import of openai module."""
+    global _openai, ChatCompletion, OpenAI
+    if _openai is None:
+        try:
+            import openai
+            from openai.types.chat import ChatCompletion
+            _openai = openai
+            ChatCompletion = ChatCompletion
+            OpenAI = openai.OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is required for OpenAI provider. "
+                "Install it with: pip install 'ai-utilities[openai]'"
+            )
+    return _openai
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -33,6 +49,7 @@ class OpenAIProvider(BaseProvider):
         if client is not None:
             self.client = client
         else:
+            _get_openai()  # Ensure openai is imported
             self.client = OpenAI(
                 api_key=settings.api_key,
                 base_url=settings.base_url,
