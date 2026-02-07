@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bug Prevention Tests
+Bug Prevention Tests for Provider Tools
 
 Tests for preventing common bugs and edge cases in provider monitoring.
 Focuses on robust error handling, configuration validation, and edge case coverage.
@@ -18,8 +18,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 
-from provider_health_monitor import ProviderMonitor
-from provider_change_detector import ProviderChangeDetector
+from provider_tools import ProviderMonitor, ChangeDetector
 
 
 class TestProviderChangeDetectorBugPrevention:
@@ -27,20 +26,20 @@ class TestProviderChangeDetectorBugPrevention:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.detector = ProviderChangeDetector()
+        self.detector = ChangeDetector()
     
     def test_alert_thresholds_are_reasonable(self):
         """Test that alert thresholds are reasonable and prevent false positives."""
         # Test threshold validation
-        assert self.detector.alert_threshold['response_time'] > 0
-        assert self.detector.alert_threshold['response_time'] < 60  # Should alert under 1 minute
-        assert self.detector.alert_threshold['error_rate'] >= 0
-        assert self.detector.alert_threshold['error_rate'] <= 1.0
-        assert self.detector.alert_threshold['downtime_hours'] > 0
+        assert self.detector.monitor.alert_thresholds['response_time'] > 0
+        assert self.detector.monitor.alert_thresholds['response_time'] < 60  # Should alert under 1 minute
+        assert self.detector.monitor.alert_thresholds['error_rate'] >= 0
+        assert self.detector.monitor.alert_thresholds['error_rate'] <= 1.0
+        assert self.detector.monitor.alert_thresholds['downtime_hours'] > 0
     
     def test_change_detection_handles_all_status_types(self):
         """Test that change detection handles all possible provider status types."""
-        from provider_health_monitor import ProviderStatus
+        from provider_tools import ProviderStatus
         from datetime import datetime
         
         status_types = ["healthy", "degraded", "down"]

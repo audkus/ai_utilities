@@ -48,7 +48,6 @@ python scripts/provider_tools.py --all
   - `probe_local_providers.py` - Local AI provider probing
   - `probe_simple_free_api.py` - Simple free API probing
   - `probe_text_generation_webui_integration.py` - Text Generation WebUI probing
-- `validate_*.py` - Bug prevention and critical validation
 
 ### Utilities
 - `coverage_summary.py` - Test coverage analysis
