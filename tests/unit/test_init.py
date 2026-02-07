@@ -188,7 +188,7 @@ class TestInitModule:
         import ai_utilities as fresh_ai_utilities
         
         # Should fall back to hardcoded version
-        assert fresh_ai_utilities.__version__ == "1.0.0b2"
+        assert fresh_ai_utilities.__version__ == "1.0.0"
 
     @patch('importlib.metadata.version')
     def test_version_from_metadata(self, mock_version: MagicMock) -> None:
