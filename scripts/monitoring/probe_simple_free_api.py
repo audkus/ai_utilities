@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ai_utilities import create_client
 
-def test_simple_free_api():
-    """Test a simple free API that works without registration."""
+def probe_simple_free_api():
+    """Probe a simple free API that works without registration."""
     print("🌐 Testing Simple Free API (No Setup Required)")
     print("=" * 55)
     
@@ -38,4 +38,4 @@ def test_simple_free_api():
     print("• Groq gives you the fastest free inference with Llama 3")
 
 if __name__ == "__main__":
-    test_simple_free_api()
+    probe_simple_free_api()
