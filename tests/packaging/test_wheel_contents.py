@@ -2,23 +2,21 @@
 
 from __future__ import annotations
 
-import os
 import zipfile
 from pathlib import Path
 from typing import Set
 
 import pytest
 
+pytestmark = pytest.mark.packaging
 
-@pytest.mark.packaging
+
 def test_wheel_contains_only_runtime_files() -> None:
     """
     Test that wheel contains only runtime files, no development artifacts.
     
     Wheel should be minimal - only code and metadata needed for runtime.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -77,15 +75,12 @@ def test_wheel_contains_only_runtime_files() -> None:
     )
 
 
-@pytest.mark.packaging
 def test_wheel_contains_essential_files() -> None:
     """
     Test that wheel contains essential runtime files.
     
     Wheel should contain all necessary Python modules and metadata.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -127,15 +122,12 @@ def test_wheel_contains_essential_files() -> None:
     )
 
 
-@pytest.mark.packaging
 def test_wheel_no_duplicate_files() -> None:
     """
     Test that wheel doesn't contain duplicate files.
     
     Duplicates can cause installation issues.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
@@ -161,15 +153,12 @@ def test_wheel_no_duplicate_files() -> None:
     )
 
 
-@pytest.mark.packaging
 def test_wheel_metadata_consistency() -> None:
     """
     Test that wheel metadata is consistent and valid.
     
     Checks for proper metadata structure and required fields.
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
 
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent

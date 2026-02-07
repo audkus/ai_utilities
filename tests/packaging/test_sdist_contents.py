@@ -1,3 +1,5 @@
+"""Test sdist contents validation."""
+
 from __future__ import annotations
 
 import os
@@ -6,6 +8,8 @@ from pathlib import Path
 from typing import Iterable, Set
 
 import pytest
+
+pytestmark = pytest.mark.packaging
 
 
 def _list_sdist_members(tar_gz_path: Path) -> Set[str]:
@@ -25,15 +29,11 @@ def _iter_audio_paths(members: Iterable[str]) -> Iterable[str]:
             yield name
 
 
-@pytest.mark.packaging
 def test_sdist_audio_only_in_examples_assets() -> None:
     """
     Enforce sdist rule:
     - .wav/.mp3 may only appear under examples/assets/
     """
-    if os.getenv("RUN_PACKAGING_TESTS") != "1":
-        pytest.skip("Packaging tests disabled (set RUN_PACKAGING_TESTS=1)")
-
     # Use absolute path from project root
     project_root = Path(__file__).parent.parent.parent
     dist = project_root / "dist"
