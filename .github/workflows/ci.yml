@@ -155,6 +155,9 @@ jobs:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     continue-on-error: true  # Never block releases
     
+    env:
+      SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -169,7 +172,7 @@ jobs:
     
     - name: Check for security vulnerabilities
       run: |
-        safety scan --full-report --exit-code
+        safety --key "$SAFETY_API_KEY" scan --detailed-output --exit-code
     
     - name: Run bandit security linter
       run: |
