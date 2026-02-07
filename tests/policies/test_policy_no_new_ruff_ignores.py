@@ -145,7 +145,6 @@ def test_ruff_per_file_ignores_baseline():
             "S101", "B018", "S105", "S106", "S108", "S311", "S603", "S607",
             "B011", "B017", "E501", "SIM117", "SIM105"
         },  # Test-specific allowances
-        "src/ai_utilities/cli.py": set(),  # CLI tools - print statements appropriate
         "src/ai_utilities/client.py": {"E402"},  # Conditional OpenAI import handling
         "src/ai_utilities/providers/openai_provider.py": {"E402"},  # Conditional OpenAI import
         "src/ai_utilities/providers/openai_compatible_provider.py": {"E402"},  # Conditional OpenAI import
