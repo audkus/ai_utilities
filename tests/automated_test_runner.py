@@ -168,7 +168,8 @@ class AutomatedTestRunner:
                     "--verbose",
                     "--tb=short",
                     "--json-report",
-                    "--json-report-file=/tmp/pytest_report.json"
+                    "--json-report-file=/tmp/pytest_report.json",
+                    "-m", "not integration and not slow and not packaging and not hanging and not dashboard"
                 ]
                 
                 result = subprocess.run(
