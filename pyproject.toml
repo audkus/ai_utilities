@@ -31,9 +31,11 @@ dependencies = [
   "portalocker>=2.0,<3",
   "requests>=2.31,<3",
   "urllib3>=1.26,<3",  # Updated to allow v2.x for compatibility
-  # Security constraints for transitive dependencies
-  "filelock>=3.20.1",  # CVE-2025-68146 fix
-  "marshmallow>=4.1.2",  # CVE-2025-68480 fix
+  # Security constraints for transitive dependencies with Python version compatibility
+  "filelock>=3.16.0,<3.20.0; python_version<'3.10'",  # CVE-2025-68146 fix for Python 3.9
+  "filelock>=3.20.1; python_version>='3.10'",  # CVE-2025-68146 fix for Python 3.10+
+  "marshmallow>=3.20.0,<4.1.0; python_version<'3.10'",  # CVE-2025-68480 fix for Python 3.9 (last safe version)
+  "marshmallow>=4.1.2; python_version>='3.10'",  # CVE-2025-68480 fix for Python 3.10+
 ]
 
 [project.optional-dependencies]
