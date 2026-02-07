@@ -91,6 +91,80 @@ Or run the interactive setup:
 ai-utilities setup
 ```
 
+## 🚀 API Stability & Compatibility
+
+### Stable Public API (v1.x)
+
+The following classes and functions are **guaranteed to remain stable** across v1.x releases:
+
+#### ✅ Core Classes (Stable)
+- `AiClient` - Main client class for AI interactions
+- `AsyncAiClient` - Async client class
+- `AiSettings` - Configuration settings
+- `create_client()` - Client factory function
+
+#### ✅ Response Types (Stable)
+- `AskResult` - Response from AI requests
+- `UploadedFile` - File upload result
+
+#### ✅ Error Handling (Stable)
+- `JsonParseError` - JSON parsing errors
+- `parse_json_from_text()` - JSON parsing utility
+
+#### ✅ Audio Processing (Stable)
+- `AudioProcessor` - Audio file processing
+- `load_audio_file()` - Load audio files
+- `save_audio_file()` - Save audio files
+- `validate_audio_file()` - Validate audio files
+- `get_audio_info()` - Get audio file information
+
+### 📦 Compatibility Exports (May Change)
+
+The following are available for backwards compatibility but **may change** in future releases:
+
+#### ⚠️ Usage Tracking (Compatibility)
+- `UsageTracker*` - Usage tracking classes
+- `create_usage_tracker()` - Usage tracker factory
+
+#### ⚠️ Rate Limiting (Compatibility)
+- `RateLimitFetcher` - Rate limit information
+- `RateLimitInfo` - Rate limit data
+
+#### ⚠️ Token Counting (Compatibility)
+- `TokenCounter` - Token counting utilities
+
+#### ⚠️ Provider Classes (Compatibility)
+- `BaseProvider` - Base provider class
+- `OpenAIProvider` - OpenAI provider
+- `create_provider()` - Provider factory
+- Other provider-specific classes
+
+#### ⚠️ Audio Models (Compatibility)
+- `AudioFormat` - Audio format enums
+- `TranscriptionRequest` - Transcription request
+- Other audio model classes
+
+### 🔄 Migration Path
+
+For new development, prefer the stable API:
+
+```python
+# ✅ Recommended (Stable API)
+from ai_utilities import AiClient, AiSettings
+client = AiClient()
+
+# ⚠️ Legacy (Compatibility API)
+from ai_utilities import UsageTracker, create_usage_tracker
+# Consider using ai_utilities.usage in future versions
+```
+
+### 📋 What This Means for Developers
+
+- **✅ Safe to use**: All stable API classes will work without breaking changes
+- **⚠️ May change**: Compatibility exports might be modified or moved in future releases
+- **🔄 Migration plan**: Compatibility exports will be available but gradually deprecated
+- **📚 Documentation**: Always check the stable API list above for guaranteed interfaces
+
 ## Common Usage Examples
 
 ### With Caching
