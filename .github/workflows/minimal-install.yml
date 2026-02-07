@@ -21,6 +21,8 @@ jobs:
     
     - name: Install minimal package
       run: |
+        # Ensure clean installation from current source
+        pip uninstall -y ai-utilities || true
         # Install only core package (no providers)
         pip install .
     
