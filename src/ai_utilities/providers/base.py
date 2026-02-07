@@ -1,6 +1,6 @@
 """Base provider interfaces for sync and async AI clients."""
 
-from typing import Any, Dict, Literal, Protocol, Union, runtime_checkable
+from typing import Any, Dict, Literal, Optional, Protocol, Union, runtime_checkable
 from pathlib import Path
 
 from ..file_models import UploadedFile
@@ -23,7 +23,7 @@ class SyncProvider(Protocol):
         """
         ...
 
-    def upload_file(self, path: Path, *, purpose: str = "assistants", filename: str = None, mime_type: str = None) -> UploadedFile:
+    def upload_file(self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None) -> UploadedFile:
         """Upload a file to the AI provider.
         
         Args:
@@ -48,7 +48,7 @@ class SyncProvider(Protocol):
         """
         ...
 
-    def list_files(self, *, purpose: str = None) -> list[UploadedFile]:
+    def list_files(self, *, purpose: Optional[str] = None) -> list[UploadedFile]:
         """List all uploaded files.
         
         Args:
@@ -88,7 +88,7 @@ class AsyncProvider(Protocol):
         """
         ...
 
-    async def upload_file(self, path: Path, *, purpose: str = "assistants", filename: str = None, mime_type: str = None) -> UploadedFile:
+    async def upload_file(self, path: Path, *, purpose: str = "assistants", filename: Optional[str] = None, mime_type: Optional[str] = None) -> UploadedFile:
         """Upload a file to the AI provider asynchronously.
         
         Args:
@@ -113,7 +113,7 @@ class AsyncProvider(Protocol):
         """
         ...
 
-    async def list_files(self, *, purpose: str = None) -> list[UploadedFile]:
+    async def list_files(self, *, purpose: Optional[str] = None) -> list[UploadedFile]:
         """List all uploaded files asynchronously.
         
         Args:

@@ -180,7 +180,7 @@ def _resolve_provider_config_internal(
                 order_source,
             )
 
-        requested_provider = selected_provider
+        requested_provider = selected_provider  # type: ignore[assignment]  # None case handled above
     else:
         configured = _detect_configured_providers(settings)
         # Special case: openai_compatible should be allowed through so that

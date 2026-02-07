@@ -24,7 +24,7 @@ class MetricsContext:
     """
     
     # Context variable for thread-local storage
-    _metrics_context: contextvars.ContextVar[MetricsContext] = contextvars.ContextVar(
+    _metrics_context: contextvars.ContextVar[Optional[MetricsContext]] = contextvars.ContextVar(
         "metrics_context",
         default=None
     )
@@ -39,8 +39,8 @@ class MetricsContext:
         self.registry = registry or MetricsRegistry()
         
         # Store previous context for restoration
-        self._previous_context = None
-        self._token = None
+        self._previous_context: Optional[MetricsContext] = None
+        self._token: Optional[contextvars.Token[Optional[MetricsContext]]] = None
     
     def __enter__(self) -> MetricsContext:
         """Enter the metrics context."""

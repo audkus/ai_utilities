@@ -363,8 +363,8 @@ class SetupWizard:
             selected_mode = self._select_mode(mode)
             provider = self._select_provider(selected_mode)
             api_key = self._get_api_key(provider, selected_mode)
-            base_url = self._get_base_url(provider, selected_mode)
-            model = self._get_model(provider, selected_mode, base_url)
+            base_url = self._get_base_url(provider, selected_mode) or ""
+            model = self._get_model(provider, selected_mode, base_url) or ""
         
         # Create result
         result = SetupResult(

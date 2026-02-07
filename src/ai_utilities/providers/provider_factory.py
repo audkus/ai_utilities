@@ -80,11 +80,7 @@ def create_provider(settings: "AiSettings", provider: Optional[BaseProvider] = N
             "model": getattr(config, "model", None),
             "timeout": _coerce_timeout_seconds(getattr(config, "timeout", None), 30),
         }
-        if hasattr(settings, "model_copy"):
-            provider_settings = settings.model_copy(update=update_data)
-        else:
-            provider_settings = settings.copy()
-            provider_settings.update(update_data)
+        provider_settings = settings.model_copy(update=update_data)
 
         # Create provider based on resolved provider
         if config.provider == "openai":

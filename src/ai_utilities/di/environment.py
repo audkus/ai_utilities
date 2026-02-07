@@ -198,7 +198,7 @@ class EnvironmentProviderStub(EnvironmentProvider):
     scenarios without affecting the real environment.
     """
     
-    def __init__(self, initial_state: Dict[str, str] = None):
+    def __init__(self, initial_state: Optional[Dict[str, str]] = None):
         """
         Initialize test environment provider.
         
@@ -226,7 +226,7 @@ class EnvironmentProviderStub(EnvironmentProvider):
         if key in self._env:
             del self._env[key]
     
-    def reset(self, new_state: Dict[str, str] = None) -> None:
+    def reset(self, new_state: Optional[Dict[str, str]] = None) -> None:
         """Reset environment state."""
         self._env = dict(new_state or {})
 
