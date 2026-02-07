@@ -11,7 +11,7 @@ from . import openai_compatible_provider as openai_compatible_provider
 
 # Make OpenAIProvider available lazily
 try:
-    from .openai_provider import OpenAIProvider as OpenAIProvider
+    from .openai_provider import OpenAIProvider
 except ImportError as e:
     _openai_import_error = e
     class OpenAIProvider:  # callable (class)
@@ -22,7 +22,7 @@ except ImportError as e:
 
 # Make OpenAICompatibleProvider available lazily for patching
 try:
-    from .openai_compatible_provider import OpenAICompatibleProvider as OpenAICompatibleProvider
+    from .openai_compatible_provider import OpenAICompatibleProvider
 except ImportError as e:
     _openai_compatible_import_error = e
     class OpenAICompatibleProvider:  # callable (class)

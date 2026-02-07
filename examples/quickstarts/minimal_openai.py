@@ -5,6 +5,7 @@ The simplest possible way to use AI Utilities with OpenAI.
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Add src to path for imports

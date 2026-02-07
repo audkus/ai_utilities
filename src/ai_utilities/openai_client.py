@@ -52,6 +52,7 @@ class OpenAIClient:
         self.base_url = base_url
         self.timeout = timeout
         _get_openai()  # Ensure openai is imported
+        assert OpenAI is not None  # For MyPy type checking
         self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(
