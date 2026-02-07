@@ -161,11 +161,11 @@ def _resolve_provider_config_internal(
             )
 
         if len(configured) == 1:
-            selected_provider = configured[0]
+            selected_provider: str = configured[0]
             reason = "single configured provider"
         else:
             order, order_source = _resolve_auto_select_order(settings)
-            selected_provider = _pick_first_in_order(configured, order)
+            selected_provider = _pick_first_in_order(configured, order)  # type: ignore[assignment]
             if selected_provider is None:
                 raise ProviderConfigurationError(
                     f"Multiple providers are configured ({', '.join(configured)}), but none match AI_AUTO_SELECT_ORDER.",
@@ -180,7 +180,7 @@ def _resolve_provider_config_internal(
                 order_source,
             )
 
-        requested_provider = selected_provider  # type: ignore[assignment]  # None case handled above
+        requested_provider = selected_provider
     else:
         configured = _detect_configured_providers(settings)
         # Special case: openai_compatible should be allowed through so that
