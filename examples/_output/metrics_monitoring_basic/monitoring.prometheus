@@ -1,93 +1,93 @@
-# HELP operations_total Counter metric operations_total
-# TYPE operations_total counter
-operations_total{model="dall-e-3",endpoint="/generate"} 1.0
-operations_total{table="users",query="select"} 1.0
-operations_total{cache="redis"} 1.0
-operations_total{endpoint="/login"} 1.0
-operations_total{model="gpt-4",endpoint="/chat"} 1.0
-operations_total{type="image",size="large"} 1.0
-operations_total{endpoint="/logout"} 1.0
-operations_total{model="gpt-3.5-turbo",endpoint="/chat"} 1.0
-operations_total{model="dall-e-3",endpoint="/generate"} 0.0
-operations_total{table="users",query="select"} 0.0
-operations_total{cache="redis"} 0.0
-operations_total{type="image",size="large"} 0.0
-operations_total{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
-operations_total{endpoint="/logout"} 0.0
-operations_total{endpoint="/login"} 0.0
-operations_total{model="gpt-4",endpoint="/chat"} 0.0
-# HELP cache_hits_total Total cache hits
-# TYPE cache_hits_total counter
-cache_hits_total 0.0
-cache_hits_total 0.0
-# HELP memory_usage_bytes Memory usage in bytes
-# TYPE memory_usage_bytes counter
-memory_usage_bytes 0.0
-memory_usage_bytes 0.0
-# HELP memory_usage Gauge metric memory_usage
-# TYPE memory_usage counter
-memory_usage{component="application"} 0.0
-memory_usage{component="application"} 512
-# HELP cache_size Current cache size
-# TYPE cache_size counter
-cache_size 0.0
-cache_size 0.0
-# HELP ai_operations Timer metric ai_operations
-# TYPE ai_operations counter
-ai_operations{model="dall-e-3",endpoint="/generate"} 0.0
-ai_operations{model="gpt-4",endpoint="/chat"} 0.0
-ai_operations{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
-ai_operations{model="dall-e-3",endpoint="/generate"} 0.0
-ai_operations{model="gpt-4",endpoint="/chat"} 0.0
-ai_operations{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
-# HELP rate_limit_hits_total Total rate limit hits
-# TYPE rate_limit_hits_total counter
-rate_limit_hits_total 0.0
-rate_limit_hits_total 0.0
-# HELP active_users Gauge metric active_users
-# TYPE active_users counter
-active_users{service="web"} 0.0
-active_users{service="web"} 127
-# HELP provider_errors_total Total provider errors
-# TYPE provider_errors_total counter
-provider_errors_total{provider=""} 0.0
-provider_errors_total{provider=""} 0.0
-# HELP provider_request_duration_seconds Provider request duration
-# TYPE provider_request_duration_seconds counter
-provider_request_duration_seconds 0.0
-provider_request_duration_seconds 0.0
-# HELP ai_requests_successful Total successful AI requests
-# TYPE ai_requests_successful counter
-ai_requests_successful 0.0
-ai_requests_successful 0.0
-# HELP cache_misses_total Total cache misses
-# TYPE cache_misses_total counter
-cache_misses_total 0.0
-cache_misses_total 0.0
-# HELP ai_response_tokens AI response token count
-# TYPE ai_response_tokens counter
-ai_response_tokens 0.0
-ai_response_tokens 0.0
-# HELP active_clients Number of active clients
-# TYPE active_clients counter
-active_clients 0.0
-active_clients 0.0
-# HELP ai_response_duration_seconds AI response duration in seconds
-# TYPE ai_response_duration_seconds counter
-ai_response_duration_seconds 0.0
-ai_response_duration_seconds 0.0
 # HELP ai_requests_failed Total failed AI requests
 # TYPE ai_requests_failed counter
 ai_requests_failed 0.0
 ai_requests_failed 0.0
-# HELP tokens_used_total Total tokens used
-# TYPE tokens_used_total counter
-tokens_used_total{model=""} 0.0
-tokens_used_total{model=""} 0.0
+# HELP ai_operations Timer metric ai_operations
+# TYPE ai_operations counter
+ai_operations{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
+ai_operations{model="dall-e-3",endpoint="/generate"} 0.0
+ai_operations{model="gpt-4",endpoint="/chat"} 0.0
+ai_operations{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
+ai_operations{model="dall-e-3",endpoint="/generate"} 0.0
+ai_operations{model="gpt-4",endpoint="/chat"} 0.0
+# HELP operations_total Counter metric operations_total
+# TYPE operations_total counter
+operations_total{model="gpt-4",endpoint="/chat"} 1.0
+operations_total{model="dall-e-3",endpoint="/generate"} 1.0
+operations_total{endpoint="/login"} 1.0
+operations_total{model="gpt-3.5-turbo",endpoint="/chat"} 1.0
+operations_total{type="image",size="large"} 1.0
+operations_total{cache="redis"} 1.0
+operations_total{endpoint="/logout"} 1.0
+operations_total{table="users",query="select"} 1.0
+operations_total{model="gpt-4",endpoint="/chat"} 0.0
+operations_total{model="dall-e-3",endpoint="/generate"} 0.0
+operations_total{cache="redis"} 0.0
+operations_total{endpoint="/login"} 0.0
+operations_total{endpoint="/logout"} 0.0
+operations_total{model="gpt-3.5-turbo",endpoint="/chat"} 0.0
+operations_total{type="image",size="large"} 0.0
+operations_total{table="users",query="select"} 0.0
 # HELP ai_requests_total Total number of AI requests
 # TYPE ai_requests_total counter
 ai_requests_total 0.0
 ai_requests_total 0.0
+# HELP cache_size Current cache size
+# TYPE cache_size counter
+cache_size 0.0
+cache_size 0.0
+# HELP tokens_used_total Total tokens used
+# TYPE tokens_used_total counter
+tokens_used_total{model=""} 0.0
+tokens_used_total{model=""} 0.0
+# HELP memory_usage Gauge metric memory_usage
+# TYPE memory_usage counter
+memory_usage{component="application"} 0.0
+memory_usage{component="application"} 512
+# HELP ai_response_tokens AI response token count
+# TYPE ai_response_tokens counter
+ai_response_tokens 0.0
+ai_response_tokens 0.0
+# HELP cache_misses_total Total cache misses
+# TYPE cache_misses_total counter
+cache_misses_total 0.0
+cache_misses_total 0.0
+# HELP ai_requests_successful Total successful AI requests
+# TYPE ai_requests_successful counter
+ai_requests_successful 0.0
+ai_requests_successful 0.0
+# HELP rate_limit_hits_total Total rate limit hits
+# TYPE rate_limit_hits_total counter
+rate_limit_hits_total 0.0
+rate_limit_hits_total 0.0
+# HELP memory_usage_bytes Memory usage in bytes
+# TYPE memory_usage_bytes counter
+memory_usage_bytes 0.0
+memory_usage_bytes 0.0
+# HELP ai_response_duration_seconds AI response duration in seconds
+# TYPE ai_response_duration_seconds counter
+ai_response_duration_seconds 0.0
+ai_response_duration_seconds 0.0
+# HELP active_users Gauge metric active_users
+# TYPE active_users counter
+active_users{service="web"} 0.0
+active_users{service="web"} 127
+# HELP provider_request_duration_seconds Provider request duration
+# TYPE provider_request_duration_seconds counter
+provider_request_duration_seconds 0.0
+provider_request_duration_seconds 0.0
+# HELP cache_hits_total Total cache hits
+# TYPE cache_hits_total counter
+cache_hits_total 0.0
+cache_hits_total 0.0
+# HELP active_clients Number of active clients
+# TYPE active_clients counter
+active_clients 0.0
+active_clients 0.0
+# HELP provider_errors_total Total provider errors
+# TYPE provider_errors_total counter
+provider_errors_total{provider=""} 0.0
+provider_errors_total{provider=""} 0.0
 # HELP ai_operations_count Timer metric ai_operations
 # TYPE ai_operations_count gauge
 ai_operations_count{model="gpt-4",endpoint="/chat"} 1

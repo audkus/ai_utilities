@@ -497,7 +497,7 @@ def main():
             print(f"   # TEXT_GENERATION_WEBUI_API_KEY=your-key-here  # Optional")
             
             print(f"\n🚀 Test with AI Utilities:")
-            print(f"   python tests/provider_monitoring/test_text_generation_webui.py")
+            print(f"   python scripts/monitoring/probe_text_generation_webui_integration.py")
             
             print(f"\n💻 Usage example:")
             print(f"   from ai_utilities import create_client")

@@ -8,16 +8,18 @@ Out of **153 total test files**, **36 are script-like files** that don't belong 
 ## Script-Like Files Categories
 
 ### **Category 1: Provider Monitoring Scripts** (9 files)
-**Location:** `tests/provider_monitoring/`
-- `test_all_providers_script.py` → `scripts/monitor_providers.py`
-- `test_bug_prevention.py` → `scripts/validate_bug_prevention.py`
-- `test_critical_bugs.py` → `scripts/validate_critical_bugs.py`
-- `test_fastchat.py` → `scripts/test_fastchat_integration.py`
-- `test_free_apis_script.py` → `scripts/test_free_apis.py`
-- `test_local_providers_script.py` → `scripts/test_local_providers.py`
-- `test_monitoring_system.py` → `scripts/monitor_providers.py`
-- `test_simple_free_api.py` → `scripts/test_simple_free_api.py`
-- `test_text_generation_webui.py` → `scripts/test_text_generation_webui.py`
+**Location:** `tests/provider_monitoring/` → `scripts/monitoring/` (COMPLETED)
+- `test_all_providers_script.py` → `scripts/monitoring/monitor_providers.py`
+- `test_bug_prevention.py` → `scripts/monitoring/validate_bug_prevention.py`
+- `test_critical_bugs.py` → `scripts/monitoring/validate_critical_bugs.py`
+- `test_fastchat.py` → `scripts/monitoring/probe_fastchat_integration.py` (renamed)
+- `test_free_apis_script.py` → `scripts/monitoring/probe_free_apis.py` (renamed)
+- `test_local_providers_script.py` → `scripts/monitoring/probe_local_providers.py` (renamed)
+- `test_monitoring_system.py` → `scripts/monitoring/monitor_providers_system.py`
+- `test_simple_free_api.py` → `scripts/monitoring/probe_simple_free_api.py` (renamed)
+- `test_text_generation_webui.py` → `scripts/monitoring/probe_text_generation_webui_integration.py` (renamed)
+
+**✅ STATUS: COMPLETED** - All files moved and renamed to `probe_*.py` for clarity
 
 ### **Category 2: Utility Scripts** (13 files)
 **Location:** `tests/` → `scripts/utils/`

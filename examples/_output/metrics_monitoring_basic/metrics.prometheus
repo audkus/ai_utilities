@@ -1,71 +1,71 @@
-# HELP cache_hits_total Total cache hits
-# TYPE cache_hits_total counter
-cache_hits_total 0.0
-cache_hits_total 0.0
-# HELP ai_requests_successful Total successful AI requests
-# TYPE ai_requests_successful counter
-ai_requests_successful 0.0
-ai_requests_successful 0.0
-# HELP active_users Gauge metric active_users
-# TYPE active_users counter
-active_users 0.0
-active_users 42
-# HELP cache_misses_total Total cache misses
-# TYPE cache_misses_total counter
-cache_misses_total 0.0
-cache_misses_total 0.0
-# HELP memory_usage_bytes Memory usage in bytes
-# TYPE memory_usage_bytes counter
-memory_usage_bytes 0.0
-memory_usage_bytes 0.0
-# HELP ai_response_tokens AI response token count
-# TYPE ai_response_tokens counter
-ai_response_tokens 0.0
-ai_response_tokens 0.0
-# HELP requests_total Counter metric requests_total
-# TYPE requests_total counter
-requests_total{method="POST"} 1.0
-requests_total{method="POST"} 0.0
-# HELP active_clients Number of active clients
-# TYPE active_clients counter
-active_clients 0.0
-active_clients 0.0
-# HELP cache_size Current cache size
-# TYPE cache_size counter
-cache_size 0.0
-cache_size 0.0
-# HELP ai_response_duration_seconds AI response duration in seconds
-# TYPE ai_response_duration_seconds counter
-ai_response_duration_seconds 0.0
-ai_response_duration_seconds 0.0
 # HELP ai_requests_failed Total failed AI requests
 # TYPE ai_requests_failed counter
 ai_requests_failed 0.0
 ai_requests_failed 0.0
-# HELP rate_limit_hits_total Total rate limit hits
-# TYPE rate_limit_hits_total counter
-rate_limit_hits_total 0.0
-rate_limit_hits_total 0.0
-# HELP response_time Timer metric response_time
-# TYPE response_time counter
-response_time{endpoint="/api"} 0.0
-response_time{endpoint="/api"} 0.0
-# HELP provider_errors_total Total provider errors
-# TYPE provider_errors_total counter
-provider_errors_total{provider=""} 0.0
-provider_errors_total{provider=""} 0.0
-# HELP tokens_used_total Total tokens used
-# TYPE tokens_used_total counter
-tokens_used_total{model=""} 0.0
-tokens_used_total{model=""} 0.0
-# HELP provider_request_duration_seconds Provider request duration
-# TYPE provider_request_duration_seconds counter
-provider_request_duration_seconds 0.0
-provider_request_duration_seconds 0.0
 # HELP ai_requests_total Total number of AI requests
 # TYPE ai_requests_total counter
 ai_requests_total 0.0
 ai_requests_total 0.0
+# HELP cache_size Current cache size
+# TYPE cache_size counter
+cache_size 0.0
+cache_size 0.0
+# HELP tokens_used_total Total tokens used
+# TYPE tokens_used_total counter
+tokens_used_total{model=""} 0.0
+tokens_used_total{model=""} 0.0
+# HELP response_time Timer metric response_time
+# TYPE response_time counter
+response_time{endpoint="/api"} 0.0
+response_time{endpoint="/api"} 0.0
+# HELP rate_limit_hits_total Total rate limit hits
+# TYPE rate_limit_hits_total counter
+rate_limit_hits_total 0.0
+rate_limit_hits_total 0.0
+# HELP memory_usage_bytes Memory usage in bytes
+# TYPE memory_usage_bytes counter
+memory_usage_bytes 0.0
+memory_usage_bytes 0.0
+# HELP active_users Gauge metric active_users
+# TYPE active_users counter
+active_users 0.0
+active_users 42
+# HELP ai_response_duration_seconds AI response duration in seconds
+# TYPE ai_response_duration_seconds counter
+ai_response_duration_seconds 0.0
+ai_response_duration_seconds 0.0
+# HELP ai_response_tokens AI response token count
+# TYPE ai_response_tokens counter
+ai_response_tokens 0.0
+ai_response_tokens 0.0
+# HELP provider_request_duration_seconds Provider request duration
+# TYPE provider_request_duration_seconds counter
+provider_request_duration_seconds 0.0
+provider_request_duration_seconds 0.0
+# HELP cache_misses_total Total cache misses
+# TYPE cache_misses_total counter
+cache_misses_total 0.0
+cache_misses_total 0.0
+# HELP ai_requests_successful Total successful AI requests
+# TYPE ai_requests_successful counter
+ai_requests_successful 0.0
+ai_requests_successful 0.0
+# HELP requests_total Counter metric requests_total
+# TYPE requests_total counter
+requests_total{method="POST"} 1.0
+requests_total{method="POST"} 0.0
+# HELP cache_hits_total Total cache hits
+# TYPE cache_hits_total counter
+cache_hits_total 0.0
+cache_hits_total 0.0
+# HELP active_clients Number of active clients
+# TYPE active_clients counter
+active_clients 0.0
+active_clients 0.0
+# HELP provider_errors_total Total provider errors
+# TYPE provider_errors_total counter
+provider_errors_total{provider=""} 0.0
+provider_errors_total{provider=""} 0.0
 # HELP response_time_count Timer metric response_time
 # TYPE response_time_count gauge
 response_time_count{endpoint="/api"} 1

@@ -9,6 +9,34 @@ import os
 from typing import Any, Dict
 
 
+def _reset_usage_tracker_state():
+    """Reset usage tracker global state to prevent test contamination."""
+    try:
+        import sys
+        from .usage_tracker import ThreadSafeUsageTracker
+        
+        # Clear shared locks that accumulate across tests
+        if hasattr(ThreadSafeUsageTracker, '_shared_locks'):
+            ThreadSafeUsageTracker._shared_locks.clear()
+            
+        # Remove the module from sys.modules to ensure fresh import
+        # This fixes enum contamination issues
+        module_names_to_remove = [
+            'ai_utilities.usage_tracker',
+            'ai_utilities.usage_tracker.ThreadSafeUsageTracker',
+            'ai_utilities.usage_tracker.UsageScope',
+            'ai_utilities.usage_tracker.UsageStats'
+        ]
+        
+        for module_name in module_names_to_remove:
+            if module_name in sys.modules:
+                del sys.modules[module_name]
+            
+    except ImportError:
+        # Module not available, skip
+        pass
+
+
 def reset_global_state_for_tests() -> None:
     """
     Reset all global/module caches and loaded-once flags.
@@ -24,6 +52,7 @@ def reset_global_state_for_tests() -> None:
     - SSL warning emission flag
     - Metrics registry
     - ContextVar state
+    - Audio processor global state
     - Any module-level global state
     """
     try:
@@ -71,6 +100,20 @@ def reset_global_state_for_tests() -> None:
     try:
         # Reset metrics registry
         _reset_metrics_registry()
+    except Exception:
+        # Ignore errors - this is a safety mechanism
+        pass
+    
+    try:
+        # Reset usage tracker state
+        _reset_usage_tracker_state()
+    except Exception:
+        # Ignore errors - this is a safety mechanism
+        pass
+    
+    try:
+        # Reset audio processor state
+        _reset_audio_processor_state()
     except Exception:
         # Ignore errors - this is a safety mechanism
         pass
@@ -176,6 +219,49 @@ def _reset_contextvar_state() -> None:
         
     except (ImportError, Exception):
         # Module might not exist or reset might fail
+        pass
+
+
+def _reset_audio_processor_state() -> None:
+    """Reset audio processor global state."""
+    try:
+        # Clear any module-level caches in audio processor
+        import sys
+        
+        # Remove audio modules from cache to force fresh import
+        audio_modules = [
+            'ai_utilities.audio.audio_processor',
+            'ai_utilities.audio.audio_utils',
+            'ai_utilities.audio.audio_models',
+        ]
+        
+        for module_name in audio_modules:
+            if module_name in sys.modules:
+                del sys.modules[module_name]
+        
+        # Reset Pydantic model caches
+        _reset_pydantic_caches()
+                
+    except (ImportError, Exception):
+        # Handle any exception gracefully
+        pass
+
+
+def _reset_pydantic_caches() -> None:
+    """Reset Pydantic model caches and validation state."""
+    try:
+        # Clear Pydantic model caches
+        import pydantic
+        if hasattr(pydantic, '__pydantic_cache__'):
+            pydantic.__pydantic_cache__.clear()
+        
+        # Reset pydantic-core validation caches
+        import pydantic_core
+        if hasattr(pydantic_core, '__pydantic_core_cache__'):
+            pydantic_core.__pydantic_core_cache__.clear()
+            
+    except (ImportError, Exception):
+        # Handle any exception gracefully
         pass
 
 
