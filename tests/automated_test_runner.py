@@ -79,32 +79,30 @@ class AutomatedTestRunner:
     def _run_core_library_tests(self) -> Dict[str, Any]:
         """Run core library tests."""
         core_test_files = [
-            "test_client.py",
-            "test_config_models.py",
-            "test_enhanced_setup.py",
-            "test_improved_setup.py",
-            "test_caching.py",
-            "test_audio_integration.py"
+            "unit/test_client.py",
+            "unit/test_config_models.py",
+            "utils/test_caching.py",
+            "integration/test_audio_integration.py"
         ]
         
         return self._run_test_files(core_test_files, "Core Library")
     
     def _run_example_tests(self) -> Dict[str, Any]:
         """Run example tests."""
-        example_test_file = "test_examples_comprehensive.py"
-        return self._run_test_files([example_test_file], "Examples")
+        # Skip examples test - file doesn't exist
+        return {
+            "status": "skipped",
+            "tests_run": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "message": "No example tests found"
+        }
     
     def _run_script_tests(self) -> Dict[str, Any]:
         """Run script tests."""
         script_test_files = [
-            "test_fastchat_setup_script.py",
-            "test_text_generation_webui_setup_script.py",
-            "test_coverage_summary_script.py",
-            "test_dashboard.py",
-            "test_provider_tools.py",
-            "test_webui_api_helper.py",
-            "test_main_script.py",
-            "test_ci_provider_check.py"
+            "unit/test_dashboard.py",
+            "test_provider_tools.py"
         ]
         
         return self._run_test_files(script_test_files, "Scripts")
@@ -112,26 +110,28 @@ class AutomatedTestRunner:
     def _run_integration_tests(self) -> Dict[str, Any]:
         """Run integration tests."""
         integration_test_files = [
-            "test_integration_workflows.py"
+            "integration/test_main_integration.py",
+            "integration/test_usage_tracking.py"
         ]
         
         return self._run_test_files(integration_test_files, "Integration")
     
     def _run_performance_tests(self) -> Dict[str, Any]:
         """Run performance benchmarks."""
-        performance_test_files = [
-            "test_performance_benchmarks.py"
-        ]
-        
-        return self._run_test_files(performance_test_files, "Performance")
+        # Skip performance tests - file doesn't exist
+        return {
+            "status": "skipped",
+            "tests_run": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "message": "No performance tests found"
+        }
     
     def _run_ci_tests(self) -> Dict[str, Any]:
         """Run CI-specific tests."""
         # Run a subset of critical tests for CI
         ci_test_files = [
-            "test_examples_comprehensive.py",
-            "test_provider_tools.py",
-            "test_ci_provider_check.py"
+            "test_provider_tools.py"
         ]
         
         return self._run_test_files(ci_test_files, "CI Pipeline")
@@ -167,8 +167,6 @@ class AutomatedTestRunner:
                     str(test_path),
                     "--verbose",
                     "--tb=short",
-                    "--json-report",
-                    "--json-report-file=/tmp/pytest_report.json",
                     "-m", "not integration and not slow and not packaging and not hanging and not dashboard"
                 ]
                 
