@@ -6,22 +6,22 @@ Pure OpenAI API client with single responsibility for API communication.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletion
 
 # OpenAI imports - lazy loaded to avoid import-time dependencies
 _openai = None
-ChatCompletion = None
 OpenAI = None
 
 def _get_openai():
     """Lazy import of openai module."""
-    global _openai, ChatCompletion, OpenAI
+    global _openai, OpenAI
     if _openai is None:
         try:
             import openai
-            from openai.types.chat import ChatCompletion
             _openai = openai
-            ChatCompletion = ChatCompletion
             OpenAI = openai.OpenAI
         except ImportError:
             raise ImportError(
@@ -61,7 +61,7 @@ class OpenAIClient:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         **kwargs
-    ) -> ChatCompletion:
+    ):
         """
         Create a chat completion with OpenAI API.
         
@@ -78,6 +78,7 @@ class OpenAIClient:
         Raises:
             OpenAI API exceptions for API errors
         """
+        _get_openai()  # Ensure openai is imported
         params: Dict[str, Any] = {
             "model": model,
             "messages": messages,
@@ -86,8 +87,7 @@ class OpenAIClient:
         
         if max_tokens:
             params["max_tokens"] = max_tokens
-            
-        # Add any additional parameters
+        
         params.update(kwargs)
         
         return self.client.chat.completions.create(**params)
