@@ -28,14 +28,12 @@ python scripts/provider_tools.py --all
 
 ## 🛠️ Setup Scripts
 
-### Environment Management
-- `backup_env.sh` - Backup current environment
-- `restore_env.sh` - Restore from backup
-- `ci_provider_check.sh` - CI/CD provider validation
-
 ### Provider Setup
 - `fastchat_setup.py` - FastChat provider setup
 - `text_generation_webui_setup.py` - Text Generation WebUI setup
+
+### CI/CD Integration
+- `ci_provider_check.sh` - CI/CD provider validation
 
 ## 📊 Monitoring & Testing
 
