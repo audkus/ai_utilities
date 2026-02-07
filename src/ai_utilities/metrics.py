@@ -157,6 +157,12 @@ class MetricsCollector:
         """Record a timer metric."""
         key = self._make_key(name, labels or {})
         with self.lock:
+            # Store labels if this is the first time we see this metric
+            if key not in self.labels and labels:
+                self.labels[key] = labels
+            # Store description if not present (use a default)
+            if key not in self.descriptions:
+                self.descriptions[key] = f"Timer metric {name}"
             self.timers[key].append(duration)
     
     def timer(self, name: str, labels: Optional[Dict[str, str]] = None):
@@ -243,6 +249,46 @@ class MetricsCollector:
                             labels={**labels, "le": str(bucket.upper_bound)},
                             description=description
                         ))
+            
+            # Timers - include snapshot statistics for each timer series
+            for key, timer_values in self.timers.items():
+                if not timer_values:  # Skip empty timer series
+                    continue
+                    
+                labels = self.labels.get(key, {})
+                description = self.descriptions.get(key, "")
+                
+                # Extract name from internal key
+                if "|" in key:
+                    name, _ = key.split("|", 1)
+                else:
+                    name = key
+                
+                # Calculate timer statistics
+                count = len(timer_values)
+                sum_seconds = sum(timer_values)
+                min_seconds = min(timer_values)
+                max_seconds = max(timer_values)
+                last_seconds = timer_values[-1]  # Last recorded value
+                
+                # Emit timer snapshot metrics as gauges
+                timer_metrics = [
+                    (f"{name}_count", count, "Timer event count"),
+                    (f"{name}_sum_seconds", sum_seconds, "Timer total duration in seconds"),
+                    (f"{name}_min_seconds", min_seconds, "Timer minimum duration in seconds"),
+                    (f"{name}_max_seconds", max_seconds, "Timer maximum duration in seconds"),
+                    (f"{name}_last_seconds", last_seconds, "Timer last duration in seconds"),
+                ]
+                
+                for metric_name, value, desc in timer_metrics:
+                    metrics.append(MetricValue(
+                        name=metric_name,
+                        value=value,
+                        metric_type=MetricType.GAUGE,
+                        timestamp=timestamp,
+                        labels=labels,
+                        description=description or f"Timer snapshot: {desc}"
+                    ))
         
         return metrics
     
