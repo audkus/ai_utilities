@@ -26,6 +26,12 @@ sys.path.insert(0, scripts_dir)
 src_dir = os.path.join(os.path.dirname(__file__), '..', 'src')
 sys.path.insert(0, src_dir)
 
+# Mock environment variables for tests
+ENV_VARS = {
+    'OPENAI_API_KEY': 'test-openai-key',
+    'GROQ_API_KEY': 'test-groq-key'
+}
+
 
 class TestProviderTools:
     """Test provider tools functionality."""
@@ -36,18 +42,12 @@ class TestProviderTools:
         self.config_file = self.temp_dir / "test_config.json"
         self.report_file = self.temp_dir / "test_report.json"
         
-        # Mock environment variables
-        self.env_vars = {
-            'OPENAI_API_KEY': 'test-openai-key',
-            'GROQ_API_KEY': 'test-groq-key'
-        }
-        
     def teardown_method(self):
         """Clean up test environment."""
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     def test_provider_monitor_initialization(self):
         """Test ProviderMonitor initialization."""
         from provider_tools import ProviderMonitor
@@ -81,9 +81,9 @@ class TestProviderTools:
         assert status.response_time == 0.5
         assert status.issues == []
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
     @patch('provider_tools.create_client')
-    def test_health_check_success(self, mock_create_client):
+    def test_full_workflow(self, mock_create_client):
         """Test successful health check."""
         from provider_tools import ProviderMonitor
         
@@ -119,7 +119,7 @@ class TestProviderTools:
         diagnostics = ProviderDiagnostics()
         assert hasattr(diagnostics, 'monitor')
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     @patch('provider_tools.requests.get')
     def test_connectivity_check_success(self, mock_get):
         """Test successful connectivity check."""
@@ -138,7 +138,7 @@ class TestProviderTools:
         assert 'configuration' in results
         assert 'dependencies' in results
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     @patch('provider_tools.requests.get')
     def test_connectivity_check_failure(self, mock_get):
         """Test connectivity check with failure."""
@@ -160,7 +160,7 @@ class TestProviderTools:
         detector = ChangeDetector()
         assert hasattr(detector, 'monitor')
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     @patch('provider_tools.create_client')
     def test_change_detection(self, mock_create_client):
         """Test change detection functionality."""
@@ -193,7 +193,7 @@ class TestProviderTools:
                     pass  # Expected for --help
                 mock_help.assert_called_once()
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     @patch('provider_tools.create_client')
     def test_cli_health_check(self, mock_create_client):
         """Test CLI health check execution."""
@@ -214,7 +214,7 @@ class TestProviderTools:
                 except SystemExit as e:
                     assert e.code == 0  # Success exit code
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     def test_cli_diagnose(self):
         """Test CLI diagnostics execution."""
         from provider_tools import main
@@ -275,7 +275,7 @@ class TestProviderTools:
             assert 'providers' in results
             assert 'summary' in results
     
-    @patch.dict(os.environ, env_vars)
+    @patch.dict(os.environ, ENV_VARS)
     def test_alert_generation(self):
         """Test alert generation for changes."""
         from provider_tools import ChangeDetector
