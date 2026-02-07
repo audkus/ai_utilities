@@ -1,0 +1,47 @@
+# PyPI Publishing via Trusted Publishing
+#
+# PURPOSE: Automatically publish packages to PyPI when version tags are pushed
+# TRIGGER: Git tags matching pattern v* (e.g., v1.0.0, v1.0.0b1, v1.0.0rc1)
+# AUTHENTICATION: Uses PyPI Trusted Publishing (OIDC) - no secrets stored
+# PUBLISHES: Both stable releases and pre-releases
+
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  id-token: write  # Required for OIDC trusted publishing
+  contents: read   # Required to checkout the repository
+
+jobs:
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'  # Use latest stable Python
+    
+    - name: Upgrade build tooling
+      run: |
+        python3 -m pip install --upgrade pip build
+    
+    - name: Build package
+      run: |
+        python3 -m build
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # No username/password/token needed - uses OIDC trusted publishing
+      with:
+        # Publish to the main PyPI repository (not TestPyPI)
+        # Both stable and pre-release versions are accepted
+        verbose: true
