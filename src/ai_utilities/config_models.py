@@ -1081,7 +1081,7 @@ class AiSettings(BaseSettings):
             model = input(f"Model [{current_model}]: ").strip() or current_model
             if model != current_model:
                 os.environ["AI_MODEL"] = model
-                cls._save_to_env_file("AI_MODEL", model)
+                cls._save_to_env_file("AI_MODEL", model or "")
             
             # Prompt for temperature (safe - no security concerns)
             temp_input = input(f"Temperature [{current_temperature}]: ").strip()

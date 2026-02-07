@@ -16,7 +16,7 @@ def _coerce_timeout_seconds(value: object, default: int) -> int:
     if value is None:
         return default
     try:
-        return int(value)  # type: ignore[arg-type]
+        return int(value)  # type: ignore[arg-type, call-overload]
     except (TypeError, ValueError):
         return default
 
