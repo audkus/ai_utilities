@@ -64,6 +64,9 @@ class AutomatedTestRunner:
         """Run all tests and return comprehensive results."""
         self.start_time = time.time()
         
+        # Clean up coverage artifacts from previous runs
+        self._cleanup_coverage_artifacts()
+        
         print("🚀 Starting Automated Test Suite for AI Utilities")
         print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 60)
@@ -217,6 +220,27 @@ class AutomatedTestRunner:
         
         results["duration"] = time.time() - start_time
         return results
+    
+    def _cleanup_coverage_artifacts(self):
+        """Clean up coverage artifacts from previous runs."""
+        import glob
+        import shutil
+        
+        # Remove stray .coverage.* files from repo root
+        for pattern in [".coverage", ".coverage.*"]:
+            for file_path in glob.glob(pattern):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+        
+        # Ensure coverage_reports directory exists
+        coverage_reports_dir = self.project_root / "coverage_reports"
+        coverage_reports_dir.mkdir(exist_ok=True)
+        
+        # Ensure html subdirectory exists
+        html_dir = coverage_reports_dir / "html"
+        html_dir.mkdir(exist_ok=True)
     
     def _print_category_results(self, category: str, results: Dict[str, Any]):
         """Print results for a test category."""

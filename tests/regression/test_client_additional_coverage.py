@@ -663,16 +663,21 @@ class TestAiClientEmbeddings:
         with pytest.raises(ValueError, match="API key is required for embeddings"):
             self.client.get_embeddings(["test"])
     
-    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
-    def test_get_embeddings_success(self, mock_create_client):
+    @patch('builtins.__import__')
+    def test_get_embeddings_success(self, mock_import):
         """Test successful embeddings generation."""
+        # Create mock openai module
+        mock_openai = Mock()
         mock_client = Mock()
         mock_response = Mock()
         mock_data = Mock()
         mock_data.embedding = [0.1, 0.2, 0.3]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_create_client.return_value = mock_client
+        mock_openai.OpenAI.return_value = mock_client
+        
+        # When client tries to import openai, return our mock
+        mock_import.return_value = mock_openai
         
         result = self.client.get_embeddings(["test text"])
         
@@ -682,16 +687,21 @@ class TestAiClientEmbeddings:
             input=["test text"]
         )
     
-    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
-    def test_get_embeddings_with_dimensions(self, mock_create_client):
+    @patch('builtins.__import__')
+    def test_get_embeddings_with_dimensions(self, mock_import):
         """Test embeddings generation with dimensions."""
+        # Create mock openai module
+        mock_openai = Mock()
         mock_client = Mock()
         mock_response = Mock()
         mock_data = Mock()
         mock_data.embedding = [0.4, 0.5, 0.6]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_create_client.return_value = mock_client
+        mock_openai.OpenAI.return_value = mock_client
+        
+        # When client tries to import openai, return our mock
+        mock_import.return_value = mock_openai
         
         result = self.client.get_embeddings(
             ["test text"],
@@ -705,16 +715,21 @@ class TestAiClientEmbeddings:
             dimensions=512
         )
     
-    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
-    def test_get_embeddings_with_custom_model(self, mock_create_client):
+    @patch('builtins.__import__')
+    def test_get_embeddings_with_custom_model(self, mock_import):
         """Test embeddings generation with custom model."""
+        # Create mock openai module
+        mock_openai = Mock()
         mock_client = Mock()
         mock_response = Mock()
         mock_data = Mock()
         mock_data.embedding = [0.7, 0.8, 0.9]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_create_client.return_value = mock_client
+        mock_openai.OpenAI.return_value = mock_client
+        
+        # When client tries to import openai, return our mock
+        mock_import.return_value = mock_openai
         
         result = self.client.get_embeddings(
             ["test text"],
