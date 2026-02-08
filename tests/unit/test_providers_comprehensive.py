@@ -43,6 +43,7 @@ class TestProviderFactory:
         
         assert provider is mock_provider
     
+    @pytest.mark.requires_openai
     def test_create_openai_compatible_provider(self, isolated_env, monkeypatch):
         """Test creating OpenAI-compatible provider."""
         monkeypatch.setenv("AI_MODEL", "gpt-3.5-turbo")

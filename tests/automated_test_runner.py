@@ -221,14 +221,17 @@ class AutomatedTestRunner:
         results["duration"] = time.time() - start_time
         return results
     
-    def _finalize_coverage_artifacts(self) -> None:
+    def _finalize_coverage(self) -> None:
         """Finalize coverage artifacts: combine, generate reports, and clean up all files."""
         import subprocess
         import sys
         from pathlib import Path
         
+        # Get repo root from tests directory
+        repo_root = Path(__file__).resolve().parents[1]
+        
         # Find all coverage files in repo root
-        coverage_files = list(Path(self.project_root).glob(".coverage*"))
+        coverage_files = list(repo_root.glob(".coverage*"))
         coverage_files = [f for f in coverage_files if f.name != ".coveragerc"]  # Skip config file
         
         if coverage_files:
@@ -238,7 +241,7 @@ class AutomatedTestRunner:
             try:
                 result = subprocess.run(
                     [sys.executable, "-m", "coverage", "combine"],
-                    cwd=self.project_root,
+                    cwd=repo_root,
                     capture_output=True,
                     text=True,
                     check=False
@@ -255,7 +258,7 @@ class AutomatedTestRunner:
             try:
                 result = subprocess.run(
                     [sys.executable, "-m", "coverage", "xml", "-o", "coverage.xml"],
-                    cwd=self.project_root,
+                    cwd=repo_root,
                     capture_output=True,
                     text=True,
                     check=False
@@ -270,14 +273,14 @@ class AutomatedTestRunner:
             # Generate HTML report
             try:
                 # Ensure coverage_reports/html directory exists
-                coverage_reports_dir = Path(self.project_root) / "coverage_reports"
+                coverage_reports_dir = repo_root / "coverage_reports"
                 coverage_reports_dir.mkdir(exist_ok=True)
                 html_dir = coverage_reports_dir / "html"
                 html_dir.mkdir(exist_ok=True)
                 
                 result = subprocess.run(
                     [sys.executable, "-m", "coverage", "html", "-d", "coverage_reports/html"],
-                    cwd=self.project_root,
+                    cwd=repo_root,
                     capture_output=True,
                     text=True,
                     check=False
@@ -290,7 +293,8 @@ class AutomatedTestRunner:
                 print(f"    ⚠️  HTML report generation failed: {e}")
         
         # Clean up ALL coverage files (including .coverage) - policy forbids them in root
-        for coverage_file in Path(self.project_root).glob(".coverage*"):
+        # This happens even if combine/xml/html fails
+        for coverage_file in repo_root.glob(".coverage*"):
             if coverage_file.name != ".coveragerc":  # Keep config file
                 try:
                     coverage_file.unlink()
@@ -299,7 +303,7 @@ class AutomatedTestRunner:
                     print(f"    ⚠️  Failed to remove {coverage_file.name}: {e}")
         
         # Ensure coverage_reports directory structure exists
-        coverage_reports_dir = Path(self.project_root) / "coverage_reports"
+        coverage_reports_dir = repo_root / "coverage_reports"
         coverage_reports_dir.mkdir(exist_ok=True)
         html_dir = coverage_reports_dir / "html"
         html_dir.mkdir(exist_ok=True)
@@ -593,7 +597,7 @@ def main():
             sys.exit(0 if overall_status == "passed" else 1)
     finally:
         # Always finalize coverage artifacts, even if tests fail
-        runner._finalize_coverage_artifacts()
+        runner._finalize_coverage()
 
 
 if __name__ == "__main__":

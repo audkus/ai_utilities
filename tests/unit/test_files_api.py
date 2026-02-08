@@ -249,6 +249,7 @@ class TestFileUpload:
         finally:
             temp_path.unlink()
     
+    @pytest.mark.requires_openai
     def test_upload_file_capability_error(self, mock_env_vars):
         """Test upload with provider that doesn't support files."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -370,6 +371,7 @@ class TestFileDownload:
         with pytest.raises(FileTransferError, match="download failed"):
             client.download_file("file-123")
     
+    @pytest.mark.requires_openai
     def test_download_file_capability_error(self, mock_env_vars):
         """Test download with provider that doesn't support files."""
         provider = OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
@@ -467,6 +469,7 @@ class TestAsyncFileOperations:
         with pytest.raises(ValueError, match="file_id cannot be empty"):
             await client.download_file("")
     
+    @pytest.mark.requires_openai
     @pytest.mark.asyncio
     async def test_async_capability_errors(self):
         """Test async capability errors."""

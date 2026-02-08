@@ -1518,3 +1518,21 @@ def clean_env(monkeypatch):
         monkeypatch.delenv(var, raising=False)
 
     return monkeypatch
+
+
+def requires_openai() -> bool:
+    """
+    Check if OpenAI-dependent tests should be run.
+    
+    Returns:
+        True if RUN_OPENAI_TESTS environment variable is set to truthy value
+    """
+    return bool(os.getenv("RUN_OPENAI_TESTS"))
+
+
+def pytest_runtest_setup(item):
+    """
+    Skip tests that require OpenAI if RUN_OPENAI_TESTS is not set.
+    """
+    if "requires_openai" in item.keywords and not requires_openai():
+        pytest.skip("Test requires OpenAI SDK - set RUN_OPENAI_TESTS=1 to run")

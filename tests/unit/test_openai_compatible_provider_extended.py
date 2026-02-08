@@ -17,6 +17,7 @@ from ai_utilities.providers.provider_exceptions import (
 from ai_utilities.file_models import UploadedFile
 
 
+@pytest.mark.requires_openai
 class TestOpenAICompatibleProviderExtended:
     """Extended test cases for OpenAICompatibleProvider to cover missing lines."""
 
