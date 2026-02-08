@@ -2,27 +2,23 @@
 
 import os
 import pytest
-
-# Add src to path for imports
-import sys
 from unittest.mock import MagicMock, patch
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 pytestmark = pytest.mark.integration
 
 def test_main_uses_real_models():
     """Test that main.py uses real OpenAI models, not test models."""
-    # Mock the actual OpenAI API calls but verify model names
-    with patch('ai_utilities.providers.openai_provider.OpenAI') as mock_openai, \
-         patch.dict(os.environ, {'AI_API_KEY': 'test-key'}):
-        # Mock the OpenAI client and response
+    # Patch the SDK boundary function to avoid requiring openai package
+    with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_create_client, \
+         patch.dict(os.environ, {'AI_API_KEY': 'test-key'}, clear=True):
+        
+        # Mock the OpenAI client and response with proper string content
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = "Test response"
+        mock_response.choices[0].message.content = "Test response"  # String, not MagicMock
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         # Import and run main with mocked API
         from ai_utilities import create_client
@@ -33,31 +29,63 @@ def test_main_uses_real_models():
         # Verify the client was initialized with real model
         assert client.settings.model == "gpt-4"
         
-        # Test that default client would fail with test model
-        try:
-            from ai_utilities import AiClient
-            # This should work in mocked environment with API key
-            client_default = AiClient(api_key="test-key")
-            # But in real environment, this would trigger interactive setup
-            assert client_default.settings.model == "test-model-1"
-        except Exception:
-            # In real environment without API key, this would trigger setup
-            pass
+        # Test that the model flows through to the API call
+        response = client.ask("test prompt")
+        assert response == "Test response"
+        
+        # Verify the SDK client was created (without model parameter)
+        mock_create_client.assert_called_once()
+        call_kwargs = mock_create_client.call_args[1]
+        assert 'api_key' in call_kwargs
+        assert 'base_url' in call_kwargs
+        assert 'timeout' in call_kwargs
+        assert 'model' not in call_kwargs  # Model is passed to API call, not client creation
+        
+        # Verify the API call was made with the correct model
+        mock_client.chat.completions.create.assert_called()
+        api_call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert api_call_kwargs.get('model') == 'gpt-4'
 
 def test_create_client_vs_aiclient_model_difference():
     """Test the difference between create_client and AiClient for model selection."""
     from ai_utilities import create_client
     from ai_utilities.client import AiSettings
-    import os
     
-    # create_client should allow specifying real models
-    client_with_real_model = create_client(model="gpt-4", api_key="test-key-for-testing")
-    assert client_with_real_model.settings.model == "gpt-4"
+    # Patch the SDK boundary function to avoid requiring openai package
+    with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_create_client, \
+         patch.dict(os.environ, {'AI_API_KEY': 'test-key-for-testing'}, clear=True):
+        
+        # Mock the OpenAI client
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Test response"
+        mock_client.chat.completions.create.return_value = mock_response
+        mock_create_client.return_value = mock_client
+        
+        # create_client should allow specifying real models
+        client_with_real_model = create_client(model="gpt-4", api_key="test-key-for-testing")
+        assert client_with_real_model.settings.model == "gpt-4"
+        
+        # Test that the model flows through to the API call
+        response = client_with_real_model.ask("test prompt")
+        assert response == "Test response"
+        
+        # Verify the SDK client was created (without model parameter)
+        mock_create_client.assert_called_once()
+        call_kwargs = mock_create_client.call_args[1]
+        assert 'api_key' in call_kwargs
+        assert 'base_url' in call_kwargs
+        assert 'timeout' in call_kwargs
+        assert 'model' not in call_kwargs  # Model is passed to API call, not client creation
+        
+        # Verify the API call was made with the correct model
+        mock_client.chat.completions.create.assert_called()
+        api_call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert api_call_kwargs.get('model') == 'gpt-4'
     
     # AiSettings without parameters uses model from environment or default
-    settings_default = AiSettings()
-    expected_model = os.environ.get('AI_MODEL')  # No fallback default anymore
-    assert settings_default.model == expected_model
-    
-    # This demonstrates the issue: default settings use environment models
-    # but real applications need real OpenAI models
+    with patch.dict(os.environ, {}, clear=True):  # Clear environment to test default behavior
+        settings_default = AiSettings()
+        # In current implementation, model defaults to None when no environment variable
+        assert settings_default.model is None
