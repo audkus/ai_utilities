@@ -17,13 +17,40 @@ def _get_openai():
         try:
             import openai
             _openai = openai
-            OpenAI = openai.OpenAI
-        except ImportError:
+            # Only set OpenAI if it's not already set (e.g., by tests)
+            if OpenAI is None:
+                OpenAI = openai.OpenAI
+        except ImportError as exc:
             raise ImportError(
                 "OpenAI package is required for OpenAI-compatible providers. "
                 "Install it with: pip install 'ai-utilities[openai]'"
-            )
+            ) from exc
     return _openai
+
+
+def _create_openai_sdk_client(**client_kwargs: Any) -> Any:
+    """
+    Create and return an OpenAI SDK client instance.
+    
+    This is the single boundary for SDK client creation, making it
+    the correct target for test patching.
+    
+    Args:
+        **client_kwargs: Arguments to pass to OpenAI constructor
+        
+    Returns:
+        OpenAI SDK client instance
+        
+    Raises:
+        MissingOptionalDependencyError: If OpenAI package is not available
+    """
+    _get_openai()
+    if OpenAI is None:
+        raise MissingOptionalDependencyError(
+            "OpenAI package is required for OpenAI-compatible providers. "
+            "Install it with: pip install 'ai-utilities[openai]'"
+        )
+    return OpenAI(**client_kwargs)
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -82,8 +109,7 @@ class OpenAICompatibleProvider(BaseProvider):
             'model': model  # Use the provided model parameter
         })()
         
-        # Initialize OpenAI client with custom base_url
-        _get_openai()  # Ensure openai is imported
+        # Initialize OpenAI client using the stable boundary
         client_kwargs = {
             "api_key": api_key or "dummy-key",  # OpenAI SDK requires API key
             "base_url": self.base_url,
@@ -94,7 +120,7 @@ class OpenAICompatibleProvider(BaseProvider):
         if self.extra_headers:
             client_kwargs["default_headers"] = self.extra_headers
             
-        self.client = OpenAI(**client_kwargs)
+        self.client = _create_openai_sdk_client(**client_kwargs)
         
         # Initialize warning tracking
         self._shown_warnings = set()

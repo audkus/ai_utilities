@@ -265,6 +265,165 @@ def openai_mocks(
 
 
 @pytest.fixture
+def mock_openai_sdk_client():
+    """
+    Contract-level fixture for OpenAI SDK client mocking.
+    
+    Provides a mock client that matches the OpenAI SDK interface
+    used by providers, without importing openai at module load time.
+    """
+    from unittest.mock import MagicMock
+    
+    # Mock client with the exact interface used by providers
+    mock_client = MagicMock()
+    
+    # Mock chat completions response structure
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Test response"
+    mock_response.choices = [mock_choice]
+    mock_client.chat.completions.create.return_value = mock_response
+    
+    # Mock file operations
+    mock_file = MagicMock()
+    mock_file.id = "file-123"
+    mock_file.filename = "test.txt"
+    mock_file.bytes = 1024
+    mock_client.files.create.return_value = mock_file
+    mock_client.files.retrieve.return_value = mock_file
+    mock_client.files.delete.return_value = MagicMock(deleted=True)
+    
+    # Mock image generation
+    mock_image_response = MagicMock()
+    mock_image = MagicMock()
+    mock_image.url = "https://example.com/image.png"
+    mock_image_response.data = [mock_image]
+    mock_client.images.generate.return_value = mock_image_response
+    
+    return mock_client
+
+
+@pytest.fixture
+def settings_minimal():
+    """
+    Minimal AiSettings for contract testing.
+
+    Provides only the required fields for provider creation,
+    avoiding optional dependencies and complex configuration.
+    """
+    from ai_utilities.config_models import AiSettings
+    
+    return AiSettings(
+        provider="openai",
+        api_key="test-key",
+        model="gpt-3.5-turbo",
+        temperature=0.7,
+        max_tokens=1000,
+        timeout=30
+    )
+
+
+@pytest.fixture
+def mock_openai_compatible_response():
+    """
+    Contract-level fixture for OpenAI Compatible provider response mocking.
+    
+    Provides real response objects with proper string content that match
+    the provider's parsing contract, avoiding MagicMock chains.
+    """
+    from types import SimpleNamespace
+    
+    # Create response structure with real strings
+    message = SimpleNamespace(content="Test response content")
+    choice = SimpleNamespace(message=message)
+    response = SimpleNamespace(choices=[choice])
+    
+    return response
+
+
+@pytest.fixture
+def mock_openai_compatible_json_response():
+    """
+    Contract-level fixture for OpenAI Compatible provider JSON response mocking.
+    
+    Provides real response objects with JSON string content that match
+    the provider's JSON parsing contract.
+    """
+    from types import SimpleNamespace
+    import json
+    
+    # Create response structure with JSON string content
+    json_content = json.dumps({"key": "value", "number": 123})
+    message = SimpleNamespace(content=json_content)
+    choice = SimpleNamespace(message=message)
+    response = SimpleNamespace(choices=[choice])
+    
+    return response
+
+
+@pytest.fixture
+def mock_openai_compatible_client(mock_openai_compatible_response, mock_openai_compatible_json_response):
+    """
+    Contract-level fixture for OpenAI Compatible provider client mocking.
+    
+    Provides a mock client that returns proper response objects with real strings,
+    matching the provider's parsing contract without MagicMock chains.
+    """
+    from unittest.mock import MagicMock
+    
+    # Mock client with proper response objects
+    mock_client = MagicMock()
+    
+    # Set up chat completions to return appropriate responses
+    def create_chat_completion(**kwargs):
+        # Return JSON response if response_format is json_object, otherwise text
+        if kwargs.get("response_format", {}).get("type") == "json_object":
+            return mock_openai_compatible_json_response
+        return mock_openai_compatible_response
+    
+    mock_client.chat.completions.create.side_effect = create_chat_completion
+    
+    return mock_client
+
+
+@pytest.fixture
+def patch_openai_compatible_sdk_client(mock_openai_compatible_client):
+    """
+    Fixture that patches OpenAI Compatible provider's SDK client creation boundary.
+    
+    Patches the stable _create_openai_sdk_client function, ensuring the provider
+    uses our mock client with proper response objects without touching module globals.
+    """
+    from unittest.mock import patch
+    
+    with patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client') as mock_create:
+        mock_create.return_value = mock_openai_compatible_client
+        yield mock_create
+
+
+@pytest.fixture
+def reset_openai_client_globals():
+    """
+    Reset ai_utilities.openai_client global state between tests.
+    
+    This fixture ensures that tests that patch the lazy loading mechanism
+    don't leak state to other tests.
+    """
+    import ai_utilities.openai_client
+    
+    # Store original values
+    original_openai = ai_utilities.openai_client._openai
+    original_openai_class = ai_utilities.openai_client.OpenAI
+    
+    try:
+        yield
+    finally:
+        # Reset to original values
+        ai_utilities.openai_client._openai = original_openai
+        ai_utilities.openai_client.OpenAI = original_openai_class
+
+
+@pytest.fixture
 def enable_test_mode_guard():
     """
     Enable test-mode guards for tests that use this fixture.

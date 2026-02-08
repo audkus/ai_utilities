@@ -22,13 +22,36 @@ def _get_openai():
         try:
             import openai
             _openai = openai
-            OpenAI = openai.OpenAI
+            # Only set OpenAI if it's not already set (e.g., by tests)
+            if OpenAI is None:
+                OpenAI = openai.OpenAI
         except ImportError:
             raise ImportError(
                 "OpenAI package is required for OpenAI client. "
                 "Install it with: pip install 'ai-utilities[openai]'"
             )
     return _openai
+
+
+def _create_openai_sdk_client(api_key: str, base_url: Optional[str] = None, timeout: Optional[float] = None):
+    """
+    Create and return an OpenAI SDK client instance.
+    
+    This is the single boundary for SDK client creation, making it
+    the correct target for test patching.
+    
+    Args:
+        api_key: OpenAI API key
+        base_url: Custom base URL (optional)
+        timeout: Request timeout in seconds
+        
+    Returns:
+        OpenAI SDK client instance
+    """
+    openai_mod = _get_openai()
+    # Use the global OpenAI if set (e.g., by tests), otherwise get from module
+    ctor = OpenAI or getattr(openai_mod, 'OpenAI')
+    return ctor(api_key=api_key, base_url=base_url, timeout=timeout)
 
 
 class OpenAIClient:
@@ -51,9 +74,7 @@ class OpenAIClient:
         self.api_key = api_key
         self.base_url = base_url
         self.timeout = timeout
-        _get_openai()  # Ensure openai is imported
-        assert OpenAI is not None  # For MyPy type checking
-        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
+        self.client = _create_openai_sdk_client(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(
         self,

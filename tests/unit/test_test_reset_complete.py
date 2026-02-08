@@ -93,21 +93,18 @@ class TestTestResetComplete:
         mock_reset_config.assert_called_once()
         mock_reset_context.assert_called_once()
     
-    def test_reset_ai_settings_cache_with_model_config(self):
-        """Test resetting AiSettings cache when model_config exists."""
+    def test_reset_ai_settings_cache_success(self):
+        """Test successful reset of AiSettings cache."""
+        from ai_utilities._test_reset import _reset_ai_settings_cache
+        
+        # Test AiSettings reset
         with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
-            # Configure mock with model_config
-            mock_config = Mock()
-            mock_config._env_file_cache = Mock()
-            mock_ai_settings.model_config = mock_config
+            mock_ai_settings.model_config = {}
             mock_ai_settings._cached_settings = Mock()
             
-            # Call the function
-            from ai_utilities._test_reset import _reset_ai_settings_cache
             _reset_ai_settings_cache()
             
-            # Verify cache clearing
-            mock_config._env_file_cache.clear.assert_called_once()
+            # Verify only _cached_settings is cleared (model_config is a dict, no _env_file_cache)
             mock_ai_settings._cached_settings.clear.assert_called_once()
     
     def test_reset_ai_settings_cache_without_model_config(self):
@@ -121,24 +118,21 @@ class TestTestResetComplete:
             from ai_utilities._test_reset import _reset_ai_settings_cache
             _reset_ai_settings_cache()
             
-            # Verify only cached_settings is cleared
+            # Verify only _cached_settings is cleared (no model_config to check)
             mock_ai_settings._cached_settings.clear.assert_called_once()
     
     def test_reset_ai_settings_cache_without_cached_settings(self):
         """Test resetting AiSettings cache when _cached_settings doesn't exist."""
         with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
             # Configure mock without _cached_settings
-            mock_config = Mock()
-            mock_config._env_file_cache = Mock()
-            mock_ai_settings.model_config = mock_config
+            mock_ai_settings.model_config = {}
             del mock_ai_settings._cached_settings
             
-            # Call the function
+            # Call the function - should not raise exceptions
             from ai_utilities._test_reset import _reset_ai_settings_cache
             _reset_ai_settings_cache()
             
-            # Verify only env_file_cache is cleared
-            mock_config._env_file_cache.clear.assert_called_once()
+            # Should complete without error (nothing to clear)
     
     def test_reset_ai_settings_cache_no_attributes(self):
         """Test resetting AiSettings cache when no cache attributes exist."""
@@ -154,14 +148,30 @@ class TestTestResetComplete:
     def test_reset_ai_settings_cache_with_exception(self):
         """Test resetting AiSettings cache handles exceptions."""
         with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
-            # Configure mock to raise exception
-            mock_ai_settings.model_config = Mock()
-            mock_ai_settings.model_config._env_file_cache = Mock()
-            mock_ai_settings.model_config._env_file_cache.clear.side_effect = Exception("Clear error")
+            # Configure mock to raise exception on _cached_settings.clear
+            mock_ai_settings.model_config = {}
+            mock_ai_settings._cached_settings = Mock()
+            mock_ai_settings._cached_settings.clear.side_effect = Exception("Clear error")
             
             # Call the function - should not raise exceptions
             from ai_utilities._test_reset import _reset_ai_settings_cache
             _reset_ai_settings_cache()
+            
+            # Should handle exception gracefully
+    
+    def test_reset_ai_settings_cache_clear_exception(self):
+        """Test resetting AiSettings cache when clear() raises exception."""
+        with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
+            # Configure mock to raise exception
+            mock_ai_settings.model_config = {}
+            mock_ai_settings._cached_settings = Mock()
+            mock_ai_settings._cached_settings.clear.side_effect = Exception("Clear error")
+            
+            # Call the function - should not raise exceptions
+            from ai_utilities._test_reset import _reset_ai_settings_cache
+            _reset_ai_settings_cache()
+            
+            # Should handle exception gracefully
     
     def test_reset_provider_factory_state_success(self):
         """Test successful reset of provider factory state."""
@@ -413,14 +423,13 @@ class TestTestResetComplete:
         
         # Test AiSettings reset
         with patch('ai_utilities.config_models.AiSettings') as mock_ai_settings:
-            mock_ai_settings.model_config = Mock()
-            mock_ai_settings.model_config._env_file_cache = Mock()
+            mock_ai_settings.model_config = {}
             mock_ai_settings._cached_settings = Mock()
             
             from ai_utilities._test_reset import _reset_ai_settings_cache
             _reset_ai_settings_cache()
             
-            mock_ai_settings.model_config._env_file_cache.clear.assert_called_once()
+            # Verify only _cached_settings is cleared (model_config is a dict, no _env_file_cache)
             mock_ai_settings._cached_settings.clear.assert_called_once()
         
         # Test provider factory reset (should handle missing class gracefully)
