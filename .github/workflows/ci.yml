@@ -68,8 +68,24 @@ jobs:
         mypy src/ai_utilities/ --no-error-summary
     
     - name: Test with pytest
+      env:
+        COVERAGE_FILE: coverage_reports/.coverage
       run: |
         pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=html:coverage_reports --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
+    
+    - name: Combine coverage data
+      run: |
+        # Set coverage file location and combine any parallel fragments
+        export COVERAGE_FILE=coverage_reports/.coverage
+        python -m coverage combine
+        # Generate reports in the correct locations
+        python -m coverage xml -o coverage.xml
+        python -m coverage html -d coverage_reports/html
+    
+    - name: Clean up coverage artifacts
+      run: |
+        # Defensive cleanup of any stray coverage files from root
+        rm -f .coverage .coverage.* || true
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
