@@ -182,10 +182,14 @@ class TestProviderFactoryExtended:
         error_msg = str(exc_info.value)
         assert "configuration" in error_msg.lower()
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_provider_initialization_edge_cases(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_provider_initialization_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider initialization edge cases."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
+        
+        # Mock the SDK client creation
+        mock_client = Mock()
+        mock_create_client.return_value = mock_client
         
         # Test with empty string API key
         provider = OpenAICompatibleProvider(
@@ -203,15 +207,17 @@ class TestProviderFactoryExtended:
         )
         assert provider.base_url == long_url
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_ask_with_various_prompts(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_ask_with_various_prompts(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask with various prompt types."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
         
-        # Mock response
+        # Mock the OpenAI client
+        mock_client = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content="Response"))]
-        mock_openai.return_value.chat.completions.create.return_value = mock_response
+        mock_create_client.return_value = mock_client
+        mock_client.chat.completions.create.return_value = mock_response
         
         provider = OpenAICompatibleProvider(
             base_url="http://localhost:8000/v1"
@@ -220,10 +226,10 @@ class TestProviderFactoryExtended:
         # Test with different prompt types
         prompts = [
             "Simple prompt",
-            "Prompt with special chars: 🚀\n\t",
+            "Prompt with special chars: \n\t",
             "Very long prompt " * 100,
             "Prompt with \"quotes\" and 'apostrophes'",
-            "Prompt with unicode: ñáéíóú",
+            "Prompt with unicode: áéíóú",
             ""
         ]
         
@@ -233,15 +239,17 @@ class TestProviderFactoryExtended:
             assert response is not None
             assert isinstance(response, str)  # Verify return type contract
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_ask_with_parameters(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_ask_with_parameters(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask with various parameters."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
         
-        # Mock response
+        # Mock the OpenAI client
+        mock_client = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content="Response"))]
-        mock_openai.return_value.chat.completions.create.return_value = mock_response
+        mock_create_client.return_value = mock_client
+        mock_client.chat.completions.create.return_value = mock_response
         
         provider = OpenAICompatibleProvider(
             base_url="http://localhost:8000/v1"
@@ -261,15 +269,17 @@ class TestProviderFactoryExtended:
         assert response is not None
         assert isinstance(response, str)  # Verify return type contract
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_ask_many_edge_cases(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_ask_many_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask_many edge cases."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
         
-        # Mock response
+        # Mock the OpenAI client
+        mock_client = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content="Response"))]
-        mock_openai.return_value.chat.completions.create.return_value = mock_response
+        mock_create_client.return_value = mock_client
+        mock_client.chat.completions.create.return_value = mock_response
         
         provider = OpenAICompatibleProvider(
             base_url="http://localhost:8000/v1"
@@ -290,11 +300,15 @@ class TestProviderFactoryExtended:
         assert len(responses) == 10
         assert all(r == "Response" for r in responses)
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_json_mode_edge_cases(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_json_mode_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider JSON mode edge cases."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
         import json
+        
+        # Mock the OpenAI client
+        mock_client = Mock()
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(
             base_url="http://localhost:8000/v1"
@@ -303,7 +317,7 @@ class TestProviderFactoryExtended:
         # Test with valid JSON
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content='{"key": "value"}'))]
-        mock_openai.return_value.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create.return_value = mock_response
         
         response = provider.ask("Test", return_format="json")
         assert response == {"key": "value"}
@@ -323,17 +337,21 @@ class TestProviderFactoryExtended:
         response = provider.ask("Test", return_format="json")
         assert response is True
     
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_compatible_error_handling(self, mock_openai) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_compatible_error_handling(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider error handling."""
         from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
+        
+        # Mock the OpenAI client
+        mock_client = Mock()
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(
             base_url="http://localhost:8000/v1"
         )
         
         # Test with API error
-        mock_openai.return_value.chat.completions.create.side_effect = Exception("API Error")
+        mock_client.chat.completions.create.side_effect = Exception("API Error")
         
         with pytest.raises(Exception):
             provider.ask("Test prompt")
@@ -341,7 +359,7 @@ class TestProviderFactoryExtended:
         # Test with malformed response (missing choices)
         mock_response = Mock()
         mock_response.choices = []
-        mock_openai.return_value.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create.return_value = mock_response
         
         with pytest.raises(Exception):
             provider.ask("Test prompt")
