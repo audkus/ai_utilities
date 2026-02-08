@@ -71,6 +71,7 @@ class TestProviderFactory:
             # Provider might use different attribute pattern
             assert provider.base_url == "http://localhost:11434/v1" or hasattr(provider, 'base_url')
     
+    @pytest.mark.requires_openai
     def test_create_groq_provider(self, isolated_env):
         """Test creating Groq provider."""
         settings = AiSettings(
@@ -92,6 +93,7 @@ class TestProviderFactory:
             assert isinstance(provider.settings.model, str)  # Contract: model is string type
             assert len(provider.settings.model) > 0  # Contract: non-empty model
     
+    @pytest.mark.requires_openai
     def test_create_together_provider(self, isolated_env):
         """Test creating Together AI provider."""
         settings = AiSettings(
@@ -111,6 +113,7 @@ class TestProviderFactory:
             assert isinstance(provider.settings.model, str)  # Contract: model is string type
             assert len(provider.settings.model) > 0  # Contract: non-empty model
     
+    @pytest.mark.requires_openai
     def test_create_openrouter_provider(self, isolated_env):
         """Test creating OpenRouter provider."""
         settings = AiSettings(
@@ -130,6 +133,7 @@ class TestProviderFactory:
             assert isinstance(provider.settings.model, str)  # Contract: model is string type
             assert len(provider.settings.model) > 0  # Contract: non-empty model
     
+    @pytest.mark.requires_openai
     def test_create_ollama_provider(self, isolated_env, monkeypatch):
         """Test creating Ollama provider."""
         monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
@@ -259,6 +263,7 @@ class TestProviderConfiguration:
         assert settings.timeout == 30  # Default timeout
         assert settings.max_tokens is None  # Default (no limit)
     
+    @pytest.mark.requires_openai
     def test_provider_specific_base_urls(self, isolated_env, monkeypatch):
         """Test provider-specific base URL handling."""
         # Test OpenAI-compatible with custom URL

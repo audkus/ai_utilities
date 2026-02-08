@@ -126,6 +126,7 @@ class TestBaseUrlResolution:
 class TestClientIntegration:
     """Test that AiClient works correctly with provider-specific base URLs."""
 
+    @pytest.mark.requires_openai
     def test_client_uses_actual_text_generation_webui_base_url(self):
         """Test that AiClient works correctly with actual TEXT_GENERATION_WEBUI_BASE_URL."""
         # Use the actual environment variable or fall back to default

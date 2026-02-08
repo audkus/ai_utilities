@@ -382,6 +382,7 @@ class TestAiClientIntegration:
         with pytest.raises(ValueError, match="Invalid input"):
             client.ask("Test question")
     
+    @pytest.mark.requires_openai
     def test_client_parameter_validation(self):
         """Test client parameter validation."""
         # Current implementation validates API key at creation time for OpenAI

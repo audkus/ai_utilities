@@ -39,6 +39,7 @@ class TestProviderFactory:
         
         assert provider is mock_provider
     
+    @pytest.mark.requires_openai
     def test_create_openai_compatible_provider(self):
         """Test creating OpenAI-compatible provider."""
         # Import the module locally to ensure patch target exists
@@ -67,6 +68,7 @@ class TestProviderFactory:
             call_args = mock_create_client.call_args[1]
             assert call_args["timeout"] == 60
     
+    @pytest.mark.requires_openai
     def test_openai_compatible_with_request_timeout_s(self):
         """Test OpenAI-compatible provider with request_timeout_s."""
         # Import the module locally to ensure patch target exists
@@ -94,6 +96,7 @@ class TestProviderFactory:
             call_args = mock_create_client.call_args[1]
             assert call_args["timeout"] == 45  # Converted to int
     
+    @pytest.mark.requires_openai
     def test_openai_compatible_with_extra_headers(self):
         """Test OpenAI-compatible provider with extra headers."""
         # Import the module locally to ensure patch target exists
@@ -157,6 +160,7 @@ class TestProviderFactory:
         assert "Unknown provider: unknown" in str(exc_info.value)
 
 
+@pytest.mark.requires_openai
 class TestOpenAICompatibleProvider:
     """Test the OpenAI-compatible provider functionality."""
     
@@ -164,7 +168,7 @@ class TestOpenAICompatibleProvider:
         """Test provider initialization requires base_url."""
         # Import the module locally to ensure patch target exists
         import ai_utilities.providers.openai_compatible_provider as ocp
-        with patch.object(ocp, 'OpenAI') as mock_openai:
+        with patch.object(ocp, '_create_openai_sdk_client') as mock_create_client:
             from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
             
             # Should raise error without base_url
@@ -178,7 +182,7 @@ class TestOpenAICompatibleProvider:
             )
             
             assert provider.base_url == "http://localhost:11434/v1"
-            mock_openai.assert_called_once()
+            mock_create_client.assert_called_once()
     
     def test_initialization_with_extra_headers(self):
         """Test provider initialization with extra headers."""
@@ -261,15 +265,10 @@ class TestOpenAICompatibleProvider:
                 base_url="http://localhost:11434/v1"
             )
             
-            with patch.object(ocp, 'logger') as mock_logger:
-                response = provider.ask("Test prompt", return_format="json")
-                
-                # Should log error but return raw text
-                mock_logger.error.assert_called()
+            response = provider.ask("Test prompt", return_format="json")
             
-            # Contract: verify error handling returns content (passthrough)
-            assert response is not None
-            assert isinstance(response, str)  # Verify return type contract
+            # Should return raw text when JSON parsing fails
+            assert response == "Invalid JSON {"
     
     def test_ask_many(self):
         """Test ask_many method."""
