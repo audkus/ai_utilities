@@ -121,7 +121,7 @@ class AutomatedTestRunner:
             "integration/test_usage_tracking.py"
         ]
         
-        return self._run_test_files(integration_test_files, "Integration")
+        return self._run_test_files(integration_test_files, "Integration", markers="integration")
     
     def _run_performance_tests(self) -> Dict[str, Any]:
         """Run performance benchmarks."""
@@ -143,7 +143,7 @@ class AutomatedTestRunner:
         
         return self._run_test_files(ci_test_files, "CI Pipeline")
     
-    def _run_test_files(self, test_files: List[str], category: str) -> Dict[str, Any]:
+    def _run_test_files(self, test_files: List[str], category: str, markers: str = None) -> Dict[str, Any]:
         """Run a list of test files and return results."""
         results = self._new_results(status="passed")
         
@@ -165,9 +165,15 @@ class AutomatedTestRunner:
                     sys.executable, "-m", "pytest", 
                     str(test_path),
                     "--verbose",
-                    "--tb=short",
-                    "-m", "not integration and not slow and not packaging and not hanging and not dashboard"
+                    "--tb=short"
                 ]
+                
+                # Add marker filter based on category
+                if markers:
+                    cmd.extend(["-m", markers])
+                else:
+                    # Default exclusion markers for non-integration tests
+                    cmd.extend(["-m", "not integration and not slow and not packaging and not hanging and not dashboard"])
                 
                 result = subprocess.run(
                     cmd,
@@ -184,6 +190,10 @@ class AutomatedTestRunner:
                 else:
                     file_result = {"status": "failed", "output": result.stderr}
                     print(f"    ❌ {test_file} failed")
+                    print(f"       Command: {' '.join(cmd)}")
+                    print(f"       Return code: {result.returncode}")
+                    print(f"       STDOUT:\n{result.stdout}")
+                    print(f"       STDERR:\n{result.stderr}")
                     results["status"] = "failed"
                     results["errors"].append(f"{test_file}: {result.stderr[:200]}")
                 

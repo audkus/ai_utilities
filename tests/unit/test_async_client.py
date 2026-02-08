@@ -34,8 +34,9 @@ class TestAsyncOpenAIProvider:
         with patch('ai_utilities.providers.OpenAIProvider') as mock_sync_provider:
             mock_sync_instance = MagicMock()
             mock_sync_provider.return_value = mock_sync_instance
-
+            
             provider = AsyncOpenAIProvider(mock_settings)
+            # Replace the sync provider with our mock
             provider._sync_provider = mock_sync_instance
             return provider, mock_sync_instance
 

@@ -17,6 +17,8 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+pytestmark = pytest.mark.integration
+
 from ai_utilities.usage_tracker import (
     ThreadSafeUsageTracker,
     UsageScope,
