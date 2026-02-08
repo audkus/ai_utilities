@@ -212,87 +212,95 @@ class TestClientUtilitiesCoverage:
 class TestClientIntegrationCoverage:
     """Test client integration scenarios for better coverage."""
     
-    @patch('ai_utilities.providers.base_provider.BaseProvider')
     @patch('ai_utilities.usage_tracker.create_usage_tracker')
     @patch('ai_utilities.cache.CacheBackend')
     @patch('ai_utilities.progress_indicator.ProgressIndicator')
     @patch('ai_utilities.models.AskResult')
     @patch('ai_utilities.json_parsing.parse_json_from_text')
     @patch('ai_utilities.file_models.UploadedFile')
-    @patch('ai_utilities.providers.provider_exceptions.ProviderConfigurationError')
-    def test_client_with_different_config_formats(self, mock_provider_exc, mock_file_models, mock_json_parsing, 
-                                                  mock_models, mock_progress, mock_cache, mock_usage_tracker, mock_base_provider):
+    def test_client_with_different_config_formats(self, mock_file_models, mock_json_parsing, 
+                                                  mock_models, mock_progress, mock_cache, mock_usage_tracker):
         """Test client initialization with different config formats."""
-        # Test with JSON config
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            config = {
-                "api_key": "test-key",
-                "model": "gpt-4",
-                "provider": "openai",
-                "namespace": "Test Namespace"
-            }
-            json.dump(config, f)
-            json_file = f.name
+        # Patch provider_exceptions and base_provider locally to avoid lazy import issues
+        import ai_utilities.providers.provider_exceptions as pe
+        import ai_utilities.providers.base_provider as bp
         
-        try:
-            with patch('ai_utilities.client.AiSettings') as mock_settings_class:
-                mock_settings = Mock()
-                mock_settings.api_key = "test-key"
-                mock_settings.model = "gpt-4"
-                mock_settings.provider = "openai"
-                mock_settings.base_url = "https://api.openai.com/v1"  # Ensure this is a string, not Mock
-                mock_settings.namespace = "test namespace"
-                # Configure Mock to return proper values for attribute access
-                mock_settings.configure_mock(**{
-                    'api_key': "test-key",
-                    'model': "gpt-4",
-                    'provider': "openai", 
-                    'base_url': "https://api.openai.com/v1",
-                    'namespace': "test namespace"
-                })
-                # Configure model_copy to return a copy with proper string values
-                mock_copy = Mock()
-                mock_copy.configure_mock(**{
-                    'api_key': "test-key",
-                    'model': "gpt-4",
-                    'provider': "openai", 
-                    'base_url': "https://api.openai.com/v1",
-                    'namespace': "test namespace"
-                })
-                mock_settings.model_copy.return_value = mock_copy
-                mock_settings_class.return_value = mock_settings
+        with patch.object(pe, 'ProviderConfigurationError') as mock_provider_exc:
+            with patch.object(bp, 'BaseProvider') as mock_base_provider:
+                # Test with JSON config
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    config = {
+                        "api_key": "test-key",
+                        "model": "gpt-4",
+                        "provider": "openai",
+                        "namespace": "Test Namespace"
+                    }
+                    json.dump(config, f)
+                    json_file = f.name
                 
-                with patch('ai_utilities.client.create_usage_tracker') as mock_tracker:
-                    mock_tracker.return_value = Mock()
-                    
-                    from ai_utilities.client import AiClient
-                    
-                    client = AiClient(settings=mock_settings)
-                    
-                    assert client is not None
-                    # Namespace should be sanitized
-                    assert mock_settings.namespace == "test namespace"
-        finally:
-            Path(json_file).unlink()
+                try:
+                    with patch('ai_utilities.client.AiSettings') as mock_settings_class:
+                        mock_settings = Mock()
+                        mock_settings.api_key = "test-key"
+                        mock_settings.model = "gpt-4"
+                        mock_settings.provider = "openai"
+                        mock_settings.base_url = "https://api.openai.com/v1"  # Ensure this is a string, not Mock
+                        mock_settings.namespace = "test namespace"
+                        # Configure Mock to return proper values for attribute access
+                        mock_settings.configure_mock(**{
+                            'api_key': "test-key",
+                            'model': "gpt-4",
+                            'provider': "openai", 
+                            'base_url': "https://api.openai.com/v1",
+                            'namespace': "test namespace"
+                        })
+                        # Configure model_copy to return a copy with proper string values
+                        mock_copy = Mock()
+                        mock_copy.configure_mock(**{
+                            'api_key': "test-key",
+                            'model': "gpt-4",
+                            'provider': "openai", 
+                            'base_url': "https://api.openai.com/v1",
+                            'namespace': "test namespace"
+                        })
+                        mock_settings.model_copy.return_value = mock_copy
+                        mock_settings_class.return_value = mock_settings
+                        
+                        with patch('ai_utilities.client.create_usage_tracker') as mock_tracker:
+                            mock_tracker.return_value = Mock()
+                            
+                            from ai_utilities.client import AiClient
+                            
+                            client = AiClient(settings=mock_settings)
+                            
+                            assert client is not None
+                            # Namespace should be sanitized
+                            assert mock_settings.namespace == "test namespace"
+                finally:
+                    Path(json_file).unlink()
     
-    @patch('ai_utilities.providers.base_provider.BaseProvider')
     @patch('ai_utilities.usage_tracker.create_usage_tracker')
     @patch('ai_utilities.cache.CacheBackend')
     @patch('ai_utilities.progress_indicator.ProgressIndicator')
     @patch('ai_utilities.models.AskResult')
     @patch('ai_utilities.json_parsing.parse_json_from_text')
     @patch('ai_utilities.file_models.UploadedFile')
-    @patch('ai_utilities.providers.provider_exceptions.ProviderConfigurationError')
-    def test_client_error_handling(self, mock_provider_exc, mock_file_models, mock_json_parsing, 
-                                  mock_models, mock_progress, mock_cache, mock_usage_tracker, mock_base_provider):
+    def test_client_error_handling(self, mock_file_models, mock_json_parsing, 
+                                  mock_models, mock_progress, mock_cache, mock_usage_tracker):
         """Test client error handling scenarios."""
-        with patch('ai_utilities.client.AiSettings') as mock_settings_class:
-            # Test with invalid config file
-            mock_settings_class.side_effect = Exception("Invalid config")
-            
-            with pytest.raises(Exception):
-                from ai_utilities.client import AiClient
-                AiClient(config_file="/nonexistent/config.json")
+        # Patch provider_exceptions locally to avoid lazy import issues
+        import ai_utilities.providers.provider_exceptions as pe
+        import ai_utilities.providers.base_provider as bp
+        
+        with patch.object(pe, 'ProviderConfigurationError') as mock_provider_exc:
+            with patch.object(bp, 'BaseProvider') as mock_base_provider:
+                with patch('ai_utilities.client.AiSettings') as mock_settings_class:
+                    # Test with invalid config file
+                    mock_settings_class.side_effect = Exception("Invalid config")
+                    
+                    with pytest.raises(Exception):
+                        from ai_utilities.client import AiClient
+                        AiClient(config_file="/nonexistent/config.json")
     
     def test_namespace_sanitize_integration(self):
         """Test namespace sanitization in realistic scenarios."""

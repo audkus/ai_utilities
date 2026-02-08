@@ -368,9 +368,31 @@ class TestAiClientConfiguration:
         monkeypatch.setenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
         monkeypatch.setenv('OLLAMA_MODEL', 'llama3')
         
-        client = AiClient()
-        assert client is not None  # Contract: client created
-        assert client.settings.provider == 'ollama'  # Contract: provider set from environment
+        # Patch stable SDK creation boundary to avoid OpenAI dependency
+        from unittest.mock import patch, MagicMock
+        from types import SimpleNamespace
+        
+        with patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client") as mock_create_client:
+            # Create deterministic mock client and response
+            mock_client = MagicMock()
+            response = SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]
+            )
+            mock_client.chat.completions.create.return_value = response
+            mock_create_client.return_value = mock_client
+            
+            client = AiClient()
+            
+            # Contract assertions
+            assert client is not None
+            assert hasattr(client, "provider")
+            assert client.provider is not None
+            assert client.settings.provider == 'ollama'
+            
+            # Optional: verify SDK boundary was called with correct base_url
+            mock_create_client.assert_called_once()
+            kwargs = mock_create_client.call_args.kwargs
+            assert kwargs["base_url"] == "http://localhost:11434/v1"
     
     def test_client_with_minimal_settings(self):
         """Test client with minimal required settings."""

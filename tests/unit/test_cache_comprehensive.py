@@ -365,7 +365,11 @@ class TestCacheIntegration:
         fake_settings.cache_enabled = True
         fake_settings.cache_backend = "sqlite"
         
-        client = AiClient(settings=fake_settings, cache=explicit_cache)
-        
-        assert client.cache is explicit_cache
-        assert client.cache._default_ttl_s == 1800
+        # Patch provider creation to avoid OpenAI SDK dependency
+        with patch("ai_utilities.providers.provider_factory.create_provider") as mock_create_provider:
+            mock_create_provider.return_value = Mock(name="provider_stub")
+            
+            client = AiClient(settings=fake_settings, cache=explicit_cache)
+            
+            assert client.cache is explicit_cache
+            assert client.cache._default_ttl_s == 1800
