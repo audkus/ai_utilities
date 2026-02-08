@@ -89,6 +89,9 @@ class AutomatedTestRunner:
         final_report = self._generate_final_report()
         self._print_final_report(final_report)
         
+        # Clean up coverage artifacts and generate reports
+        self._cleanup_coverage_artifacts()
+        
         return final_report
     
     def _run_core_library_tests(self) -> Dict[str, Any]:
@@ -222,25 +225,71 @@ class AutomatedTestRunner:
         return results
     
     def _cleanup_coverage_artifacts(self):
-        """Clean up coverage artifacts from previous runs."""
+        """Clean up coverage artifacts from previous runs and generate final reports."""
         import glob
+        import subprocess
         import shutil
         
-        # Remove stray .coverage.* files from repo root
-        for pattern in [".coverage", ".coverage.*"]:
-            for file_path in glob.glob(pattern):
+        # Find all coverage data files
+        coverage_files = glob.glob(".coverage*")
+        coverage_data_files = [f for f in coverage_files if f.startswith(".coverage.") and not f.endswith(".coveragerc")]
+        
+        # Always clean up fragment files (even if no coverage data was generated)
+        if coverage_data_files:
+            print("  🧹 Cleaning up coverage fragment files...")
+            # Remove the fragment files
+            for file_path in coverage_data_files:
                 try:
                     os.remove(file_path)
+                    print(f"    🗑️  Removed {file_path}")
                 except OSError:
                     pass
         
-        # Ensure coverage_reports directory exists
+        # Generate HTML report if .coverage file exists
+        if os.path.exists(".coverage"):
+            print("  📊 Generating HTML coverage report...")
+            try:
+                # Ensure coverage_reports/html directory exists
+                coverage_reports_dir = self.project_root / "coverage_reports"
+                coverage_reports_dir.mkdir(exist_ok=True)
+                html_dir = coverage_reports_dir / "html"
+                html_dir.mkdir(exist_ok=True)
+                
+                result = subprocess.run(
+                    ["python", "-m", "coverage", "html", "-d", "coverage_reports/html"],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    print("    ✅ HTML report generated")
+                else:
+                    print(f"    ⚠️  HTML report generation failed: {result.stderr}")
+            except (subprocess.SubprocessError, FileNotFoundError):
+                print("    ⚠️  Coverage command not available, skipping HTML report")
+            
+            # Generate XML report for CI
+            try:
+                result = subprocess.run(
+                    ["python", "-m", "coverage", "xml", "-o", "coverage.xml"],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    print("    ✅ XML report generated")
+                else:
+                    print(f"    ⚠️  XML report generation failed: {result.stderr}")
+            except (subprocess.SubprocessError, FileNotFoundError):
+                print("    ⚠️  Coverage command not available, skipping XML report")
+        
+        # Ensure coverage_reports directory structure exists
         coverage_reports_dir = self.project_root / "coverage_reports"
         coverage_reports_dir.mkdir(exist_ok=True)
-        
-        # Ensure html subdirectory exists
         html_dir = coverage_reports_dir / "html"
         html_dir.mkdir(exist_ok=True)
+        xml_dir = coverage_reports_dir / "xml"
+        xml_dir.mkdir(exist_ok=True)
     
     def _print_category_results(self, category: str, results: Dict[str, Any]):
         """Print results for a test category."""
@@ -508,6 +557,9 @@ def main():
             print(f"🧪 Running {args.category.upper()} tests...")
             results = category_methods[args.category]()
             runner._print_category_results(args.category, results)
+            
+            # Clean up coverage artifacts after category run
+            runner._cleanup_coverage_artifacts()
             
             # Exit with appropriate code - treat skipped as success for examples category
             is_success = results["status"] in ["passed", "skipped"]
