@@ -16,6 +16,7 @@ from ai_utilities.providers.provider_exceptions import (
 )
 
 
+@pytest.mark.requires_openai
 class TestOpenAICompatibleProvider:
     """Test cases for OpenAICompatibleProvider."""
 

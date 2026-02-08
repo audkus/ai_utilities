@@ -50,6 +50,7 @@ class TestProviderFactoryExtended:
         provider = create_provider(settings)
         assert provider is not None
     
+    @pytest.mark.requires_openai
     @patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client")
     def test_create_openai_compatible_with_various_base_urls(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider with various base URL formats."""
@@ -83,6 +84,7 @@ class TestProviderFactoryExtended:
                 timeout=30
             )
     
+    @pytest.mark.requires_openai
     def test_create_openai_compatible_with_request_timeout_float(self) -> None:
         """Test OpenAI-compatible provider with float request_timeout_s."""
         settings = AiSettings(
@@ -96,6 +98,7 @@ class TestProviderFactoryExtended:
         assert isinstance(provider, OpenAICompatibleProvider)
         assert provider.timeout == 30  # Should be converted to int
     
+    @pytest.mark.requires_openai
     def test_create_openai_compatible_with_empty_extra_headers(self) -> None:
         """Test OpenAI-compatible provider with empty extra headers."""
         settings = AiSettings(
@@ -109,6 +112,7 @@ class TestProviderFactoryExtended:
         assert isinstance(provider, OpenAICompatibleProvider)
         assert provider.extra_headers == {}
     
+    @pytest.mark.requires_openai
     def test_create_openai_compatible_with_complex_extra_headers(self) -> None:
         """Test OpenAI-compatible provider with complex extra headers."""
         extra_headers = {
@@ -182,6 +186,7 @@ class TestProviderFactoryExtended:
         error_msg = str(exc_info.value)
         assert "configuration" in error_msg.lower()
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_provider_initialization_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider initialization edge cases."""
@@ -207,6 +212,7 @@ class TestProviderFactoryExtended:
         )
         assert provider.base_url == long_url
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_ask_with_various_prompts(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask with various prompt types."""
@@ -239,6 +245,7 @@ class TestProviderFactoryExtended:
             assert response is not None
             assert isinstance(response, str)  # Verify return type contract
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_ask_with_parameters(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask with various parameters."""
@@ -269,6 +276,7 @@ class TestProviderFactoryExtended:
         assert response is not None
         assert isinstance(response, str)  # Verify return type contract
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_ask_many_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider ask_many edge cases."""
@@ -300,6 +308,7 @@ class TestProviderFactoryExtended:
         assert len(responses) == 10
         assert all(r == "Response" for r in responses)
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_json_mode_edge_cases(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider JSON mode edge cases."""
@@ -337,6 +346,7 @@ class TestProviderFactoryExtended:
         response = provider.ask("Test", return_format="json")
         assert response is True
     
+    @pytest.mark.requires_openai
     @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
     def test_openai_compatible_error_handling(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider error handling."""
