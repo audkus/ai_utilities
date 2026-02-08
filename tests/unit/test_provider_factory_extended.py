@@ -113,9 +113,27 @@ class TestProviderFactoryExtended:
             model="test-model"  # Add required model parameter
         )
         
-        provider = create_provider(settings)
-        assert isinstance(provider, OpenAICompatibleProvider)
-        assert provider.extra_headers == extra_headers
+        # Patch stable SDK creation boundary to avoid OpenAI dependency
+        with patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client") as mock_create_client:
+            # Create dummy client
+            mock_client = MagicMock(name="OpenAICompatibleSDKClient")
+            mock_create_client.return_value = mock_client
+            
+            provider = create_provider(settings)
+            
+            # Contract assertions
+            assert provider is not None
+            assert provider.provider_name == "openai_compatible"
+            assert provider.base_url == "http://localhost:8000/v1"
+            assert provider.extra_headers == extra_headers
+            
+            # Verify boundary called with correct kwargs
+            mock_create_client.assert_called_once()
+            kwargs = mock_create_client.call_args.kwargs
+            assert kwargs["api_key"] == "dummy-key"   # because api_key not provided in settings
+            assert kwargs["base_url"] == "http://localhost:8000/v1"
+            assert kwargs["timeout"] == 30
+            assert kwargs["default_headers"] == extra_headers
     
     def test_provider_factory_error_messages(self) -> None:
         """Test provider factory error messages are descriptive."""

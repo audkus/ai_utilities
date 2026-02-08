@@ -217,18 +217,26 @@ class TestProvidersInitCompleteIntegration:
         """Test module reload behavior and state management."""
         import ai_utilities.providers
         
+        # Ensure module is registered in sys.modules (robust to global reset fixtures)
+        providers_mod = ai_utilities.providers
+        sys.modules[providers_mod.__name__] = providers_mod
+        
         # Get initial state
-        initial_all = list(ai_utilities.providers.__all__)
-        initial_openai_provider = ai_utilities.providers.OpenAIProvider
+        initial_all = list(providers_mod.__all__)
+        initial_openai_provider = providers_mod.OpenAIProvider
         
         # Reload module
-        importlib.reload(ai_utilities.providers)
+        reloaded = importlib.reload(providers_mod)
         
-        # Verify state is preserved
-        assert ai_utilities.providers.__all__ == initial_all
-        assert ai_utilities.providers.OpenAIProvider.__name__ == initial_openai_provider.__name__
-        assert ai_utilities.providers.OpenAIProvider.__module__ == initial_openai_provider.__module__
-        assert callable(ai_utilities.providers.OpenAIProvider)
+        # Verify state is preserved (contract-first: focus on observable behavior)
+        assert reloaded.__all__ == initial_all
+        assert hasattr(reloaded, "OpenAIProvider")
+        assert callable(reloaded.OpenAIProvider) or isinstance(reloaded.OpenAIProvider, type)
+        
+        # Verify provider resolution stability after reload
+        reloaded_provider = reloaded.OpenAIProvider
+        assert reloaded_provider.__name__ == initial_openai_provider.__name__
+        assert reloaded_provider.__module__ == initial_openai_provider.__module__
 
     def test_concurrent_module_access(self):
         """Test concurrent access to provider module."""
