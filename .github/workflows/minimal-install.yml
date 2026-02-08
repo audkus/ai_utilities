@@ -62,7 +62,7 @@ jobs:
       run: |
         # Install pytest and run core tests
         pip install pytest
-        pytest tests/test_config_resolver.py -q --tb=no
+        pytest tests/unit/test_config_resolver.py -q --tb=no
         echo "OK: Core tests pass"
 
   install-options:

@@ -304,17 +304,25 @@ class TestEdgeCases:
     
     def test_empty_environment_variables(self):
         """Test behavior with empty environment variables."""
-        # Clear all development environment variables first
+        # Clear all development and CI environment variables
         dev_indicators = [
             "VIRTUAL_ENV", "CONDA_DEFAULT_ENV", "PYCHARM_HOSTED", 
             "VSCODE_PID", "IPython"
         ]
         
-        with patch.dict(os.environ, {var: "" for var in dev_indicators}, clear=False):
-            # Also clear CI variables
-            with patch.dict(os.environ, {"CI": ""}, clear=False):
-                assert is_ci_environment() is False
-                assert is_development_environment() is False
+        ci_indicators = [
+            "CI", "CONTINUOUS_INTEGRATION", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS",
+            "CIRCLECI", "JENKINS_URL", "AZURE_PIPELINES", "BITBUCKET_BUILD_NUMBER",
+            "APPVEYOR", "CODEBUILD_BUILD_ID", "GOOGLE_CLOUD_PROJECT", "BUILDKITE"
+        ]
+        
+        # Clear all indicators
+        all_indicators = dev_indicators + ci_indicators
+        env_clear = {var: "" for var in all_indicators}
+        
+        with patch.dict(os.environ, env_clear, clear=False):
+            assert is_ci_environment() is False
+            assert is_development_environment() is False
     
     def test_whitespace_environment_variables(self):
         """Test behavior with whitespace environment variables."""

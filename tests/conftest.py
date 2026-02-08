@@ -387,18 +387,145 @@ def mock_openai_compatible_client(mock_openai_compatible_response, mock_openai_c
 
 
 @pytest.fixture
-def patch_openai_compatible_sdk_client(mock_openai_compatible_client):
+def patch_openai_sdk_client():
+    """
+    Fixture that patches OpenAI provider's SDK client creation boundary.
+    
+    Patches the stable _create_openai_sdk_client function, ensuring the provider
+    uses our mock client with SimpleNamespace response objects to avoid leaks.
+    """
+    from unittest.mock import patch
+    from types import SimpleNamespace
+    
+    # Create deterministic fake client with SimpleNamespace responses
+    mock_client = SimpleNamespace()
+    
+    # Mock chat completions with SimpleNamespace to avoid MagicMock leaks
+    mock_response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="Test response"))]
+    )
+    mock_client.chat = SimpleNamespace()
+    mock_client.chat.completions = SimpleNamespace()
+    mock_client.chat.completions.create = MagicMock(return_value=mock_response)
+    
+    # Mock file operations
+    mock_file = SimpleNamespace(id="file-123", filename="test.txt", bytes=1024)
+    mock_client.files = SimpleNamespace()
+    mock_client.files.create = MagicMock(return_value=mock_file)
+    mock_client.files.retrieve = MagicMock(return_value=mock_file)
+    mock_client.files.delete = MagicMock(return_value=SimpleNamespace(deleted=True))
+    
+    # Mock image generation
+    mock_image = SimpleNamespace(url="https://example.com/image.png")
+    mock_client.images = SimpleNamespace()
+    mock_client.images.generate = MagicMock(return_value=SimpleNamespace(data=[mock_image]))
+    
+    with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_create:
+        mock_create.return_value = mock_client
+        yield mock_create
+
+
+@pytest.fixture
+def patch_openai_compatible_sdk_client():
     """
     Fixture that patches OpenAI Compatible provider's SDK client creation boundary.
     
     Patches the stable _create_openai_sdk_client function, ensuring the provider
-    uses our mock client with proper response objects without touching module globals.
+    uses our mock client with SimpleNamespace response objects to avoid leaks.
     """
     from unittest.mock import patch
+    from types import SimpleNamespace
+    
+    # Create deterministic fake client with SimpleNamespace responses
+    mock_client = SimpleNamespace()
+    
+    # Mock chat completions with SimpleNamespace to avoid MagicMock leaks
+    def create_chat_completion(**kwargs):
+        if kwargs.get("response_format", {}).get("type") == "json_object":
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content='{"test": "json"}'))]
+            )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="Test response"))]
+        )
+    
+    mock_client.chat = SimpleNamespace()
+    mock_client.chat.completions = SimpleNamespace()
+    mock_client.chat.completions.create = MagicMock(side_effect=create_chat_completion)
+    
+    # Mock file operations
+    mock_file = SimpleNamespace(id="file-123", filename="test.txt", bytes=1024)
+    mock_client.files = SimpleNamespace()
+    mock_client.files.create = MagicMock(return_value=mock_file)
+    mock_client.files.retrieve = MagicMock(return_value=mock_file)
+    mock_client.files.delete = MagicMock(return_value=SimpleNamespace(deleted=True))
+    
+    # Mock image generation
+    mock_image = SimpleNamespace(url="https://example.com/image.png")
+    mock_client.images = SimpleNamespace()
+    mock_client.images.generate = MagicMock(return_value=SimpleNamespace(data=[mock_image]))
     
     with patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client') as mock_create:
-        mock_create.return_value = mock_openai_compatible_client
+        mock_create.return_value = mock_client
         yield mock_create
+
+
+@pytest.fixture
+def auto_patch_openai_boundary_functions():
+    """
+    Fixture that patches OpenAI boundary functions for tests.
+    
+    This ensures that tests can instantiate OpenAI-compatible providers without
+    requiring the openai package to be installed, and avoids MagicMock leaks.
+    
+    Use this fixture in tests that need OpenAI providers:
+    
+    @pytest.mark.usefixtures("auto_patch_openai_boundary_functions")
+    def test_something():
+        # Test code here
+    """
+    from unittest.mock import patch
+    from types import SimpleNamespace
+    
+    # Create deterministic fake client for OpenAI provider
+    mock_openai_client = SimpleNamespace()
+    mock_openai_response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="Test response"))]
+    )
+    mock_openai_client.chat = SimpleNamespace()
+    mock_openai_client.chat.completions = SimpleNamespace()
+    mock_openai_client.chat.completions.create = MagicMock(return_value=mock_openai_response)
+    
+    # Create deterministic fake client for OpenAI Compatible provider
+    mock_compatible_client = SimpleNamespace()
+    
+    def create_chat_completion(**kwargs):
+        if kwargs.get("response_format", {}).get("type") == "json_object":
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content='{"test": "json"}'))]
+            )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="Test response"))]
+        )
+    
+    mock_compatible_client.chat = SimpleNamespace()
+    mock_compatible_client.chat.completions = SimpleNamespace()
+    mock_compatible_client.chat.completions.create = MagicMock(side_effect=create_chat_completion)
+    
+    # Import the modules to ensure they exist before patching
+    try:
+        import ai_utilities.providers.openai_provider
+        import ai_utilities.providers.openai_compatible_provider
+        
+        # Patch both boundary functions
+        with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_openai_create, \
+             patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client') as mock_compatible_create:
+            mock_openai_create.return_value = mock_openai_client
+            mock_compatible_create.return_value = mock_compatible_client
+            yield
+    except ImportError:
+        # If modules can't be imported, skip patching (tests that need them will fail appropriately)
+        yield
 
 
 @pytest.fixture

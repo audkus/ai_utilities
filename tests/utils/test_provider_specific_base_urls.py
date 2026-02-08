@@ -178,6 +178,7 @@ class TestClientIntegration:
         client = AiClient(settings=settings)
         assert client.settings.base_url == "http://custom.com/v1"
 
+    @pytest.mark.usefixtures("auto_patch_openai_boundary_functions")
     @patch.dict(os.environ, {
         "TEXT_GENERATION_WEBUI_BASE_URL": get_actual_tgwui_url(),
         "TEXT_GENERATION_WEBUI_MODEL": "local-model"

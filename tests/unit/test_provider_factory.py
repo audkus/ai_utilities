@@ -184,7 +184,7 @@ class TestOpenAICompatibleProvider:
         """Test provider initialization with extra headers."""
         # Import the module locally to ensure patch target exists
         import ai_utilities.providers.openai_compatible_provider as ocp
-        with patch.object(ocp, 'OpenAI') as mock_openai:
+        with patch.object(ocp, '_create_openai_sdk_client') as mock_create_client:
             from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
             
             extra_headers = {"Authorization": "Bearer token", "X-Custom": "value"}
@@ -194,19 +194,21 @@ class TestOpenAICompatibleProvider:
             )
             
             assert provider.extra_headers == extra_headers
-            mock_openai.assert_called_once()
+            mock_create_client.assert_called_once()
     
     def test_ask_text_mode(self):
         """Test asking in text mode."""
         # Import the module locally to ensure patch target exists
         import ai_utilities.providers.openai_compatible_provider as ocp
-        with patch.object(ocp, 'OpenAI') as mock_openai:
+        with patch.object(ocp, '_create_openai_sdk_client') as mock_create_client:
             from ai_utilities.providers.openai_compatible_provider import OpenAICompatibleProvider
             
             # Mock the OpenAI client response
             mock_response = Mock()
             mock_response.choices = [Mock(message=Mock(content="Test response"))]
-            mock_openai.return_value.chat.completions.create.return_value = mock_response
+            mock_client = Mock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock_create_client.return_value = mock_client
             
             provider = OpenAICompatibleProvider(
                 api_key="test-key",

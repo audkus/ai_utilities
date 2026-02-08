@@ -560,6 +560,29 @@ class AiSettings(BaseSettings):
             return v
         return os.getenv('AI_AUTO_SELECT_ORDER')
     
+    @field_validator('request_timeout_s', mode='before')
+    @classmethod
+    def get_request_timeout_s(cls, v):
+        """Get request timeout from AI_REQUEST_TIMEOUT_S environment variable."""
+        import os
+        if v is not None:
+            return v
+        env_value = os.getenv('AI_REQUEST_TIMEOUT_S')
+        if env_value is not None:
+            try:
+                return float(env_value)
+            except ValueError:
+                pass
+        return v
+
+    @field_validator('timeout', mode='before')
+    @classmethod  
+    def get_timeout(cls, v):
+        """Get timeout from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_TIMEOUT')
+
     @field_validator('base_url', mode='before')
     @classmethod  
     def get_base_url(cls, v):

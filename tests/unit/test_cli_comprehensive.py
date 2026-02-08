@@ -13,6 +13,9 @@ import pytest
 from ai_utilities.cli import create_parser, main
 from ai_utilities.setup.wizard import SetupMode, run_setup_wizard, SetupResult, SetupWizard
 
+# Compute repo root dynamically
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
 
 class TestCLIArgumentParsing:
     """Test CLI argument parsing functionality."""
@@ -223,7 +226,7 @@ class TestCLIIntegration:
             [sys.executable, "-m", "ai_utilities.cli", "--help"],
             capture_output=True,
             text=True,
-            cwd="/Users/steffenrasmussen/PycharmProjects/ai_utilities",
+            cwd=str(REPO_ROOT),
             env={**os.environ, "PYTHONPATH": "src"}
         )
         
@@ -237,7 +240,7 @@ class TestCLIIntegration:
             [sys.executable, "-m", "ai_utilities.cli", "setup", "--help"],
             capture_output=True,
             text=True,
-            cwd="/Users/steffenrasmussen/PycharmProjects/ai_utilities",
+            cwd=str(REPO_ROOT),
             env={**os.environ, "PYTHONPATH": "src"}
         )
         
@@ -254,7 +257,7 @@ class TestCLIIntegration:
             [sys.executable, "-m", "ai_utilities.cli", "setup", "--mode", "normal", "--dry-run", "--non-interactive"],
             capture_output=True,
             text=True,
-            cwd="/Users/steffenrasmussen/PycharmProjects/ai_utilities",
+            cwd=str(REPO_ROOT),
             env=env
         )
         
@@ -273,7 +276,7 @@ class TestCLIIntegration:
             [sys.executable, "-m", "ai_utilities.cli", "setup", "--mode", "normal", "--dry-run", "--non-interactive"],
             capture_output=True,
             text=True,
-            cwd="/Users/steffenrasmussen/PycharmProjects/ai_utilities",
+            cwd=str(REPO_ROOT),
             env=clean_env
         )
         
@@ -291,7 +294,7 @@ class TestCLIErrorHandling:
             [sys.executable, "-m", "ai_utilities.cli", "setup", "--mode", "invalid"],
             capture_output=True,
             text=True,
-            cwd="/Users/steffenrasmussen/PycharmProjects/ai_utilities",
+            cwd=str(REPO_ROOT),
             env={**os.environ, "PYTHONPATH": "src"}
         )
         

@@ -76,7 +76,7 @@ def test_coverage_functionality_works():
     assert result.returncode == 0, f"Command failed with return code {result.returncode}: {result.stderr}"  # noqa: S101 - Test validation
 
     # Check that HTML report was generated (behavior-based)
-    html_report_path = Path(__file__).parent.parent.parent / "htmlcov" / "index.html"  # tests/regression/ -> tests/ -> project root
+    html_report_path = Path(__file__).parent.parent.parent / "coverage_reports" / "html" / "index.html"  # tests/regression/ -> tests/ -> project root
     assert html_report_path.exists(), f"HTML report not found at {html_report_path}"  # noqa: S101 - Test validation
 
     # Check that coverage data was collected (behavior-based: look for coverage report generation)
@@ -84,9 +84,9 @@ def test_coverage_functionality_works():
     
     # Clean up HTML report to avoid repository contamination
     import shutil
-    htmlcov_dir = html_report_path.parent
-    if htmlcov_dir.exists():
-        shutil.rmtree(htmlcov_dir)
+    coverage_reports_dir = html_report_path.parent.parent
+    if coverage_reports_dir.exists():
+        shutil.rmtree(coverage_reports_dir)
 
 
 def test_makefile_targets_work():
