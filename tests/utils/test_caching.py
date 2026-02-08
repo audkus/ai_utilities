@@ -347,10 +347,10 @@ class TestAiClientCaching:
             Mock(embedding=[0.4, 0.5, 0.6])
         ]
         
-        with patch('openai.OpenAI') as mock_openai:
+        with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_create_client:
             mock_client = Mock()
             mock_client.embeddings.create.return_value = mock_embeddings
-            mock_openai.return_value = mock_client
+            mock_create_client.return_value = mock_client
             
             # First call
             result1 = client.get_embeddings(["hello", "world"])
@@ -372,10 +372,10 @@ class TestAiClientCaching:
         mock_embeddings = Mock()
         mock_embeddings.data = [Mock(embedding=[0.1, 0.2, 0.3])]
         
-        with patch('openai.OpenAI') as mock_openai:
+        with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client') as mock_create_client:
             mock_client = Mock()
             mock_client.embeddings.create.return_value = mock_embeddings
-            mock_openai.return_value = mock_client
+            mock_create_client.return_value = mock_client
             
             # Different texts should make different calls
             client.get_embeddings(["hello"])

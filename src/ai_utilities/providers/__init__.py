@@ -21,6 +21,15 @@ if TYPE_CHECKING:
 # Lazy import for provider classes to preserve import-safety
 def __getattr__(name: str) -> Any:
     """Lazy import provider classes only when requested."""
+    # Handle module-level attribute access
+    if name in ("openai_provider", "openai_compatible_provider", "base_provider"):
+        import importlib
+        try:
+            return importlib.import_module(f".{name}", __name__)
+        except ImportError as e:
+            raise AttributeError(f"module '{__name__}' has no attribute '{name}'") from e
+    
+    # Handle class-level attribute access
     if name == "OpenAIProvider":
         try:
             from .openai_provider import OpenAIProvider

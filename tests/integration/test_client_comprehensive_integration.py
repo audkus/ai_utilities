@@ -364,6 +364,11 @@ class TestClientEmbeddingsIntegration:
     
     def test_embeddings_workflow(self):
         """Test complete embeddings workflow."""
+        try:
+            import openai
+        except ImportError:
+            pytest.skip("OpenAI package not available for embeddings test")
+            
         mock_settings = Mock()
         mock_settings.cache_enabled = False
         mock_settings.api_key = "test-api-key"
@@ -371,7 +376,7 @@ class TestClientEmbeddingsIntegration:
         mock_settings.model_dump.return_value = {}
         
         with patch('ai_utilities.providers.provider_factory.create_provider') as mock_create_provider, \
-             patch('ai_utilities.client.OpenAI') as mock_openai:
+             patch('openai.OpenAI') as mock_openai:
             
             mock_provider = Mock()
             mock_create_provider.return_value = mock_provider
