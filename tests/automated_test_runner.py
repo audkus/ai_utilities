@@ -89,9 +89,6 @@ class AutomatedTestRunner:
         final_report = self._generate_final_report()
         self._print_final_report(final_report)
         
-        # Clean up coverage artifacts and generate reports
-        self._cleanup_coverage_artifacts()
-        
         return final_report
     
     def _run_core_library_tests(self) -> Dict[str, Any]:
@@ -224,67 +221,85 @@ class AutomatedTestRunner:
         results["duration"] = time.time() - start_time
         return results
     
-    def _cleanup_coverage_artifacts(self):
-        """Clean up coverage artifacts from previous runs and generate final reports."""
-        import glob
+    def _finalize_coverage_artifacts(self) -> None:
+        """Finalize coverage artifacts: combine, generate reports, and clean up all files."""
         import subprocess
-        import shutil
+        import sys
+        from pathlib import Path
         
-        # Find all coverage data files
-        coverage_files = glob.glob(".coverage*")
-        coverage_data_files = [f for f in coverage_files if f.startswith(".coverage.") and not f.endswith(".coveragerc")]
+        # Find all coverage files in repo root
+        coverage_files = list(Path(self.project_root).glob(".coverage*"))
+        coverage_files = [f for f in coverage_files if f.name != ".coveragerc"]  # Skip config file
         
-        # Always clean up fragment files (even if no coverage data was generated)
-        if coverage_data_files:
-            print("  🧹 Cleaning up coverage fragment files...")
-            # Remove the fragment files
-            for file_path in coverage_data_files:
-                try:
-                    os.remove(file_path)
-                    print(f"    🗑️  Removed {file_path}")
-                except OSError:
-                    pass
-        
-        # Generate HTML report if .coverage file exists
-        if os.path.exists(".coverage"):
-            print("  📊 Generating HTML coverage report...")
+        if coverage_files:
+            print("  🧹 Finalizing coverage artifacts...")
+            
+            # Combine coverage data
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "coverage", "combine"],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if result.returncode != 0:
+                    # Don't fail if combine returns non-zero (might happen with single file)
+                    print(f"    ⚠️  Coverage combine returned {result.returncode}: {result.stderr.strip()}")
+                else:
+                    print("    ✅ Coverage data combined")
+            except (subprocess.SubprocessError, FileNotFoundError) as e:
+                print(f"    ⚠️  Coverage combine failed: {e}")
+            
+            # Generate XML report
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "coverage", "xml", "-o", "coverage.xml"],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if result.returncode == 0:
+                    print("    ✅ XML report generated")
+                else:
+                    print(f"    ⚠️  XML report generation failed: {result.stderr.strip()}")
+            except (subprocess.SubprocessError, FileNotFoundError) as e:
+                print(f"    ⚠️  XML report generation failed: {e}")
+            
+            # Generate HTML report
             try:
                 # Ensure coverage_reports/html directory exists
-                coverage_reports_dir = self.project_root / "coverage_reports"
+                coverage_reports_dir = Path(self.project_root) / "coverage_reports"
                 coverage_reports_dir.mkdir(exist_ok=True)
                 html_dir = coverage_reports_dir / "html"
                 html_dir.mkdir(exist_ok=True)
                 
                 result = subprocess.run(
-                    ["python", "-m", "coverage", "html", "-d", "coverage_reports/html"],
+                    [sys.executable, "-m", "coverage", "html", "-d", "coverage_reports/html"],
                     cwd=self.project_root,
                     capture_output=True,
-                    text=True
+                    text=True,
+                    check=False
                 )
                 if result.returncode == 0:
                     print("    ✅ HTML report generated")
                 else:
-                    print(f"    ⚠️  HTML report generation failed: {result.stderr}")
-            except (subprocess.SubprocessError, FileNotFoundError):
-                print("    ⚠️  Coverage command not available, skipping HTML report")
-            
-            # Generate XML report for CI
-            try:
-                result = subprocess.run(
-                    ["python", "-m", "coverage", "xml", "-o", "coverage.xml"],
-                    cwd=self.project_root,
-                    capture_output=True,
-                    text=True
-                )
-                if result.returncode == 0:
-                    print("    ✅ XML report generated")
-                else:
-                    print(f"    ⚠️  XML report generation failed: {result.stderr}")
-            except (subprocess.SubprocessError, FileNotFoundError):
-                print("    ⚠️  Coverage command not available, skipping XML report")
+                    print(f"    ⚠️  HTML report generation failed: {result.stderr.strip()}")
+            except (subprocess.SubprocessError, FileNotFoundError) as e:
+                print(f"    ⚠️  HTML report generation failed: {e}")
+        
+        # Clean up ALL coverage files (including .coverage) - policy forbids them in root
+        for coverage_file in Path(self.project_root).glob(".coverage*"):
+            if coverage_file.name != ".coveragerc":  # Keep config file
+                try:
+                    coverage_file.unlink()
+                    print(f"    🗑️  Removed {coverage_file.name}")
+                except OSError as e:
+                    print(f"    ⚠️  Failed to remove {coverage_file.name}: {e}")
         
         # Ensure coverage_reports directory structure exists
-        coverage_reports_dir = self.project_root / "coverage_reports"
+        coverage_reports_dir = Path(self.project_root) / "coverage_reports"
         coverage_reports_dir.mkdir(exist_ok=True)
         html_dir = coverage_reports_dir / "html"
         html_dir.mkdir(exist_ok=True)
@@ -542,41 +557,43 @@ def main():
     # Run tests
     runner = AutomatedTestRunner()
     
-    if args.category:
-        # Run specific category
-        category_methods = {
-            "core_library": runner._run_core_library_tests,
-            "examples": runner._run_example_tests,
-            "scripts": runner._run_script_tests,
-            "integration": runner._run_integration_tests,
-            "performance": runner._run_performance_tests,
-            "ci_pipeline": runner._run_ci_tests
-        }
-        
-        if args.category in category_methods:
-            print(f"🧪 Running {args.category.upper()} tests...")
-            results = category_methods[args.category]()
-            runner._print_category_results(args.category, results)
+    try:
+        if args.category:
+            # Run specific category
+            category_methods = {
+                "core_library": runner._run_core_library_tests,
+                "examples": runner._run_example_tests,
+                "scripts": runner._run_script_tests,
+                "integration": runner._run_integration_tests,
+                "performance": runner._run_performance_tests,
+                "ci_pipeline": runner._run_ci_tests
+            }
             
-            # Clean up coverage artifacts after category run
-            runner._cleanup_coverage_artifacts()
+            if args.category in category_methods:
+                print(f"🧪 Running {args.category.upper()} tests...")
+                results = category_methods[args.category]()
+                runner._print_category_results(args.category, results)
+                
+                # Exit with appropriate code - treat skipped as success for examples category
+                is_success = results["status"] in ["passed", "skipped"]
+                sys.exit(0 if is_success else 1)
+        else:
+            # Run all tests
+            results = runner.run_all_tests()
             
-            # Exit with appropriate code - treat skipped as success for examples category
-            is_success = results["status"] in ["passed", "skipped"]
-            sys.exit(0 if is_success else 1)
-    else:
-        # Run all tests
-        results = runner.run_all_tests()
-        
-        # Save results to file
-        results_file = project_root / "test_results.json"
-        with open(results_file, 'w') as f:
-            json.dump(results, f, indent=2)
-        
-        print(f"\n📄 Results saved to: {results_file}")
-        
-        # Exit with appropriate code
-        sys.exit(0 if results["overall_status"] == "passed" else 1)
+            # Save results to file
+            results_file = project_root / "test_results.json"
+            with open(results_file, 'w') as f:
+                json.dump(results, f, indent=2)
+            
+            print(f"\n📄 Results saved to {results_file}")
+            
+            # Exit with appropriate code
+            overall_status = results.get("overall_status", "failed")
+            sys.exit(0 if overall_status == "passed" else 1)
+    finally:
+        # Always finalize coverage artifacts, even if tests fail
+        runner._finalize_coverage_artifacts()
 
 
 if __name__ == "__main__":
