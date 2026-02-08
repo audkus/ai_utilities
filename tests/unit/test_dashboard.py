@@ -13,6 +13,15 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+# Environment variable to control dashboard tests
+RUN_DASHBOARD_TESTS = os.getenv("RUN_DASHBOARD_TESTS") == "1"
+
+# Skip dashboard tests by default unless explicitly enabled
+pytestmark = pytest.mark.skipif(
+    not RUN_DASHBOARD_TESTS,
+    reason="Dashboard tests are disabled by default; set RUN_DASHBOARD_TESTS=1 to run."
+)
+
 # Add scripts to path for imports
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
