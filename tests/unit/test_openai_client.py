@@ -22,9 +22,10 @@ class TestOpenAIClient:
         """Test client initialization with default parameters."""
         constructor_mock, client_mock = openai_mocks
 
-        # Temporary diagnostic: confirm we have the right mock
-        assert openai_client_mod.OpenAI is constructor_mock, f"Diagnostic: openai_client_mod.OpenAI={openai_client_mod.OpenAI!r}, expected={constructor_mock!r}"
-
+        # Patch the lazy import mechanism in openai_client
+        import ai_utilities.openai_client
+        ai_utilities.openai_client.OpenAI = constructor_mock
+        
         client = openai_client_mod.OpenAIClient(api_key="test-key")
         
         # Verify client has the mock instance

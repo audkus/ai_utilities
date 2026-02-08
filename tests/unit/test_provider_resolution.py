@@ -55,12 +55,16 @@ def test_multiple_configured_default_order_and_logs(monkeypatch: pytest.MonkeyPa
 
     settings = AiSettings(_env_file=None)
 
-    caplog.set_level(logging.INFO)
+    # Capture logs from the provider_resolution module specifically
+    caplog.set_level(logging.INFO, logger="ai_utilities.provider_resolution")
     resolved = resolve_provider_config(settings)
 
     # Default order: openai, groq, openrouter...
     assert resolved.provider == "groq"
-    assert any("Auto-selected provider" in rec.message for rec in caplog.records)
+    
+    # Check for auto-selection log message (flexible matching)
+    messages = [rec.getMessage().lower() for rec in caplog.records]
+    assert any("groq" in msg and "auto-selected" in msg for msg in messages)
 
 
 def test_multiple_configured_custom_order(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -22,13 +22,41 @@ def _get_openai():
             from openai.types.chat import ChatCompletion
             _openai = openai
             ChatCompletion = ChatCompletion
-            OpenAI = openai.OpenAI
+            # Only set OpenAI if it's not already set (e.g., by tests)
+            if OpenAI is None:
+                OpenAI = openai.OpenAI
         except ImportError:
             raise ImportError(
                 "OpenAI package is required for OpenAI provider. "
                 "Install it with: pip install 'ai-utilities[openai]'"
             )
     return _openai
+
+
+def _create_openai_sdk_client(**client_kwargs: Any) -> Any:
+    """
+    Create and return an OpenAI SDK client instance.
+    
+    This is the single boundary for SDK client creation, making it
+    the correct target for test patching.
+    
+    Args:
+        **client_kwargs: Arguments to pass to OpenAI constructor
+        
+    Returns:
+        OpenAI SDK client instance
+        
+    Raises:
+        MissingOptionalDependencyError: If OpenAI package is not available
+    """
+    _get_openai()
+    if OpenAI is None:
+        from .provider_exceptions import MissingOptionalDependencyError
+        raise MissingOptionalDependencyError(
+            "OpenAI package is required for OpenAI provider. "
+            "Install it with: pip install 'ai-utilities[openai]'"
+        )
+    return OpenAI(**client_kwargs)
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -49,8 +77,7 @@ class OpenAIProvider(BaseProvider):
         if client is not None:
             self.client = client
         else:
-            _get_openai()  # Ensure openai is imported
-            self.client = OpenAI(
+            self.client = _create_openai_sdk_client(
                 api_key=settings.api_key,
                 base_url=settings.base_url,
                 timeout=settings.timeout

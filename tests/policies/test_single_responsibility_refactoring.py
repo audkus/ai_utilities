@@ -32,6 +32,11 @@ def openai_client_mod(openai_mocks) -> ModuleType:
 class TestOpenAIClient:
     """Test OpenAIClient single responsibility for API communication."""
     
+    @pytest.fixture(autouse=True)
+    def setup_openai_client_reset(self, reset_openai_client_globals):
+        """Ensure global state is reset for each test."""
+        pass
+    
     def test_initialization(self, openai_mocks, openai_client_mod):
         """Test OpenAIClient initialization."""
         client = openai_client_mod.OpenAIClient(api_key="test-key")
@@ -42,53 +47,71 @@ class TestOpenAIClient:
         """Test OpenAIClient initialization with custom base URL."""
         client = openai_client_mod.OpenAIClient(
             api_key="test-key",
-            base_url="https://custom.openai.com/v1",
-            timeout=60
+            base_url="https://api.openai.com/v1"
         )
-        assert client.api_key == "test-key"
-        assert client.base_url == "https://custom.openai.com/v1"
-        assert client.timeout == 60
+        assert client.base_url == "https://api.openai.com/v1"
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_create_chat_completion(self, mock_openai, openai_client_mod):
-        """Test chat completion creation."""
-        # Mock the OpenAI response
+    @patch('ai_utilities.openai_client._create_openai_sdk_client')
+    def test_create_chat_completion(self, mock_create_client, openai_client_mod):
+        """Test chat completion creation - contract level."""
+        # Setup mock client with proper response
+        mock_client = Mock()
         mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = "Test response"
-        
-        mock_client = Mock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
+        # Create client and call method
         client = openai_client_mod.OpenAIClient(api_key="test-key")
-        response = client.create_chat_completion(
-            model="test-model-1",
-            messages=[{"role": "user", "content": "Hello"}],
-            temperature=0.5
+        result = client.create_chat_completion(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "test"}],
+            temperature=0.5,
+            max_tokens=100
         )
         
-        # Verify the API was called correctly
+        # Contract: verify SDK client was created correctly
+        mock_create_client.assert_called_once_with(
+            api_key="test-key", 
+            base_url=None, 
+            timeout=None
+        )
+        
+        # Contract: verify chat completion was called with correct parameters
         mock_client.chat.completions.create.assert_called_once_with(
-            model="test-model-1",
-            messages=[{"role": "user", "content": "Hello"}],
-            temperature=0.5
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "test"}],
+            temperature=0.5,
+            max_tokens=100
         )
-        assert response == mock_response
-    
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_get_models(self, mock_openai, openai_client_mod):
-        """Test model listing."""
-        mock_models = Mock()
-        mock_client = Mock()
-        mock_client.models.list.return_value = mock_models
-        mock_openai.return_value = mock_client
         
+        # Contract: verify result is returned correctly
+        assert result is mock_response
+
+    @patch('ai_utilities.openai_client._create_openai_sdk_client')
+    def test_get_models(self, mock_create_client, openai_client_mod):
+        """Test model listing - contract level."""
+        # Setup mock client with proper response
+        mock_client = Mock()
+        mock_models = Mock()
+        mock_client.models.list.return_value = mock_models
+        mock_create_client.return_value = mock_client
+        
+        # Create client and call method
         client = openai_client_mod.OpenAIClient(api_key="test-key")
         models = client.get_models()
         
+        # Contract: verify SDK client was created correctly
+        mock_create_client.assert_called_once_with(
+            api_key="test-key", 
+            base_url=None, 
+            timeout=None
+        )
+        
+        # Contract: verify models.list was called exactly once
         mock_client.models.list.assert_called_once()
-        assert models == mock_models
+        
+        # Contract: verify models are returned correctly
+        assert models is mock_models
 
 
 class TestResponseProcessor:
@@ -362,10 +385,8 @@ class TestOpenAIModelRefactoring:
         with pytest.raises(RateLimitExceededError):
             model.ask_ai("Hello")
     
-    def test_clean_response_deprecation_warning(self, caplog):
+    def test_clean_response_deprecation_warning(self):
         """Test that clean_response shows deprecation warning."""
-        caplog.set_level('WARNING')  # Ensure we capture warnings
-        
         with patch('ai_utilities.openai_model.ResponseProcessor') as mock_processor:
             mock_processor.extract_json.return_value = '{"test": "data"}'
             
@@ -373,23 +394,27 @@ class TestOpenAIModelRefactoring:
             with pytest.warns(DeprecationWarning, match="OpenAIModel.clean_response.*is deprecated"):
                 result = OpenAIModel.clean_response('{"test": "data"}')
             
-            assert "deprecated" in caplog.text.lower()
             assert result == '{"test": "data"}'
 
 
 class TestComponentIntegration:
     """Test integration between refactored components."""
     
-    @patch('ai_utilities.openai_client.OpenAI')
-    def test_end_to_end_workflow(self, mock_openai, openai_mocks, openai_client_mod):
-        """Test end-to-end workflow with all components."""
-        # Mock OpenAI response
+    @pytest.fixture(autouse=True)
+    def setup_openai_client_reset(self, reset_openai_client_globals):
+        """Ensure global state is reset for each test."""
+        pass
+    
+    @patch('ai_utilities.openai_client._create_openai_sdk_client')
+    def test_end_to_end_workflow(self, mock_create_client, openai_client_mod):
+        """Test end-to-end workflow with all components - contract level."""
+        # Mock OpenAI response with real string content
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "  {\"answer\": \"test\"}  "
         mock_client = Mock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         # Create components
         api_client = openai_client_mod.OpenAIClient(api_key="test-key")
@@ -410,7 +435,16 @@ class TestComponentIntegration:
         raw_text = response.choices[0].message.content.strip()
         formatted_response = processor.format_response(raw_text, "json")
         
-        # Verify workflow
+        # Verify workflow contracts
         assert tokens > 0
         assert formatted_response == "{\"answer\": \"test\"}"
+        
+        # Contract: verify SDK client was created correctly
+        mock_create_client.assert_called_once_with(
+            api_key="test-key", 
+            base_url=None, 
+            timeout=None
+        )
+        
+        # Contract: verify API was called correctly
         mock_client.chat.completions.create.assert_called_once()

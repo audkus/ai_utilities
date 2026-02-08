@@ -160,12 +160,6 @@ def _reset_ai_settings_cache() -> None:
         # Import lazily to avoid import-time side effects
         from ai_utilities.config_models import AiSettings
         
-        # Reset pydantic-settings internal cache if it exists
-        if hasattr(AiSettings, 'model_config'):
-            # Clear any cached settings - avoid private pydantic internals
-            # Rebuild settings model to clear caches instead of touching private attributes
-            pass
-        
         # Reset class-level cached values
         if hasattr(AiSettings, '_cached_settings'):
             AiSettings._cached_settings.clear()

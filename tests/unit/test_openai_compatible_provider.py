@@ -74,11 +74,11 @@ class TestOpenAICompatibleProvider:
         provider = OpenAICompatibleProvider(base_url="http://localhost:8080/v1/")
         assert provider.base_url == "http://localhost:8080/v1"
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_client_initialization(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_client_initialization(self, mock_create_client: MagicMock) -> None:
         """Test that OpenAI client is initialized with correct parameters."""
         mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(
             base_url=self.base_url,
@@ -87,7 +87,7 @@ class TestOpenAICompatibleProvider:
             extra_headers=self.extra_headers
         )
         
-        mock_openai_class.assert_called_once_with(
+        mock_create_client.assert_called_once_with(
             api_key=self.api_key,
             base_url=self.base_url,
             timeout=self.timeout,
@@ -95,12 +95,12 @@ class TestOpenAICompatibleProvider:
         )
         assert provider.client == mock_client
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_openai_client_with_dummy_key(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_openai_client_with_dummy_key(self, mock_create_client: MagicMock) -> None:
         """Test that dummy API key is used when none provided."""
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         
-        mock_openai_class.assert_called_once_with(
+        mock_create_client.assert_called_once_with(
             api_key="dummy-key",
             base_url=self.base_url,
             timeout=30
@@ -237,8 +237,8 @@ class TestOpenAICompatibleProvider:
             mock_filter.assert_called_once_with(**test_params)
             assert result == mock_filter.return_value
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_text_format(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_text_format(self, mock_create_client: MagicMock) -> None:
         """Test ask method with text format."""
         # Mock OpenAI response
         mock_response = MagicMock()
@@ -247,7 +247,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask("Test prompt", return_format="text")
@@ -257,8 +257,8 @@ class TestOpenAICompatibleProvider:
         assert isinstance(result, str)  # Verify return type contract
         mock_client.chat.completions.create.assert_called_once()
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_json_format_success(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_json_format_success(self, mock_create_client: MagicMock) -> None:
         """Test ask method with JSON format - successful parsing."""
         json_response = {"key": "value", "number": 42}
         mock_response = MagicMock()
@@ -267,15 +267,15 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask("Test prompt", return_format="json")
         
         assert result == json_response
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_json_format_parse_error(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_json_format_parse_error(self, mock_create_client: MagicMock) -> None:
         """Test ask method with JSON format - parsing error fallback."""
         invalid_json = "This is not valid JSON"
         mock_response = MagicMock()
@@ -284,7 +284,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask("Test prompt", return_format="json")
@@ -292,8 +292,8 @@ class TestOpenAICompatibleProvider:
         # Should return raw text when JSON parsing fails
         assert result == invalid_json
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_with_custom_parameters(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_with_custom_parameters(self, mock_create_client: MagicMock) -> None:
         """Test ask method with custom parameters."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -301,7 +301,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask(
@@ -317,8 +317,8 @@ class TestOpenAICompatibleProvider:
         assert call_args.kwargs["max_tokens"] == 200
         assert call_args.kwargs["model"] == "custom-model"
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_json_mode_warning(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_json_mode_warning(self, mock_create_client: MagicMock) -> None:
         """Test that JSON mode warning is shown."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -326,7 +326,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         
@@ -338,8 +338,8 @@ class TestOpenAICompatibleProvider:
                 "JSON mode requested but not guaranteed to be supported by this OpenAI-compatible provider"
             )
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_many(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_many(self, mock_create_client: MagicMock) -> None:
         """Test ask_many method."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -347,7 +347,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         prompts = ["Prompt 1", "Prompt 2", "Prompt 3"]
@@ -357,12 +357,12 @@ class TestOpenAICompatibleProvider:
         assert all(result == "Response" for result in results)
         assert mock_client.chat.completions.create.call_count == 3
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_error_handling(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_error_handling(self, mock_create_client: MagicMock) -> None:
         """Test error handling in ask method."""
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = Exception("API Error")
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         
@@ -414,8 +414,8 @@ class TestOpenAICompatibleProvider:
         assert exc_info.value.capability == "Image generation"
         assert exc_info.value.provider == "openai_compatible"
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_with_empty_response_content(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_with_empty_response_content(self, mock_create_client: MagicMock) -> None:
         """Test ask method when response content is empty."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -423,7 +423,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask("Test prompt")
@@ -432,8 +432,8 @@ class TestOpenAICompatibleProvider:
         assert result is not None
         assert isinstance(result, str)  # Verify return type contract
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_ask_with_empty_response_content_json(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_ask_with_empty_response_content_json(self, mock_create_client: MagicMock) -> None:
         """Test ask method with JSON format when response content is empty."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -441,7 +441,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         result = provider.ask("Test prompt", return_format="json")
@@ -464,8 +464,8 @@ class TestOpenAICompatibleProvider:
         logger = logging.getLogger("ai_utilities.providers.openai_compatible_provider")
         assert logger is not None
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_default_model_usage(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_default_model_usage(self, mock_create_client: MagicMock) -> None:
         """Test that default model is used when none specified."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -473,7 +473,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         provider.ask("Test prompt")
@@ -482,8 +482,8 @@ class TestOpenAICompatibleProvider:
         call_args = mock_client.chat.completions.create.call_args
         assert call_args.kwargs["model"] == "gpt-3.5-turbo"
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_response_format_for_json(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_response_format_for_json(self, mock_create_client: MagicMock) -> None:
         """Test that response_format is included for JSON requests."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -491,7 +491,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         provider.ask("Test prompt", return_format="json")
@@ -500,8 +500,8 @@ class TestOpenAICompatibleProvider:
         call_args = mock_client.chat.completions.create.call_args
         assert call_args.kwargs["response_format"] == {"type": "json_object"}
 
-    @patch('ai_utilities.providers.openai_compatible_provider.OpenAI')
-    def test_no_response_format_for_text(self, mock_openai_class: MagicMock) -> None:
+    @patch('ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client')
+    def test_no_response_format_for_text(self, mock_create_client: MagicMock) -> None:
         """Test that response_format is not included for text requests."""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -509,7 +509,7 @@ class TestOpenAICompatibleProvider:
         
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         provider = OpenAICompatibleProvider(base_url=self.base_url)
         provider.ask("Test prompt", return_format="text")

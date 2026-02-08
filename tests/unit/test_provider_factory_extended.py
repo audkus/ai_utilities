@@ -50,8 +50,13 @@ class TestProviderFactoryExtended:
         provider = create_provider(settings)
         assert provider is not None
     
-    def test_create_openai_compatible_with_various_base_urls(self) -> None:
+    @patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client")
+    def test_create_openai_compatible_with_various_base_urls(self, mock_create_client) -> None:
         """Test OpenAI-compatible provider with various base URL formats."""
+        # Mock the client creation
+        mock_client = MagicMock(name="OpenAICompatibleSDKClient")
+        mock_create_client.return_value = mock_client
+        
         base_urls = [
             "https://api.example.com",
             "http://localhost:8080/v1",
@@ -70,6 +75,13 @@ class TestProviderFactoryExtended:
             provider = create_provider(settings)
             assert isinstance(provider, OpenAICompatibleProvider)
             assert provider.base_url == base_url
+            
+            # Verify the boundary was called with correct base_url
+            mock_create_client.assert_called_with(
+                api_key="test-key",
+                base_url=base_url,
+                timeout=30
+            )
     
     def test_create_openai_compatible_with_request_timeout_float(self) -> None:
         """Test OpenAI-compatible provider with float request_timeout_s."""

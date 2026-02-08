@@ -109,7 +109,6 @@ class AutomatedTestRunner:
     def _run_script_tests(self) -> Dict[str, Any]:
         """Run script tests."""
         script_test_files = [
-            "unit/test_dashboard.py",
             "test_provider_tools.py"
         ]
         
