@@ -663,8 +663,8 @@ class TestAiClientEmbeddings:
         with pytest.raises(ValueError, match="API key is required for embeddings"):
             self.client.get_embeddings(["test"])
     
-    @patch('openai.OpenAI')
-    def test_get_embeddings_success(self, mock_openai):
+    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
+    def test_get_embeddings_success(self, mock_create_client):
         """Test successful embeddings generation."""
         mock_client = Mock()
         mock_response = Mock()
@@ -672,7 +672,7 @@ class TestAiClientEmbeddings:
         mock_data.embedding = [0.1, 0.2, 0.3]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
         result = self.client.get_embeddings(["test text"])
         
@@ -682,41 +682,47 @@ class TestAiClientEmbeddings:
             input=["test text"]
         )
     
-    @patch('openai.OpenAI')
-    def test_get_embeddings_with_dimensions(self, mock_openai):
+    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
+    def test_get_embeddings_with_dimensions(self, mock_create_client):
         """Test embeddings generation with dimensions."""
         mock_client = Mock()
         mock_response = Mock()
         mock_data = Mock()
-        mock_data.embedding = [0.1, 0.2, 0.3]
+        mock_data.embedding = [0.4, 0.5, 0.6]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
-        result = self.client.get_embeddings(["test text"], dimensions=512)
+        result = self.client.get_embeddings(
+            ["test text"],
+            dimensions=512
+        )
         
-        assert result == [[0.1, 0.2, 0.3]]
+        assert result == [[0.4, 0.5, 0.6]]
         mock_client.embeddings.create.assert_called_once_with(
             model="text-embedding-3-small",
             input=["test text"],
             dimensions=512
         )
     
-    @patch('openai.OpenAI')
-    def test_get_embeddings_with_custom_model(self, mock_openai):
+    @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
+    def test_get_embeddings_with_custom_model(self, mock_create_client):
         """Test embeddings generation with custom model."""
         mock_client = Mock()
         mock_response = Mock()
         mock_data = Mock()
-        mock_data.embedding = [0.1, 0.2, 0.3]
+        mock_data.embedding = [0.7, 0.8, 0.9]
         mock_response.data = [mock_data]
         mock_client.embeddings.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
         
-        result = self.client.get_embeddings(["test text"], model="custom-model")
+        result = self.client.get_embeddings(
+            ["test text"],
+            model="text-embedding-3-large"
+        )
         
-        assert result == [[0.1, 0.2, 0.3]]
+        assert result == [[0.7, 0.8, 0.9]]
         mock_client.embeddings.create.assert_called_once_with(
-            model="custom-model",
+            model="text-embedding-3-large",
             input=["test text"]
         )

@@ -126,13 +126,9 @@ class AutomatedTestRunner:
     def _run_performance_tests(self) -> Dict[str, Any]:
         """Run performance benchmarks."""
         # Skip performance tests - file doesn't exist
-        return {
-            "status": "skipped",
-            "tests_run": 0,
-            "tests_passed": 0,
-            "tests_failed": 0,
-            "message": "No performance tests found"
-        }
+        results = self._new_results(status="skipped")
+        results["details"]["message"] = "No performance tests found"
+        return results
     
     def _run_ci_tests(self) -> Dict[str, Any]:
         """Run CI-specific tests."""
@@ -227,11 +223,12 @@ class AutomatedTestRunner:
         status_emoji = "✅" if results["status"] == "passed" else "❌"
         print(f"  {status_emoji} {category.title()}: {results['tests_passed']}/{results['tests_run']} passed")
         
-        if results["errors"]:
-            for error in results["errors"][:3]:  # Show first 3 errors
+        errors = results.get("errors", [])
+        if errors:
+            for error in errors[:3]:  # Show first 3 errors
                 print(f"    ⚠️  {error}")
-            if len(results["errors"]) > 3:
-                print(f"    ... and {len(results['errors']) - 3} more errors")
+            if len(errors) > 3:
+                print(f"    ... and {len(errors) - 3} more errors")
     
     def _generate_final_report(self) -> Dict[str, Any]:
         """Generate final test report."""
