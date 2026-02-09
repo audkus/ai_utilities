@@ -20,4 +20,4 @@ test-fast:
 
 # Run tests with explicit coverage reports
 cov:
-	python -m pytest --cov=ai_utilities --cov-report=term-missing --cov-report=html:coverage_reports/html
+	python -m pytest --cov=ai_utilities --cov-report=term-missing --cov-report=html:coverage_reports/html --cov-report=xml:coverage_reports/coverage.xml
