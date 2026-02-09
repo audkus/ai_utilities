@@ -1161,7 +1161,7 @@ def enforce_repo_root_cleanliness() -> None:
             f"Repository root: {repo_root}\n"
             f"{'. '.join(error_parts)}\n"
             f"Allowed files: {sorted(ROOT_FILE_ALLOWLIST)}\n"
-            f"Allowed directories: {sorted(ROOT_DIR_ALLOWLIST)}\n"
+            f"Allowed directories: {sorted(ROOT_DIR_ALLOWED_DIRECTORIES)}\n"
             "Use tmp_path, tmp_path_factory, or reports/ for outputs."
         )
 
