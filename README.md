@@ -18,80 +18,117 @@ Managing multiple AI providers is complex and error-prone. Each provider has dif
 pip install ai-utilities[openai]
 ```
 
-### Basic Usage
+## 5-minute Tour
+
+Get started immediately with these copy-pasteable examples. Each runs independently after setting environment variables.
+
+### Minimal synchronous call
 
 ```python
 from ai_utilities import AiClient
 
-# Create client (loads from .env file automatically)
 client = AiClient()
-
-# Make a request
 response = client.ask("What is the capital of France?")
 print(response)
-
-# Monitor usage (if tracking enabled)
-usage_stats = client.get_usage_stats()
-if usage_stats:
-    print(f"Tokens used: {usage_stats.total_tokens}")
 ```
 
-### Configuration
+### Minimal .env configuration
 
-Create a `.env` file:
+Create `.env` with your preferred provider:
 
 ```bash
-# Option 1: Auto-select among configured providers (recommended)
-AI_PROVIDER=auto
-
-# Option 2: Use specific provider
-# AI_PROVIDER=openai
-
-# Configure one or more providers below
-# OpenAI
+# OpenAI (recommended for beginners)
 OPENAI_API_KEY=your-openai-key
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=gpt-4o-mini
 
-# Groq (fast inference)
-# GROQ_API_KEY=your-groq-key
+# Or Groq (fast inference)
+# GROQ_API_KEY=your-groq-key  
 # GROQ_MODEL=llama3-70b-8192
-
-# Together AI (open source models)
-# TOGETHER_API_KEY=your-together-key
-# TOGETHER_MODEL=mistral-7b
-
-# OpenRouter (multiple model access)
-# OPENROUTER_API_KEY=your-openrouter-key
-# OPENROUTER_MODEL=anthropic/claude-3-haiku
-
-# Local providers (require model)
-# OLLAMA_BASE_URL=http://localhost:11434/v1
-# OLLAMA_MODEL=llama3.1
-
-# FastChat
-# FASTCHAT_BASE_URL=http://localhost:8000/v1
-# FASTCHAT_MODEL=your-model-name
-
-# Text Generation WebUI
-# TEXT_GENERATION_WEBUI_BASE_URL=http://localhost:5000/v1
-# TEXT_GENERATION_WEBUI_MODEL=your-model-name
-
-# OpenAI Compatible (custom endpoints)
-# AI_BASE_URL=https://your-endpoint.com/v1
-# AI_API_KEY=your-key
-# AI_MODEL=your-model
-
-# Optional: Override auto-selection order
-# AI_AUTO_SELECT_ORDER=openai,groq,openrouter,together,ollama,fastchat,text-generation-webui
 ```
 
-Or run the interactive setup:
+### Minimal async call
+
+```python
+import asyncio
+from ai_utilities import AsyncAiClient
+
+async def main():
+    client = AsyncAiClient()
+    response = await client.ask("Explain photosynthesis")
+    print(response)
+
+asyncio.run(main())
+```
+
+### Provider selection
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Explicit provider selection
+settings = AiSettings(provider="groq", api_key="your-key", model="llama3-70b-8192")
+client = AiClient(settings)
+response = client.ask("What is machine learning?")
+print(response)
+```
+
+### Structured JSON output
+
+```python
+from ai_utilities import AiClient, parse_json_from_text
+
+client = AiClient()
+response = client.ask("List 3 programming languages with their year created")
+data = parse_json_from_text(response)
+print(data)
+```
+
+### Caching behavior
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+
+# First call: hits API, costs tokens
+result1 = client.ask("What is Python?", cache_namespace="learning")
+
+# Second call: instant response, $0 cost
+result2 = client.ask("What is Python?", cache_namespace="learning")
+
+print(result1)
+print(result2)
+```
+
+### Local Ollama usage
+
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Requires local Ollama server running
+settings = AiSettings(
+    provider="ollama",
+    base_url="http://localhost:11434/v1",
+    model="llama3.1"
+)
+client = AiClient(settings)
+response = client.ask("Hello, local model!")
+print(response)
+```
+
+#### Sanity check
 
 ```bash
-ai-utilities setup
+pip install ai-utilities[openai]
+echo "OPENAI_API_KEY=your-key" > .env
+echo "OPENAI_MODEL=gpt-4o-mini" >> .env
+
+python demo.py  # Where demo.py contains any example above
 ```
 
-## 🚀 API Stability & Compatibility
+For more detailed examples and run instructions, see [docs/examples/README.md](docs/examples/README.md).
+
+## Quickstart
 
 ### Stable Public API (v1.x)
 
