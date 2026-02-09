@@ -68,6 +68,11 @@ jobs:
       run: |
         mypy src/ai_utilities/ --no-error-summary
     
+    - name: Clean up root coverage artifacts (CI only)
+      run: |
+        # Remove any leftover coverage fragments from repository root before pytest
+        rm -f .coverage .coverage.* || true
+    
     - name: Test with pytest
       env:
         COVERAGE_FILE: coverage_reports/.coverage

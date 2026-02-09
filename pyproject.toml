@@ -83,6 +83,8 @@ ai-utilities = "ai_utilities.cli:main"
 
 [tool.coverage.run]
 source = ["src/ai_utilities"]
+data_file = "coverage_reports/.coverage"
+parallel = true
 omit = [
     "*/tests/*",
     "*/test_*",

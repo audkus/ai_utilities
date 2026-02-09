@@ -70,15 +70,15 @@ def test_math():
             # Should have .coverage data file(s) if coverage was collected
             coverage_data_files = list(coverage_reports_dir.glob(".coverage*"))
             
-            # Should have HTML report if coverage was collected
+            # Should have HTML report if coverage was collected AND ai_utilities was actually measured
             html_index = coverage_reports_dir / "html" / "index.html"
-            if coverage_data_files:  # Only check HTML if we actually collected coverage
-                assert html_index.exists(), "Should have HTML coverage report when coverage data exists"
+            if coverage_data_files and "No data to report" not in result.stdout:
+                assert html_index.exists(), "Should have HTML coverage report when coverage data exists and was measured"
             
-            # Should have XML report if coverage was collected
+            # Should have XML report if coverage was collected AND ai_utilities was actually measured
             xml_report = coverage_reports_dir / "coverage.xml"
-            if coverage_data_files:  # Only check XML if we actually collected coverage
-                assert xml_report.exists(), "Should have XML coverage report when coverage data exists"
+            if coverage_data_files and "No data to report" not in result.stdout:
+                assert xml_report.exists(), "Should have XML coverage report when coverage data exists and was measured"
         
         # Clean up coverage artifacts
         import shutil
