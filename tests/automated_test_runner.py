@@ -239,12 +239,15 @@ class AutomatedTestRunner:
             
             # Combine coverage data
             try:
+                env = dict(__import__('os').environ)
+                env["COVERAGE_FILE"] = str(repo_root / "coverage_reports" / ".coverage")
                 result = subprocess.run(
                     [sys.executable, "-m", "coverage", "combine"],
                     cwd=repo_root,
                     capture_output=True,
                     text=True,
-                    check=False
+                    check=False,
+                    env=env
                 )
                 if result.returncode != 0:
                     # Don't fail if combine returns non-zero (might happen with single file)
@@ -256,12 +259,15 @@ class AutomatedTestRunner:
             
             # Generate XML report
             try:
+                env = dict(__import__('os').environ)
+                env["COVERAGE_FILE"] = str(repo_root / "coverage_reports" / ".coverage")
                 result = subprocess.run(
-                    [sys.executable, "-m", "coverage", "xml", "-o", "coverage.xml"],
+                    [sys.executable, "-m", "coverage", "xml", "-o", "coverage_reports/coverage.xml"],
                     cwd=repo_root,
                     capture_output=True,
                     text=True,
-                    check=False
+                    check=False,
+                    env=env
                 )
                 if result.returncode == 0:
                     print("    ✅ XML report generated")
@@ -278,12 +284,15 @@ class AutomatedTestRunner:
                 html_dir = coverage_reports_dir / "html"
                 html_dir.mkdir(exist_ok=True)
                 
+                env = dict(__import__('os').environ)
+                env["COVERAGE_FILE"] = str(repo_root / "coverage_reports" / ".coverage")
                 result = subprocess.run(
                     [sys.executable, "-m", "coverage", "html", "-d", "coverage_reports/html"],
                     cwd=repo_root,
                     capture_output=True,
                     text=True,
-                    check=False
+                    check=False,
+                    env=env
                 )
                 if result.returncode == 0:
                     print("    ✅ HTML report generated")

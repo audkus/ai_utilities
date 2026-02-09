@@ -53,6 +53,8 @@ jobs:
         python tests/automated_test_runner.py --category performance --timeout 600
     
     - name: Generate coverage report
+      env:
+        COVERAGE_FILE: coverage_reports/.coverage
       run: |
         pytest --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html
     
