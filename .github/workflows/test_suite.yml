@@ -54,12 +54,12 @@ jobs:
     
     - name: Generate coverage report
       run: |
-        pytest --cov=ai_utilities --cov-report=xml --cov-report=html:coverage_reports/html
+        pytest --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage.xml
+        file: ./coverage_reports/coverage.xml
         flags: unittests
         name: codecov-umbrella
     

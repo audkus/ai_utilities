@@ -441,7 +441,7 @@ commands = pytest {posargs}
 
 [testenv:coverage]
 deps = pytest pytest-cov pytest-mock pytest-json-report
-commands = pytest --cov=ai_utilities --cov-report=html --cov-report=term {posargs}
+commands = pytest --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term {posargs}
 """
         }
         
