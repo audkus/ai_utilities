@@ -80,7 +80,12 @@ def test_math():
             if coverage_data_files and "No data to report" not in result.stdout:
                 assert xml_report.exists(), "Should have XML coverage report when coverage data exists and was measured"
         
-        # Clean up coverage artifacts
+        # Clean up coverage artifacts (but keep the directory)
         import shutil
         if coverage_reports_dir.exists():
-            shutil.rmtree(coverage_reports_dir)
+            # Remove contents but keep the directory itself
+            for item in coverage_reports_dir.iterdir():
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)

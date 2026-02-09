@@ -1536,3 +1536,32 @@ def pytest_runtest_setup(item):
     """
     if "requires_openai" in item.keywords and not requires_openai():
         pytest.skip("Test requires OpenAI SDK - set RUN_OPENAI_TESTS=1 to run")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_coverage_reports_directory():
+    """
+    Session-scoped autouse fixture to ensure coverage_reports/ directory exists.
+    
+    This prevents coverage DataError when pytest-cov tries to write fragment files
+    to a non-existent coverage_reports/ directory, especially under parallel/xdist behavior.
+    
+    The fixture:
+    - Creates coverage_reports/ if it doesn't exist
+    - Removes stale .coverage* files to avoid combine conflicts
+    - Does NOT delete the directory itself
+    """
+    # Compute project root (tests/conftest.py -> tests/ -> project root)
+    project_root = Path(__file__).resolve().parents[2]
+    coverage_reports_dir = project_root / "coverage_reports"
+    
+    # Ensure directory exists
+    coverage_reports_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Remove stale coverage data files to avoid combine conflicts
+    for stale_file in coverage_reports_dir.glob(".coverage*"):
+        try:
+            stale_file.unlink()
+        except OSError:
+            # Ignore cleanup errors
+            pass

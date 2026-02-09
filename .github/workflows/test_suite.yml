@@ -56,6 +56,8 @@ jobs:
       env:
         COVERAGE_FILE: coverage_reports/.coverage
       run: |
+        # Ensure coverage_reports directory exists before pytest
+        mkdir -p coverage_reports
         pytest --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html
     
     - name: Upload coverage to Codecov
