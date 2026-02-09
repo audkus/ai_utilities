@@ -17,6 +17,8 @@ def test_no_coverage_warning_on_target_test():
     Note: Due to pytest-cov's internal behavior, there may still be some early imports,
     but the CoverageWarning should be eliminated for the target use case.
     """
+    project_root = Path(__file__).parent.parent.parent  # tests/regression/ -> tests/ -> project root
+    
     # Run the exact command from the user's request with consistent config
     cmd = [
         sys.executable, "-m", "pytest", "-q",
@@ -26,13 +28,18 @@ def test_no_coverage_warning_on_target_test():
         "--tb=no"  # Consistent traceback handling
     ]
 
+    # Set environment variables to prevent root contamination
+    env = dict(__import__('os').environ)
+    env["COVERAGE_FILE"] = str(project_root / "coverage_reports" / ".coverage")
+
     # Run from the project root
     result = subprocess.run(
         cmd,
-        cwd=Path(__file__).parent.parent.parent,  # tests/regression/ -> tests/ -> project root
+        cwd=project_root,
         capture_output=True,
         text=True,
-        timeout=30
+        timeout=120,  # Increased timeout for CI reliability
+        env=env
     )
 
     # Check that the command succeeded (behavior-based assertion)
@@ -45,7 +52,7 @@ def test_no_coverage_warning_on_target_test():
     assert "CoverageWarning" not in result.stdout, f"CoverageWarning still present: {result.stdout}"  # noqa: S101 - Test validation
 
     # Clean up coverage file created by subprocess
-    coverage_file = Path(__file__).parent.parent / ".coverage"
+    coverage_file = project_root / "coverage_reports" / ".coverage"
     if coverage_file.exists():
         coverage_file.unlink()
 
@@ -56,33 +63,40 @@ def test_coverage_functionality_works():
     """
     Verify that coverage measurement is working correctly despite any warnings.
     """
+    project_root = Path(__file__).parent.parent.parent  # tests/regression/ -> tests/ -> project root
+    
     cmd = [
         sys.executable, "-m", "pytest",
         "tests/unit/test_environment_modules.py",
         "--cov=ai_utilities",
-        "--cov-report=html",
+        "--cov-report=html:coverage_reports/html",
         "--tb=no"  # Consistent traceback handling
     ]
 
+    # Set environment variables to prevent root contamination
+    env = dict(__import__('os').environ)
+    env["COVERAGE_FILE"] = str(project_root / "coverage_reports" / ".coverage")
+
     result = subprocess.run(
         cmd,
-        cwd=Path(__file__).parent.parent.parent,  # tests/regression/ -> tests/ -> project root
+        cwd=project_root,
         capture_output=True,
         text=True,
-        timeout=30
+        timeout=120,  # Increased timeout for CI reliability
+        env=env
     )
 
     # Check that the command succeeded (behavior-based assertion)
     assert result.returncode == 0, f"Command failed with return code {result.returncode}: {result.stderr}"  # noqa: S101 - Test validation
 
-    # Check that HTML report was generated (behavior-based)
-    html_report_path = Path(__file__).parent.parent.parent / "coverage_reports" / "html" / "index.html"  # tests/regression/ -> tests/ -> project root
+    # Check that HTML report was generated in the correct location (behavior-based)
+    html_report_path = project_root / "coverage_reports" / "html" / "index.html"
     assert html_report_path.exists(), f"HTML report not found at {html_report_path}"  # noqa: S101 - Test validation
 
     # Check that coverage data was collected (behavior-based: look for coverage report generation)
     assert "Coverage HTML written" in result.stdout or "coverage" in result.stdout.lower(), "Coverage report not generated"  # noqa: S101 - Test validation
     
-    # Clean up HTML report to avoid repository contamination
+    # Clean up coverage artifacts to avoid repository contamination
     import shutil
     coverage_reports_dir = html_report_path.parent.parent
     if coverage_reports_dir.exists():

@@ -227,8 +227,8 @@ class AutomatedTestRunner:
         import sys
         from pathlib import Path
         
-        # Get repo root from tests directory
-        repo_root = Path(__file__).resolve().parents[1]
+        # Use self.project_root instead of hardcoded path
+        repo_root = self.project_root
         
         # Find all coverage files in repo root
         coverage_files = list(repo_root.glob(".coverage*"))
