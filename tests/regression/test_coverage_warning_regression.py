@@ -70,6 +70,7 @@ def test_coverage_functionality_works():
         "tests/unit/test_environment_modules.py",
         "--cov=ai_utilities",
         "--cov-report=html:coverage_reports/html",
+        "--cov-report=xml:coverage_reports/coverage.xml",
         "--tb=no"  # Consistent traceback handling
     ]
 
@@ -92,6 +93,16 @@ def test_coverage_functionality_works():
     # Check that HTML report was generated in the correct location (behavior-based)
     html_report_path = project_root / "coverage_reports" / "html" / "index.html"
     assert html_report_path.exists(), f"HTML report not found at {html_report_path}"  # noqa: S101 - Test validation
+
+    # Check that XML report was generated in the correct location
+    xml_report_path = project_root / "coverage_reports" / "coverage.xml"
+    assert xml_report_path.exists(), f"XML report not found at {xml_report_path}"  # noqa: S101 - Test validation
+
+    # Assert NO root contamination
+    assert not (project_root / "htmlcov").exists(), "htmlcov should not exist in root"  # noqa: S101 - Test validation
+    assert not (project_root / "coverage.xml").exists(), "coverage.xml should not exist in root"  # noqa: S101 - Test validation
+    root_coverage_files = [f for f in project_root.glob(".coverage*") if f.name != ".coveragerc"]
+    assert len(root_coverage_files) == 0, f"No .coverage* files should exist in root: {root_coverage_files}"  # noqa: S101 - Test validation
 
     # Check that coverage data was collected (behavior-based: look for coverage report generation)
     assert "Coverage HTML written" in result.stdout or "coverage" in result.stdout.lower(), "Coverage report not generated"  # noqa: S101 - Test validation
