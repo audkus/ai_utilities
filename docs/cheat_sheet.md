@@ -1,5 +1,7 @@
 # AI Utilities Cheat Sheet
 
+If you remember one thing: AiClient.ask() always returns a plain Python string.
+
 Quick reference for installation, commands, and troubleshooting.
 
 ## Installation Commands
