@@ -116,6 +116,102 @@ response = client.ask("Hello, local model!")
 print(response)
 ```
 
+### Embeddings
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+texts = ["Hello world", "Goodbye world"]
+embeddings = client.get_embeddings(texts)
+print(f"Generated {len(embeddings)} embeddings")
+print(f"Vector length: {len(embeddings[0])}")
+```
+
+### Files (requires openai extra)
+
+```python
+from ai_utilities import AiClient
+
+# Install: pip install "ai-utilities[openai]"
+client = AiClient()
+
+# Upload a file
+uploaded = client.upload_file("reports/data.txt")
+print(f"Uploaded: {uploaded.filename}")
+
+# List files
+files = client.list_files()
+print(f"Total files: {len(files)}")
+```
+
+### Audio transcription (requires openai extra)
+
+```python
+from ai_utilities import AiClient, validate_audio_file
+
+# Install: pip install "ai-utilities[openai]"
+client = AiClient()
+
+# Validate audio file
+validate_audio_file("reports/recording.wav")
+
+# Transcribe audio
+result = client.transcribe_audio("reports/recording.wav")
+print(f"Transcript: {result['text']}")
+```
+
+### Image generation (requires openai extra)
+
+```python
+from ai_utilities import AiClient
+
+# Install: pip install "ai-utilities[openai]"
+client = AiClient()
+
+# Generate image
+image_bytes = client.generate_image("A simple red circle")
+print(f"Generated {len(image_bytes)} bytes")
+
+# Save to file
+with open("reports/circle.png", "wb") as f:
+    f.write(image_bytes)
+```
+
+### Knowledge search
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+
+# Index some documents
+client.index_knowledge("reports/")
+
+# Ask with knowledge
+response = client.ask_with_knowledge("What are the main findings?")
+print(response)
+```
+
+### Usage tracking
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+
+# Make a request
+client.ask("What is machine learning?")
+
+# Print usage summary
+client.print_usage_summary()
+
+# Or get stats object
+stats = client.get_usage_stats()
+if stats:
+    print(f"Total tokens: {stats.total_tokens}")
+```
+
 #### Sanity check
 
 ```bash
@@ -126,7 +222,35 @@ echo "OPENAI_MODEL=gpt-4o-mini" >> .env
 python demo.py  # Where demo.py contains any example above
 ```
 
-For more detailed examples and run instructions, see [docs/examples/README.md](docs/examples/README.md).
+## Why Use AI Utilities
+
+### Raw OpenAI SDK
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "What is the capital of France?"}]
+)
+print(response.choices[0].message.content)
+```
+
+### AI Utilities
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+response = client.ask("What is the capital of France?")
+print(response)
+```
+
+**AI Utilities eliminates boilerplate** while adding unified provider support, intelligent caching, and comprehensive error handling.
+
+For more examples, see [docs/examples/README.md](docs/examples/README.md) and the [cheat sheet](docs/cheat_sheet.md).
 
 ## Quickstart
 
