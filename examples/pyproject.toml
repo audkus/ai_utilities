@@ -1,0 +1,37 @@
+[tool.ruff]
+# Relaxed rules for examples/tutorial scripts
+# Examples are educational and may include:
+# - Print statements for demonstration
+# - Longer lines for readability
+# - Unused imports in tutorial contexts
+# - Simplified error handling
+# - sys.path manipulation for bootstrap system
+
+line-length = 100
+
+[tool.ruff.lint]
+# Select rules to enforce
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+]
+
+# Ignore rules that are too strict for tutorial examples
+ignore = [
+    "E501",  # Line too long (examples often have longer lines for readability)
+    "F401",  # Unused import (examples may show imports for educational purposes)
+    "E402",  # Imports not at top of file (examples may import conditionally)
+    "F841",  # Unused variable (examples may have demo variables)
+]
+
+[tool.ruff.format]
+# Keep formatting relaxed for examples
+line-length = 100
+
+# Allow specific patterns for examples
+[tool.ruff.lint.per-file-ignores]
+# Allow sys.path manipulation in bootstrap blocks
+"*.py" = [
+    "E402",  # Allow imports not at top (bootstrap system)
+]

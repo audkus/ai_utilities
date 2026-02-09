@@ -1,0 +1,7 @@
+# Binary file handling
+*.wav binary
+*.mp3 binary
+*.flac binary
+*.ogg binary
+*.m4a binary
+*.webm binary

@@ -5,6 +5,7 @@ Refactored OpenAI model using composition with single-responsibility components.
 """
 
 import logging
+import configparser
 from configparser import ConfigParser
 
 from .error_codes import ERROR_RATE_LIMIT_EXCEEDED
@@ -41,11 +42,28 @@ class OpenAIModel:
         self.api_client = OpenAIClient(api_key=api_key)
         self.response_processor = ResponseProcessor()
         self.token_counter = TokenCounter()
+        
+        # Handle missing config sections gracefully with fallback defaults
+        try:
+            rpm = config.getint(model, 'requests_per_minute')
+        except (configparser.NoSectionError, configparser.NoOptionError):
+            rpm = 60  # Default fallback
+            
+        try:
+            tpm = config.getint(model, 'tokens_per_minute')
+        except (configparser.NoSectionError, configparser.NoOptionError):
+            tpm = 10000  # Default fallback
+            
+        try:
+            tpd = config.getint(model, 'tokens_per_day')
+        except (configparser.NoSectionError, configparser.NoOptionError):
+            tpd = 100000  # Default fallback
+        
         self.rate_limiter = RateLimiter(
             module_name=model,
-            rpm=config.getint(model, 'requests_per_minute'),
-            tpm=config.getint(model, 'tokens_per_minute'),
-            tpd=config.getint(model, 'tokens_per_day'),
+            rpm=rpm,
+            tpm=tpm,
+            tpd=tpd,
             config_path=config_path
         )
         
@@ -88,7 +106,9 @@ class OpenAIModel:
             messages=messages
         )
         
-        raw_response = response.choices[0].message.content.strip()
+        # Guard against None content before stripping
+        content = response.choices[0].message.content or ""
+        raw_response = content.strip()
         
         # Use response processor for formatting
         formatted_response = self.response_processor.format_response(
@@ -101,13 +121,30 @@ class OpenAIModel:
     @staticmethod
     def clean_response(response: str) -> str:
         """
-        Legacy method for backward compatibility.
+        Clean and format response text (deprecated).
+        
+        This method is deprecated and will be removed in a future version.
+        Use ResponseProcessor.extract_json() instead.
         
         Args:
-            response (str): The raw response from the AI model.
+            response: Raw response string
             
         Returns:
-            str: The cleaned response.
+            Cleaned response string
         """
-        logger.warning("clean_response is deprecated. Use ResponseProcessor.extract_json instead.")
-        return ResponseProcessor.extract_json(response)
+        import warnings
+        warnings.warn(
+            "OpenAIModel.clean_response() is deprecated. Use ResponseProcessor.extract_json() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
+        # Also log the deprecation for test capture
+        logger.warning("OpenAIModel.clean_response() is deprecated. Use ResponseProcessor.extract_json() instead.")
+        
+        # Use ResponseProcessor for backward compatibility
+        try:
+            return ResponseProcessor.extract_json(response)
+        except Exception:
+            # If JSON extraction fails, return cleaned text
+            return response.strip()

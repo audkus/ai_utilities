@@ -7,12 +7,15 @@ Pydantic models for AI configuration with validation, type safety, and immutabil
 import os
 import json
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union, ClassVar, Iterable
 from configparser import ConfigParser
 from datetime import datetime, timedelta
-
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# OpenAI imports for validation - lazy import to avoid import-time side effects
+# import openai
+# OpenAI = openai.OpenAI
 
 
 class ModelConfig(BaseModel):
@@ -91,7 +94,7 @@ class OpenAIConfig(BaseModel):
     )
     
     model: str = Field(
-        default="test-model-1",
+        default="gpt-3.5-turbo",
         description="Default OpenAI model to use"
     )
     
@@ -186,16 +189,16 @@ class AIConfig(BaseModel):
     
     models: Dict[str, ModelConfig] = Field(
         default_factory=lambda: {
-            "test-model-1": ModelConfig(),
-            "test-model-2": ModelConfig(
+            "gpt-3.5-turbo": ModelConfig(),
+            "gpt-4": ModelConfig(
                 requests_per_minute=5000,
                 tokens_per_minute=2000000,
                 tokens_per_day=20000000
             ),
-            "test-model-3": ModelConfig(
-                requests_per_minute=5000,
-                tokens_per_minute=500000,
-                tokens_per_day=1500000
+            "gpt-4-turbo": ModelConfig(
+                requests_per_minute=3000,
+                tokens_per_minute=2000000,
+                tokens_per_day=30000000
             ),
         },
         description="Model-specific rate limiting configurations"
@@ -282,16 +285,16 @@ class AIConfig(BaseModel):
             # Ensure we have the default models if none provided
             if not models_overrides:
                 models_overrides = {
-                    "test-model-1": {},
-                    "test-model-2": {
+                    "gpt-3.5-turbo": {},
+                    "gpt-4": {
                         "requests_per_minute": 5000,
                         "tokens_per_minute": 2000000,
                         "tokens_per_day": 20000000
                     },
-                    "test-model-3": {
-                        "requests_per_minute": 5000,
-                        "tokens_per_minute": 500000,
-                        "tokens_per_day": 1500000
+                    "gpt-4-turbo": {
+                        "requests_per_minute": 3000,
+                        "tokens_per_minute": 2000000,
+                        "tokens_per_day": 30000000
                     },
                 }
             
@@ -383,7 +386,7 @@ class AiSettings(BaseSettings):
     Environment Variables:
         AI_API_KEY: API key (required for OpenAI, optional for local providers)
         AI_PROVIDER: Provider type ("openai" | "openai_compatible") (default: "openai")
-        AI_MODEL: Model name (default: "test-model-1")
+        AI_MODEL: Model name (required, also accepts OPENAI_MODEL as legacy alias)
         AI_TEMPERATURE: Response temperature 0.0-2.0 (default: 0.7)
         AI_MAX_TOKENS: Maximum response tokens (optional)
         AI_BASE_URL: Custom API base URL (required for openai_compatible provider)
@@ -424,10 +427,13 @@ class AiSettings(BaseSettings):
     )
     
     # Provider selection - expanded to support multiple providers
-    provider: Optional[Literal["openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
-        default="openai", 
+    provider: Optional[Literal["auto", "openai", "groq", "together", "openrouter", "ollama", "lmstudio", "text-generation-webui", "fastchat", "openai_compatible"]] = Field(
+        default="auto",
         description="AI provider to use (inferred from base_url if not specified)"
     )
+ 
+    ai_log_level: Optional[str] = Field(default=None, description="Optional log level override for ai_utilities (AI_LOG_LEVEL)")
+    ai_auto_select_order: Optional[str] = Field(default=None, description="Comma-separated provider order for auto selection (AI_AUTO_SELECT_ORDER)")
     
     # Core settings
     api_key: Optional[str] = Field(default=None, description="Generic API key override (AI_API_KEY)")
@@ -440,8 +446,32 @@ class AiSettings(BaseSettings):
     fastchat_api_key: Optional[str] = Field(default=None, description="FastChat API key (FASTCHAT_API_KEY)")
     ollama_api_key: Optional[str] = Field(default=None, description="Ollama API key (OLLAMA_API_KEY)")
     lmstudio_api_key: Optional[str] = Field(default=None, description="LM Studio API key (LMSTUDIO_API_KEY)")
+ 
+    openai_base_url: Optional[str] = Field(default=None, description="OpenAI base URL (OPENAI_BASE_URL)")
+    groq_base_url: Optional[str] = Field(default=None, description="Groq base URL (GROQ_BASE_URL)")
+    together_base_url: Optional[str] = Field(default=None, description="Together base URL (TOGETHER_BASE_URL)")
+    openrouter_base_url: Optional[str] = Field(default=None, description="OpenRouter base URL (OPENROUTER_BASE_URL)")
+ 
+    ollama_base_url: Optional[str] = Field(default=None, description="Ollama base URL (OLLAMA_BASE_URL)")
+    fastchat_base_url: Optional[str] = Field(default=None, description="FastChat base URL (FASTCHAT_BASE_URL)")
+    text_generation_webui_base_url: Optional[str] = Field(default=None, description="Text generation webui base URL (TEXT_GENERATION_WEBUI_BASE_URL)")
+    lmstudio_base_url: Optional[str] = Field(default=None, description="LM Studio base URL (LMSTUDIO_BASE_URL)")
+ 
+    openai_model: Optional[str] = Field(default=None, description="OpenAI model override (OPENAI_MODEL)")
+    groq_model: Optional[str] = Field(default=None, description="Groq model override (GROQ_MODEL)")
+    together_model: Optional[str] = Field(default=None, description="Together model override (TOGETHER_MODEL)")
+    openrouter_model: Optional[str] = Field(default=None, description="OpenRouter model override (OPENROUTER_MODEL)")
+ 
+    ollama_model: Optional[str] = Field(default=None, description="Ollama model override (OLLAMA_MODEL)")
+    fastchat_model: Optional[str] = Field(default=None, description="FastChat model override (FASTCHAT_MODEL)")
+    text_generation_webui_model: Optional[str] = Field(default=None, description="Text generation webui model override (TEXT_GENERATION_WEBUI_MODEL)")
+    lmstudio_model: Optional[str] = Field(default=None, description="LM Studio model override (LMSTUDIO_MODEL)")
     
-    model: str = Field(default="test-model-1", description="Default model to use")
+    model: Optional[str] = Field(
+        default=None,
+        description="Model to use (required)"
+    )
+    
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for responses (0.0-2.0)")
     max_tokens: Optional[int] = Field(default=None, ge=1, description="Max tokens for responses")
     base_url: Optional[str] = Field(default=None, description="Custom base URL for API (required for openai_compatible)")
@@ -484,6 +514,133 @@ class AiSettings(BaseSettings):
     # Cache namespace
     cache_namespace: Optional[str] = Field(default=None, description="Cache namespace for isolation (None for auto-detection)")
     
+    @field_validator('provider', mode='before')
+    @classmethod
+    def get_provider(cls, v):
+        """Get provider from environment with provider-specific base URL inference."""
+        
+        # Only do environment inference if no explicit provider was set
+        # Check if v is None (truly unset) before doing inference
+        if v is None:
+            # Check explicit AI_PROVIDER first
+            ai_provider = os.getenv('AI_PROVIDER')
+            if ai_provider:
+                return ai_provider
+            
+            # Then infer from provider-specific base URLs
+            from .config_resolver import _infer_provider_from_env_base_urls
+            env_provider = _infer_provider_from_env_base_urls()
+            if env_provider:
+                return env_provider
+            
+            return "auto"
+        
+        # For any explicit value (including "openai"), use it as-is
+        if v is not None:
+            # Strip whitespace from provider value
+            if isinstance(v, str):
+                v = v.strip()
+            return v
+        
+        return "auto"
+
+    @field_validator('ai_log_level', mode='before')
+    @classmethod
+    def get_ai_log_level(cls, v):
+        """Get AI_LOG_LEVEL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_LOG_LEVEL')
+
+    @field_validator('ai_auto_select_order', mode='before')
+    @classmethod
+    def get_ai_auto_select_order(cls, v):
+        """Get AI_AUTO_SELECT_ORDER from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_AUTO_SELECT_ORDER')
+    
+    @field_validator('request_timeout_s', mode='before')
+    @classmethod
+    def get_request_timeout_s(cls, v):
+        """Get request timeout from AI_REQUEST_TIMEOUT_S environment variable."""
+        import os
+        if v is not None:
+            return v
+        env_value = os.getenv('AI_REQUEST_TIMEOUT_S')
+        if env_value is not None:
+            try:
+                return float(env_value)
+            except ValueError:
+                pass
+        return v
+
+    @field_validator('timeout', mode='before')
+    @classmethod  
+    def get_timeout(cls, v):
+        """Get timeout from environment."""
+        if v is not None:
+            return v
+        return os.getenv('AI_TIMEOUT')
+
+    @field_validator('base_url', mode='before')
+    @classmethod  
+    def get_base_url(cls, v):
+        """Get base URL from environment with provider-specific support."""
+        if v is not None:
+            return v
+        
+        # First check AI_BASE_URL
+        ai_base_url = os.getenv('AI_BASE_URL')
+        if ai_base_url:
+            return ai_base_url
+        
+        # Then check provider-specific base URLs
+        from .config_resolver import _get_provider_specific_base_url, _infer_provider_from_env_base_urls
+        
+        # Default base URLs for providers
+        defaults = {
+            "openai": "https://api.openai.com/v1",
+            "groq": "https://api.groq.com/openai/v1",
+            "together": "https://api.together.xyz/v1",
+            "openrouter": "https://openrouter.ai/api/v1",
+            "ollama": "http://localhost:11434/v1",
+            "lmstudio": "http://localhost:1234/v1",
+            "text-generation-webui": "http://localhost:5000/v1",
+            "fastchat": "http://localhost:8000/v1",
+            "anyscale": "https://api.endpoints.anyscale.com/v1",
+            "fireworks": "https://api.fireworks.ai/inference/v1",
+            "replicate": "https://api.replicate.com/v1",
+            "vllm": "http://localhost:8000/v1",
+            "oobabooga": "http://localhost:7860/v1", 
+            "localai": "http://localhost:8080/v1",
+            "azure": "https://{resource}.openai.azure.com",
+            "google-vertex": "https://{region}-aiplatform.googleapis.com",
+            "aws-bedrock": "https://bedrock.{region}.amazonaws.com",
+            "ibm-watsonx": "https://{us-south}.ml.cloud.ibm.com",
+        }
+        
+        # First check explicit AI_PROVIDER (higher precedence)
+        ai_provider = os.getenv('AI_PROVIDER')
+        if ai_provider:
+            provider_base_url = _get_provider_specific_base_url(ai_provider)
+            if provider_base_url:
+                return provider_base_url
+            # If explicit provider is set but has no specific base URL, 
+            # use the default base URL for that provider
+            return defaults.get(ai_provider.lower())
+        
+        # Only if no explicit AI_PROVIDER, try to infer from environment-specific base URLs
+        env_provider = _infer_provider_from_env_base_urls()
+        if env_provider:
+            provider_base_url = _get_provider_specific_base_url(env_provider)
+            if provider_base_url:
+                return provider_base_url
+            # Use default for inferred provider
+            return defaults.get(env_provider)
+        
+        return None
+
     @field_validator('openai_api_key', mode='before')
     @classmethod
     def get_openai_key(cls, v):
@@ -491,6 +648,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OPENAI_API_KEY')
+
+    @field_validator('openai_base_url', mode='before')
+    @classmethod
+    def get_openai_base_url(cls, v):
+        """Get OpenAI base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENAI_BASE_URL')
+
+    @field_validator('openai_model', mode='before')
+    @classmethod
+    def get_openai_model(cls, v):
+        """Get OpenAI model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENAI_MODEL')
     
     @field_validator('groq_api_key', mode='before')
     @classmethod
@@ -499,6 +672,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('GROQ_API_KEY')
+
+    @field_validator('groq_base_url', mode='before')
+    @classmethod
+    def get_groq_base_url(cls, v):
+        """Get Groq base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('GROQ_BASE_URL')
+
+    @field_validator('groq_model', mode='before')
+    @classmethod
+    def get_groq_model(cls, v):
+        """Get Groq model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('GROQ_MODEL')
     
     @field_validator('together_api_key', mode='before')
     @classmethod
@@ -507,6 +696,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('TOGETHER_API_KEY')
+
+    @field_validator('together_base_url', mode='before')
+    @classmethod
+    def get_together_base_url(cls, v):
+        """Get Together base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TOGETHER_BASE_URL')
+
+    @field_validator('together_model', mode='before')
+    @classmethod
+    def get_together_model(cls, v):
+        """Get Together model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TOGETHER_MODEL')
     
     @field_validator('openrouter_api_key', mode='before')
     @classmethod
@@ -515,6 +720,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OPENROUTER_API_KEY')
+
+    @field_validator('openrouter_base_url', mode='before')
+    @classmethod
+    def get_openrouter_base_url(cls, v):
+        """Get OpenRouter base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENROUTER_BASE_URL')
+
+    @field_validator('openrouter_model', mode='before')
+    @classmethod
+    def get_openrouter_model(cls, v):
+        """Get OpenRouter model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OPENROUTER_MODEL')
     
     @field_validator('fastchat_api_key', mode='before')
     @classmethod
@@ -523,6 +744,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('FASTCHAT_API_KEY')
+
+    @field_validator('fastchat_base_url', mode='before')
+    @classmethod
+    def get_fastchat_base_url(cls, v):
+        """Get FastChat base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('FASTCHAT_BASE_URL')
+
+    @field_validator('fastchat_model', mode='before')
+    @classmethod
+    def get_fastchat_model(cls, v):
+        """Get FastChat model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('FASTCHAT_MODEL')
     
     @field_validator('ollama_api_key', mode='before')
     @classmethod
@@ -531,6 +768,38 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('OLLAMA_API_KEY')
+
+    @field_validator('ollama_base_url', mode='before')
+    @classmethod
+    def get_ollama_base_url(cls, v):
+        """Get Ollama base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OLLAMA_BASE_URL')
+
+    @field_validator('ollama_model', mode='before')
+    @classmethod
+    def get_ollama_model(cls, v):
+        """Get Ollama model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('OLLAMA_MODEL')
+
+    @field_validator('text_generation_webui_base_url', mode='before')
+    @classmethod
+    def get_text_generation_webui_base_url(cls, v):
+        """Get text-generation-webui base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TEXT_GENERATION_WEBUI_BASE_URL')
+
+    @field_validator('text_generation_webui_model', mode='before')
+    @classmethod
+    def get_text_generation_webui_model(cls, v):
+        """Get text-generation-webui model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('TEXT_GENERATION_WEBUI_MODEL')
     
     @field_validator('lmstudio_api_key', mode='before')
     @classmethod
@@ -539,6 +808,22 @@ class AiSettings(BaseSettings):
         if v is not None:
             return v
         return os.getenv('LMSTUDIO_API_KEY')
+
+    @field_validator('lmstudio_base_url', mode='before')
+    @classmethod
+    def get_lmstudio_base_url(cls, v):
+        """Get LM Studio base URL from environment."""
+        if v is not None:
+            return v
+        return os.getenv('LMSTUDIO_BASE_URL')
+
+    @field_validator('lmstudio_model', mode='before')
+    @classmethod
+    def get_lmstudio_model(cls, v):
+        """Get LM Studio model from environment."""
+        if v is not None:
+            return v
+        return os.getenv('LMSTUDIO_MODEL')
     
     def __init__(self, **data):
         """Initialize settings with environment override support."""
@@ -550,7 +835,16 @@ class AiSettings(BaseSettings):
             # Map AI_ environment variables to field names
             for key, value in overrides.items():
                 if key.startswith('AI_'):
-                    field_name = key[3:].lower()  # Remove AI_ prefix and lowercase
+                    # Remove AI_ prefix and lowercase
+                    raw_field_name = key[3:].lower()
+
+                    # Special-case a few keys where the field name keeps the ai_ prefix
+                    if raw_field_name == 'log_level':
+                        field_name = 'ai_log_level'
+                    elif raw_field_name == 'auto_select_order':
+                        field_name = 'ai_auto_select_order'
+                    else:
+                        field_name = raw_field_name
                     # Only use override if not explicitly provided in data
                     if field_name not in data:
                         # Convert string values to appropriate types
@@ -575,26 +869,81 @@ class AiSettings(BaseSettings):
         else:
             return value
     
+    @field_validator('model', mode='before')
     @classmethod
-    def create_isolated(cls, env_vars: Optional[dict] = None, **data):
-        """Create AiSettings with isolated environment variables (deprecated - use override_env)."""
-        from .env_overrides import override_env
+    def normalize_model(cls, v):
+        """Normalize model value: treat empty/whitespace as None."""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            v = v.strip()
+            return v if v else None
+        return v
+    
+    @model_validator(mode='before')
+    @classmethod
+    def apply_contextvar_overrides(cls, data):
+        """Apply contextvar overrides before pydantic-settings processing."""
+        from .env_overrides import get_env_overrides
         
-        with override_env(env_vars):
-            settings = cls(**data)
-            return settings
+        if isinstance(data, dict):
+            # Get both real environment and contextvar overrides
+            real_env = dict(os.environ)
+            context_overrides = get_env_overrides()
+            
+            # Contextvar overrides take precedence over real environment
+            combined_env = {**real_env, **context_overrides}
+            
+            if combined_env:
+                # Apply environment/contextvar overrides only if not already set in explicit kwargs
+                # Explicit kwargs take precedence over environment and contextvar overrides
+                env_data = {}
+                
+                # Only apply environment override if not already in explicit data
+                if 'AI_MODEL' in combined_env and 'model' not in data:
+                    env_data['model'] = combined_env['AI_MODEL']
+                
+                if 'AI_TEMPERATURE' in combined_env and 'temperature' not in data:
+                    try:
+                        env_data['temperature'] = float(combined_env['AI_TEMPERATURE'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_MAX_TOKENS' in combined_env and 'max_tokens' not in data:
+                    try:
+                        env_data['max_tokens'] = int(combined_env['AI_MAX_TOKENS'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_TIMEOUT' in combined_env and 'timeout' not in data:
+                    try:
+                        env_data['timeout'] = int(combined_env['AI_TIMEOUT'])
+                    except ValueError:
+                        pass
+                
+                if 'AI_API_KEY' in combined_env and 'api_key' not in data:
+                    env_data['api_key'] = combined_env['AI_API_KEY']
+                
+                if 'AI_PROVIDER' in combined_env and 'provider' not in data:
+                    env_data['provider'] = combined_env['AI_PROVIDER']
+                
+                if 'AI_BASE_URL' in combined_env and 'base_url' not in data:
+                    env_data['base_url'] = combined_env['AI_BASE_URL']
+                
+                # Merge environment overrides with input data
+                # Environment overrides come after explicit kwargs
+                data = {**data, **env_data}
+        
+        return data
     
-    def cleanup_env(self):
-        """Restore original environment variables (deprecated - no longer needed)."""
-        pass  # No-op since we no longer mutate os.environ
-    
-    @field_validator('model')
-    @classmethod
-    def validate_model(cls, v):
-        """Validate that model is a non-empty string."""
-        if not v or not v.strip():
-            raise ValueError("Model cannot be empty")
-        return v.strip()
+    @model_validator(mode='after')
+    def set_model_default(self) -> 'AiSettings':
+        """Keep model as-is.
+
+        Model defaults are handled by provider resolution to allow local providers
+        to require explicit model configuration.
+        """
+        return self
     
     @field_validator('api_key')
     @classmethod
@@ -638,7 +987,7 @@ class AiSettings(BaseSettings):
             max_tokens_raw = openai_section.get('max_tokens')
             settings_dict = {
                 'api_key': openai_section.get('api_key'),
-                'model': openai_section.get('model', 'test-model-1'),
+                'model': openai_section.get('model'),  # No default - require explicit model
                 'temperature': float(openai_section.get('temperature', 0.7)),
                 'max_tokens': int(max_tokens_raw) if max_tokens_raw and max_tokens_raw.strip() else None,
                 'base_url': openai_section.get('base_url'),
@@ -657,6 +1006,28 @@ class AiSettings(BaseSettings):
         Returns:
             AiSettings instance with configured values
         """
+        # Import environment detection
+        from .env_detection import is_interactive_environment, should_prompt_for_reconfigure, get_environment_type
+        
+        # Check if we should prompt at all
+        if not is_interactive_environment():
+            # Non-interactive environment - try to load from environment or .env
+            print(f"Non-interactive environment detected ({get_environment_type()}) - skipping interactive setup")
+            
+            # Try to load from environment variables
+            if os.getenv("AI_API_KEY"):
+                print("Using existing environment variables for configuration")
+                return cls()  # Constructor automatically loads from environment
+            
+            # Try to load from .env file
+            if Path(".env").exists():
+                print("Using .env file for configuration")
+                return cls.from_dotenv(".env")
+            
+            # No configuration available - create minimal settings
+            print("No existing configuration found - using minimal settings")
+            return cls()
+        
         print("=== AI Utilities Interactive Setup ===\n")
         
         # Detect operating system
@@ -664,7 +1035,7 @@ class AiSettings(BaseSettings):
         
         # Check current environment
         current_api_key = os.getenv("AI_API_KEY")
-        current_model = os.getenv("AI_MODEL", "test-model-1")
+        current_model = os.getenv("AI_MODEL") or "gpt-3.5-turbo"  # No default - model is required
         current_temperature = os.getenv("AI_TEMPERATURE", "0.7")
         
         # Determine if setup is needed
@@ -672,8 +1043,18 @@ class AiSettings(BaseSettings):
         
         if not needs_setup and current_api_key:
             print(f"✓ API key is already configured (model: {current_model}, temperature: {current_temperature})")
-            response = input("Do you want to reconfigure? (y/N): ").strip().lower()
-            needs_setup = response in ['y', 'yes']
+            
+            # Only prompt if we're in an environment where prompting is safe
+            if should_prompt_for_reconfigure():
+                try:
+                    response = input("Do you want to reconfigure? (y/N): ").strip().lower()
+                    needs_setup = response in ['y', 'yes']
+                except (EOFError, KeyboardInterrupt):
+                    print("\nNo input received - keeping existing configuration")
+                    needs_setup = False
+            else:
+                print("Non-interactive or CI environment detected - keeping existing configuration")
+                needs_setup = False
         
         if needs_setup:
             print("\nPlease enter your OpenAI configuration:")
@@ -723,7 +1104,7 @@ class AiSettings(BaseSettings):
             model = input(f"Model [{current_model}]: ").strip() or current_model
             if model != current_model:
                 os.environ["AI_MODEL"] = model
-                cls._save_to_env_file("AI_MODEL", model)
+                cls._save_to_env_file("AI_MODEL", model or "")
             
             # Prompt for temperature (safe - no security concerns)
             temp_input = input(f"Temperature [{current_temperature}]: ").strip()
@@ -780,29 +1161,35 @@ class AiSettings(BaseSettings):
         return cls.interactive_setup(force_reconfigure=True)
     
     @classmethod
-    def validate_model_availability(cls, api_key: str, model: str) -> bool:
-        """Check if a model is available in the OpenAI API.
-        
+    def validate_model_availability(cls, api_key: str, model: str, *, strict: bool = True) -> bool:
+        """Check if a model is available via the OpenAI Models API.
+
         Args:
-            api_key: OpenAI API key
-            model: Model name to validate
-            
+            api_key: OpenAI API key.
+            model: Model name/id to validate.
+            strict: If True, return False when validation cannot be performed (e.g. network/SDK error).
+                    If False, assume True on errors (permissive / legacy behavior).
+
         Returns:
-            True if model is available, False otherwise
+            True if model is present in the models list; otherwise False.
         """
         if not api_key or not model:
             return False
-            
+
         try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            models = client.models.list()
-            available_models = {model.id for model in models.data}
-            return model in available_models
+            import openai
+            client: Any = openai.OpenAI(api_key=api_key)
+            models: Any = client.models.list()
+
+            # Avoid shadowing the `model` parameter.
+            data: Iterable[Any] = getattr(models, "data", []) or []
+            available_ids: set[str] = {str(m.id) for m in data if getattr(m, "id", None) is not None}
+
+            return model in available_ids
         except Exception:
-            # If we can't validate, assume it might work
-            # This prevents breaking during network issues
-            return True
+            # Deterministic by default (strict=True) so unit tests and CI are stable.
+            # Permissive fallback remains available for interactive UX flows.
+            return False if strict else True
 
     @classmethod
     def check_for_updates(cls, api_key: str, check_interval_days: int = 30) -> Dict[str, Any]:
@@ -839,8 +1226,8 @@ class AiSettings(BaseSettings):
         
         # Perform actual model check (costs tokens!)
         try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
+            import openai
+            client = openai.OpenAI(api_key=api_key)
             
             # Get available models
             models = client.models.list()
@@ -849,9 +1236,9 @@ class AiSettings(BaseSettings):
             # Use historical models as baseline for comparison
             # This list only needs to include models that existed at time of implementation
             baseline_models = {
-                'test-model-1', 'test-model-3', 'test-model-5',
                 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k',
-                'gpt-3.5-turbo-instruct', 'text-davinci-003',
+                'gpt-3.5-turbo-instruct', 'gpt-4', 'gpt-4-turbo',
+                'text-davinci-003',
                 'text-curie-001', 'text-babbage-001', 'text-ada-001'
             }
             
@@ -984,3 +1371,30 @@ class AiSettings(BaseSettings):
             return datetime.now() - last_check >= timedelta(days=check_interval_days)
         except (json.JSONDecodeError, ValueError, KeyError):
             return True
+
+    @classmethod
+    def create_isolated(cls, env_overrides: Optional[Dict[str, str]] = None, **kwargs) -> "AiSettings":
+        """
+        Create an isolated AiSettings instance with environment overrides.
+        
+        This method creates an AiSettings instance that uses temporary environment
+        overrides without mutating the global os.environ. This is useful for testing
+        and for creating isolated configuration contexts.
+        
+        Args:
+            env_overrides: Dictionary of environment variable overrides
+            **kwargs: Additional AiSettings parameters
+            
+        Returns:
+            AiSettings instance with isolated environment
+        """
+        if env_overrides is None:
+            env_overrides = {}
+        
+        # Import here to avoid circular imports
+        from ai_utilities.env_overrides import override_env
+        
+        # Create a context with environment overrides
+        with override_env(env_overrides):
+            # Create settings within the overridden environment context
+            return cls(**kwargs)

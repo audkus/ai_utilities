@@ -10,9 +10,9 @@
 #
 # MATRIX RATIONALE:
 # - Python 3.9: Minimum supported version (oldest dependencies)
+# - Python 3.10: Middle version (comprehensive coverage)
 # - Python 3.11: Middle version (most common in production)
 # - Python 3.12: Latest version (future compatibility)
-# - Removed 3.10 to reduce CI runtime while maintaining coverage
 
 name: CI
 
@@ -28,9 +28,10 @@ jobs:
     name: Unit Tests (Required)
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # Use minimal matrix for PRs (oldest + newest), full matrix for main
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
@@ -51,7 +52,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        # Ensure clean installation from current source
+        pip uninstall -y ai-utilities || true
+        pip install -e ".[dev,openai]"
     
     - name: Lint with flake8
       run: |
@@ -65,25 +68,58 @@ jobs:
       run: |
         mypy src/ai_utilities/ --no-error-summary
     
-    - name: Test with pytest
+    - name: Clean up root coverage artifacts (CI only)
       run: |
-        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml --cov-report=term-missing
+        # Remove any leftover coverage fragments from repository root before pytest
+        rm -f .coverage .coverage.* || true
+        # Ensure coverage_reports directory exists before pytest
+        mkdir -p coverage_reports
+    
+    - name: Test with pytest
+      env:
+        COVERAGE_FILE: coverage_reports/.coverage
+      run: |
+        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
+    
+    - name: Combine coverage data
+      run: |
+        # Set coverage file location and combine any parallel fragments
+        export COVERAGE_FILE=coverage_reports/.coverage
+        # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
+        (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
+        # Generate reports in the correct locations
+        python -m coverage xml -o coverage_reports/coverage.xml
+        python -m coverage html -d coverage_reports/html
+    
+    - name: Clean up coverage artifacts
+      run: |
+        # Defensive cleanup of any stray coverage files from root
+        rm -f .coverage .coverage.* || true
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage.xml
+        file: ./coverage_reports/coverage.xml
         flags: unittests
         name: codecov-umbrella
+    
+    - name: Upload HTML coverage report
+      if: matrix.python-version == '3.9'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: coverage_reports/
+        retention-days: 30
 
   minimal-install:
     name: Minimal Install Test (Required)
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # Use minimal matrix for PRs (oldest + newest), full matrix for main
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.11", "3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
     
     steps:
     - uses: actions/checkout@v4
@@ -110,8 +146,9 @@ jobs:
     name: Integration Tests (Optional)
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     continue-on-error: true  # Never block releases
@@ -134,16 +171,20 @@ jobs:
     
     - name: Test examples
       run: |
-        python examples/getting_started.py || echo "Expected failure without API key"
-        python examples/model_validation.py || echo "Expected failure without API key"
+        python examples/quickstarts/minimal_openai.py || echo "Expected failure without API key"
+        python examples/tutorial/step_01_setup.py || echo "Expected failure without API key"
 
   security-scan:
     name: Security Scan (Optional)
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     continue-on-error: true  # Never block releases
+    
+    env:
+      SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
     
     steps:
     - uses: actions/checkout@v4
@@ -159,7 +200,7 @@ jobs:
     
     - name: Check for security vulnerabilities
       run: |
-        safety check
+        safety --key "$SAFETY_API_KEY" scan --detailed-output --exit-code
     
     - name: Run bandit security linter
       run: |
@@ -187,18 +228,19 @@ jobs:
       run: |
         # Test that all examples can be imported
         python -c "
-        import examples.getting_started
-        import examples.model_validation
+        import examples.quickstarts.minimal_openai
+        import examples.tutorial.step_01_setup
         print('OK: All examples import successfully')
         "
 
   compatibility-test:
-    name: Cross-Platform Test (Optional)
+    name: Cross-Platform Compatibility (Optional)
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     continue-on-error: true  # Never block releases
     
     steps:

@@ -4,8 +4,11 @@
 .ruff_cache/
 ai_usage.json
 
-# Duplicate venv (keeping .venv/)
+# Virtual environments
 venv/
+.venv/
+env/
+.env/
 
 # Manual test outputs
 .manual_venvs/
@@ -84,6 +87,14 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
+# Coverage report contents (but keep the directory structure)
+coverage_reports/*.xml
+coverage_reports/*.html
+coverage_reports/html/*.html
+coverage_reports/html/*.js
+coverage_reports/html/*.css
+coverage_reports/html/*.json
+
 # Translations
 *.mo
 *.pot
@@ -160,3 +171,25 @@ bandit-report.json
 provider_health.json
 provider_report_*.md
 reports/
+
+# Test artifacts that should not be in root
+output.mp3
+output.wav
+output.flac
+output.ogg
+output.webm
+cute_dog.png
+generated_image_*.png
+generated_audio_*.mp3
+*_status.md
+*_progress.md
+status*.md
+progress*.md
+
+# Temporary directories for artifacts
+artifacts/
+.tmp/
+temp/
+test_artifacts/
+test_audio/
+tests/.generated/

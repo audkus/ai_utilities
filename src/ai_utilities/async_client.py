@@ -60,6 +60,20 @@ class AsyncOpenAIProvider(AsyncProvider):
             file_id
         )
     
+    async def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """Async list_files implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.list_files,
+            purpose=purpose
+        )
+    
+    async def delete_file(self, file_id: str) -> bool:
+        """Async delete_file implementation using asyncio.to_thread."""
+        return await asyncio.to_thread(
+            self._sync_provider.delete_file,
+            file_id
+        )
+    
     async def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1
@@ -188,59 +202,16 @@ class AsyncAiClient:
         
         semaphore = asyncio.Semaphore(concurrency)
         results = [None] * len(prompts)
-        completed_count = 0
-        first_error = None
         
-        async def process_prompt(index: int, prompt: str) -> AskResult:
-            nonlocal completed_count, first_error
-            
-            start_time = time.time()
-            
-            async with semaphore:
-                try:
-                    response = await self.provider.ask(prompt, return_format=return_format, **kwargs)
-                    duration = time.time() - start_time
-                    
-                    result = AskResult(
-                        prompt=prompt,
-                        response=response,
-                        error=None,
-                        duration_s=duration,
-                        model=self.settings.model,
-                        tokens_used=None  # Would need provider support
-                    )
-                    
-                except Exception as e:
-                    duration = time.time() - start_time
-                    result = AskResult(
-                        prompt=prompt,
-                        response=None,
-                        error=str(e),
-                        duration_s=duration,
-                        model=self.settings.model,
-                        tokens_used=None
-                    )
-                    
-                    if first_error is None:
-                        first_error = e
-                
-                # Update progress
-                completed_count += 1
-                if on_progress:
-                    try:
-                        on_progress(completed_count, len(prompts))
-                    except (TypeError, ValueError, RuntimeError):
-                        # Don't let progress callback errors break processing
-                        # Common callback errors: wrong args, validation errors, runtime issues
-                        pass
-                
-                return result
-        
-        # Create tasks for all prompts
-        tasks = [
-            asyncio.create_task(process_prompt(i, prompt))
-            for i, prompt in enumerate(prompts)
-        ]
+        # Create tasks directly without inner function to avoid closure issues
+        tasks = []
+        for i, prompt in enumerate(prompts):
+            task = asyncio.create_task(
+                self._process_prompt_with_semaphore(
+                    i, prompt, semaphore, return_format, on_progress, len(prompts), **kwargs
+                )
+            )
+            tasks.append(task)
         
         try:
             # Wait for all tasks to complete
@@ -250,42 +221,146 @@ class AsyncAiClient:
             for i, completed_task in enumerate(completed_tasks):
                 if isinstance(completed_task, Exception):
                     # Handle exception case
+                    if isinstance(completed_task, asyncio.CancelledError):
+                        results[i] = AskResult(
+                            prompt=prompts[i],
+                            response=None,
+                            error="Canceled",
+                            duration_s=0.0,
+                            model=self.settings.model,
+                            tokens_used=None
+                        )
+                    else:
+                        results[i] = AskResult(
+                            prompt=prompts[i],
+                            response=None,
+                            error=str(completed_task),
+                            duration_s=0.0,
+                            model=self.settings.model,
+                            tokens_used=None
+                        )
+                else:
+                    results[i] = completed_task
+                
+                # Handle fail_fast
+                if fail_fast and results[i] and results[i].error:
+                    # Cancel remaining tasks
+                    for remaining_task in tasks:
+                        if not remaining_task.done():
+                            remaining_task.cancel()
+                    
+                    # Wait for cancellation to complete, ensuring all coroutines are awaited
+                    await asyncio.gather(*tasks, return_exceptions=True)
+                    
+                    # Fill remaining results with canceled status
+                    for j in range(i + 1, len(prompts)):
+                        if results[j] is None:
+                            results[j] = AskResult(
+                                prompt=prompts[j],
+                                response=None,
+                                error="Canceled",
+                                duration_s=0.0,
+                                model=self.settings.model,
+                                tokens_used=None
+                            )
+                    break
+        except asyncio.CancelledError:
+            # Handle cancellation at the top level
+            # Cancel all tasks
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            
+            # Wait for cancellation to complete, ensuring all coroutines are awaited
+            await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Fill results with canceled status
+            for i in range(len(prompts)):
+                if results[i] is None:
                     results[i] = AskResult(
                         prompt=prompts[i],
                         response=None,
-                        error=str(completed_task),
+                        error="Canceled",
                         duration_s=0.0,
                         model=self.settings.model,
                         tokens_used=None
                     )
-                else:
-                    # Normal result case
-                    results[i] = completed_task
-                
-                # Fail fast if requested and we have an error
-                if fail_fast and results[i].error is not None:
-                    break
-                    
-        except Exception:
-            # Cancel all remaining tasks
+            
+            # Re-raise the cancellation
+            raise
+        except Exception as e:
+            # Cancel all tasks on exception
             for task in tasks:
                 if not task.done():
                     task.cancel()
+            
+            # Wait for cancellation to complete, ensuring all coroutines are awaited
+            await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Re-raise the exception
             raise
         
-        # Fill in any None results (canceled tasks)
+        # Fill in any None results (shouldn't happen)
         for i, result in enumerate(results):
             if result is None:
                 results[i] = AskResult(
                     prompt=prompts[i],
                     response=None,
-                    error="Canceled",
+                    error="Max retries exceeded",
                     duration_s=0.0,
                     model=self.settings.model,
                     tokens_used=None
                 )
         
         return results
+    
+    async def _process_prompt_with_semaphore(
+        self,
+        index: int,
+        prompt: str,
+        semaphore: asyncio.Semaphore,
+        return_format: str,
+        on_progress: callable,
+        total_prompts: int,
+        **kwargs
+    ) -> AskResult:
+        """Process a single prompt with semaphore control."""
+        start_time = time.time()
+        
+        async with semaphore:
+            try:
+                response = await self.provider.ask(prompt, return_format=return_format, **kwargs)
+                duration = time.time() - start_time
+                
+                result = AskResult(
+                    prompt=prompt,
+                    response=response,
+                    error=None,
+                    duration_s=duration,
+                    model=self.settings.model,
+                    tokens_used=None
+                )
+                
+            except Exception as e:
+                duration = time.time() - start_time
+                result = AskResult(
+                    prompt=prompt,
+                    response=None,
+                    error=str(e),
+                    duration_s=duration,
+                    model=self.settings.model,
+                    tokens_used=None
+                )
+            
+            # Update progress if callback provided
+            if on_progress:
+                try:
+                    on_progress(index + 1, total_prompts)
+                except (TypeError, ValueError, RuntimeError):
+                    # Don't let progress callback errors break processing
+                    pass
+            
+            return result
     
     async def ask_many_with_retry(
         self,
@@ -488,7 +563,72 @@ class AsyncAiClient:
         
         # Return raw bytes
         return content
-    
+
+    async def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """List all uploaded files asynchronously.
+
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+
+        Returns:
+            List of UploadedFile objects
+
+        Raises:
+            ProviderCapabilityError: If provider doesn't support file listing
+            FileTransferError: If listing fails
+
+        Example:
+            >>> files = await client.list_files()
+            >>> assistants_files = await client.list_files(purpose="assistants")
+        """
+        # Delegate to async provider
+        try:
+            return await self.provider.list_files(purpose=purpose)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("list", self.provider.__class__.__name__, e) from e
+
+    async def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file asynchronously.
+
+        Args:
+            file_id: ID of the file to delete
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            ValueError: If file_id is invalid
+            ProviderCapabilityError: If provider doesn't support file deletion
+            FileTransferError: If deletion fails
+
+        Example:
+            >>> success = await client.delete_file("file-123")
+            >>> if success:
+            ...     print("File deleted successfully")
+        """
+        if not file_id:
+            raise ValueError("file_id cannot be empty")
+
+        # Delegate to async provider
+        try:
+            return await self.provider.delete_file(file_id)
+        except ProviderCapabilityError:
+            # Re-raise with more context
+            raise
+        except Exception as e:
+            if isinstance(e, FileTransferError):
+                # Re-raise FileTransferError as-is
+                raise
+            # Wrap other exceptions
+            raise FileTransferError("delete", self.provider.__class__.__name__, e) from e
+
     async def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1

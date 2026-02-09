@@ -1,48 +1,64 @@
 """Provider-specific exceptions."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import Optional
 
 
-class ProviderCapabilityError(Exception):
-    """Raised when a requested capability is not supported by the provider."""
-    
-    def __init__(self, capability: str, provider: str):
-        self.capability = capability
-        self.provider = provider
-        super().__init__(
-            f"Provider '{provider}' does not support capability: {capability}"
-        )
-
-
+@dataclass
 class ProviderConfigurationError(Exception):
     """Raised when provider configuration is invalid."""
-    
-    def __init__(self, message: str, provider: Optional[str] = None):
-        self.provider = provider
-        if provider:
-            super().__init__(f"Provider '{provider}' configuration error: {message}")
-        else:
-            super().__init__(f"Provider configuration error: {message}")
+    message: str
+    provider: str
+
+    def __str__(self) -> str:
+        return f"Provider '{self.provider}' configuration error: {self.message}"
 
 
-class FileTransferError(Exception):
-    """Raised when file upload/download operations fail."""
-    
-    def __init__(self, operation: str, provider: str, original_error: Optional[Exception] = None):
-        self.operation = operation  # "upload" or "download"
-        self.provider = provider
-        self.original_error = original_error
-        
-        message = f"File {operation} failed for provider '{provider}'"
-        if original_error:
-            message += f": {str(original_error)}"
-        
-        super().__init__(message)
+@dataclass
+class ProviderCapabilityError(Exception):
+    """Raised when a requested capability is not supported by the provider."""
+    capability: str
+    provider: Optional[str] = None
+    message: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.message is None:
+            self.message = self.capability  # keep default simple for tests
+
+    def __str__(self) -> str:
+        return str(self.message)
 
 
+@dataclass
 class MissingOptionalDependencyError(Exception):
     """Raised when an optional dependency is required but not installed."""
-    
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
+    dependency: str
+
+    @property
+    def message(self) -> str:
+        return self.dependency
+
+    def __str__(self) -> str:
+        return self.dependency
+
+
+@dataclass
+class FileTransferError(Exception):
+    """Raised when file upload/download operations fail."""
+    operation: str
+    provider: str
+    inner_error: Optional[BaseException] = None
+    message: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.message is None:
+            self.message = self.operation
+
+    def __str__(self) -> str:
+        base_msg = f"{self.operation} failed for provider '{self.provider}'"
+        if self.inner_error:
+            # Include the original error message for better debugging
+            return f"{base_msg}: {str(self.inner_error)}"
+        return base_msg
