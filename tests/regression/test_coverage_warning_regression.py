@@ -107,11 +107,16 @@ def test_coverage_functionality_works():
     # Check that coverage data was collected (behavior-based: look for coverage report generation)
     assert "Coverage HTML written" in result.stdout or "coverage" in result.stdout.lower(), "Coverage report not generated"  # noqa: S101 - Test validation
     
-    # Clean up coverage artifacts to avoid repository contamination
+    # Clean up coverage artifacts to avoid repository contamination (but keep directory)
     import shutil
     coverage_reports_dir = html_report_path.parent.parent
     if coverage_reports_dir.exists():
-        shutil.rmtree(coverage_reports_dir)
+        # Remove contents but keep the directory itself
+        for item in coverage_reports_dir.iterdir():
+            if item.is_file():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
 
 
 def test_makefile_targets_work():
