@@ -130,9 +130,9 @@ For more detailed examples and run instructions, see [docs/examples/README.md](d
 
 ## Quickstart
 
-### Stable Public API (v1.x)
+### Stable Public API (v1.0.0)
 
-The following classes and functions are **guaranteed to remain stable** across v1.x releases:
+The following classes and functions are **guaranteed to remain stable** across v1.0.0 releases:
 
 #### ✅ Core Classes (Stable)
 - `AiClient` - Main client class for AI interactions

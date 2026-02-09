@@ -156,7 +156,7 @@ python demo.py  # Where demo.py contains the Ollama example
 
 ## Notes
 
-- Examples use the stable v1.x public API
+- Examples use the stable v1.0.0 public API
 - No error handling included for brevity
 - All examples are production-ready with proper imports
 - Environment variables are loaded automatically from `.env` if present
