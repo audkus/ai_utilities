@@ -77,7 +77,8 @@ jobs:
       run: |
         # Set coverage file location and combine any parallel fragments
         export COVERAGE_FILE=coverage_reports/.coverage
-        python -m coverage combine
+        # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
+        (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
         # Generate reports in the correct locations
         python -m coverage xml -o coverage.xml
         python -m coverage html -d coverage_reports/html
