@@ -155,7 +155,7 @@ class AIUtilitiesError(Exception):
         return self.error_info.to_dict()
     
     def __str__(self) -> str:
-        return f"[{self.error_info.code.value}] {self.error_info.message}"
+        return f"[{self.error_info.code}] {self.error_info.message}"
 
 
 # Specialized exception classes
@@ -211,7 +211,6 @@ ERROR_CODE_MAPPING: Dict[str, type] = {
     ErrorCode.CONFIG_MISSING_REQUIRED_FIELD.value: ConfigurationError,
     ErrorCode.CONFIG_VALIDATION_FAILED.value: ConfigurationError,
     
-    # Legacy configuration errors (mapped to new system)
     ErrorCode.CONFIG_API_KEY_MISSING.value: ConfigurationError,
     ErrorCode.CONFIG_MODEL_NAME_MISSING.value: ConfigurationError,
     ErrorCode.CONFIG_INITIALIZATION_FAILED.value: ConfigurationError,

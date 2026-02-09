@@ -47,7 +47,7 @@ class CoverageReporter:
                 "python", "-m", "pytest", 
                 "--cov=src/ai_utilities",
                 "--cov-report=json",
-                "--cov-report=html",
+                "--cov-report=html:coverage_reports/html",
                 "--cov-report=term-missing",
                 test_path
             ]

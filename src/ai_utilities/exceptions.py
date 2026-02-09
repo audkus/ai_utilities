@@ -77,3 +77,11 @@ class ConfigError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         logging.error(f"ConfigError: {message}")
+
+
+class AudioProcessingError(Exception):
+    """Exception raised when audio processing operations fail."""
+    
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        logging.error(f"AudioProcessingError: {message}")

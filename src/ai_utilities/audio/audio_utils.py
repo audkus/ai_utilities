@@ -28,11 +28,7 @@ except ImportError:
     PYDUB_AVAILABLE = False
 
 from .audio_models import AudioFile, AudioFormat, AudioAnalysisResult
-
-
-class AudioProcessingError(Exception):
-    """Raised when audio processing operations fail."""
-    pass
+from ..exceptions import AudioProcessingError
 
 
 def validate_audio_file(file_path: Union[str, Path]) -> bool:

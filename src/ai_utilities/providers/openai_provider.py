@@ -8,8 +8,55 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from openai import OpenAI
-from openai.types.chat import ChatCompletion
+# OpenAI imports - lazy loaded to avoid import-time dependencies
+_openai = None
+ChatCompletion = None
+OpenAI = None
+
+def _get_openai():
+    """Lazy import of openai module."""
+    global _openai, ChatCompletion, OpenAI
+    if _openai is None:
+        try:
+            import openai
+            from openai.types.chat import ChatCompletion
+            _openai = openai
+            ChatCompletion = ChatCompletion
+            # Only set OpenAI if it's not already set (e.g., by tests)
+            if OpenAI is None:
+                OpenAI = openai.OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is required for OpenAI provider. "
+                "Install it with: pip install 'ai-utilities[openai]'"
+            )
+    return _openai
+
+
+def _create_openai_sdk_client(**client_kwargs: Any) -> Any:
+    """
+    Create and return an OpenAI SDK client instance.
+    
+    This is the single boundary for SDK client creation, making it
+    the correct target for test patching.
+    
+    Args:
+        **client_kwargs: Arguments to pass to OpenAI constructor
+        
+    Returns:
+        OpenAI SDK client instance
+        
+    Raises:
+        MissingOptionalDependencyError: If OpenAI package is not available
+    """
+    _get_openai()
+    if OpenAI is None:
+        from .provider_exceptions import MissingOptionalDependencyError
+        raise MissingOptionalDependencyError(
+            "OpenAI package is required for OpenAI provider. "
+            "Install it with: pip install 'ai-utilities[openai]'"
+        )
+    return OpenAI(**client_kwargs)
 
 from ..file_models import UploadedFile
 from .base_provider import BaseProvider
@@ -19,18 +66,27 @@ from .provider_exceptions import FileTransferError
 class OpenAIProvider(BaseProvider):
     """OpenAI provider for AI requests."""
     
-    def __init__(self, settings):
+    def __init__(self, settings, client=None):
         """Initialize OpenAI provider.
         
         Args:
             settings: AI settings containing api_key, model, temperature, etc.
+            client: Optional OpenAI client instance (for testing)
         """
         self.settings = settings
-        self.client = OpenAI(
-            api_key=settings.api_key,
-            base_url=settings.base_url,
-            timeout=settings.timeout
-        )
+        if client is not None:
+            self.client = client
+        else:
+            self.client = _create_openai_sdk_client(
+                api_key=settings.api_key,
+                base_url=settings.base_url,
+                timeout=settings.timeout
+            )
+    
+    @property
+    def provider_name(self) -> str:
+        """Get the provider name."""
+        return "openai"
     
     def ask(self, prompt: str, *, return_format: Literal["text", "json"] = "text", **kwargs) -> Union[str, Dict[str, Any]]:
         """Ask a single question to OpenAI.
@@ -70,12 +126,16 @@ class OpenAIProvider(BaseProvider):
         # Add response format for JSON mode if requested and model supports it
         model = params["model"]
         
-        # JSON mode is supported by most recent GPT models
-        # Use a flexible check rather than hardcoded list
+        # JSON mode is supported by recent GPT models and most OpenAI-compatible models
+        # Use model name patterns to detect JSON capability
         supports_json_mode = (
-            model.startswith("test-model-1") or 
-            model.startswith("test-model-3") or 
-            model in ["test-model-5", "test-model-7", "test-model-8"]
+            model.startswith("gpt-4") or 
+            model.startswith("gpt-3.5-turbo") or
+            "json" in model.lower() or
+            model.startswith("claude-3") or
+            model in ["o1-preview", "o1-mini"] or
+            # For OpenAI-compatible providers, assume JSON support unless explicitly disabled
+            self.provider_name != "openai"
         )
         
         if return_format == "json" and supports_json_mode:
@@ -114,14 +174,13 @@ class OpenAIProvider(BaseProvider):
     
     def _extract_json(self, text: str) -> Dict[str, Any]:
         """Extract JSON from response text."""
-        # Try to find JSON in the response
-        json_match = re.search(r'\{.*\}', text, re.DOTALL)
-        if json_match:
+        # Try to find JSON in the response (non-greedy to get first valid JSON)
+        for json_match in re.finditer(r'\{.*?\}', text, re.DOTALL):
             try:
                 # Validate it's valid JSON and return as dict
                 return json.loads(json_match.group())
             except json.JSONDecodeError:
-                pass
+                continue
         
         # If no valid JSON found, return original text wrapped in a dict
         return {"response": text}
@@ -179,7 +238,10 @@ class OpenAIProvider(BaseProvider):
                 )
             )
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and ("File does not exist" in str(e) or "Path is not a file" in str(e)):
+                raise
             raise FileTransferError("upload", "openai", e) from e
     
     def download_file(self, file_id: str) -> bytes:
@@ -204,9 +266,80 @@ class OpenAIProvider(BaseProvider):
             # Return the content as bytes
             return response.content
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and "file_id cannot be empty" in str(e):
+                raise
             raise FileTransferError("download", "openai", e) from e
-    
+
+    def list_files(self, *, purpose: Optional[str] = None) -> List[UploadedFile]:
+        """List all uploaded files from OpenAI.
+
+        Args:
+            purpose: Optional filter by purpose (e.g., "assistants", "fine-tune")
+
+        Returns:
+            List of UploadedFile objects
+
+        Raises:
+            FileTransferError: If listing fails
+        """
+        try:
+            # List files using OpenAI SDK
+            response = self.client.files.list(purpose=purpose)
+            
+            # Convert to our UploadedFile model
+            files = []
+            for file_obj in response.data:
+                files.append(UploadedFile(
+                    file_id=file_obj.id,
+                    filename=file_obj.filename,
+                    bytes=file_obj.bytes,
+                    provider="openai",
+                    purpose=file_obj.purpose,
+                    created_at=(
+                        datetime.fromisoformat(file_obj.created_at.replace("Z", "+00:00"))
+                        if isinstance(file_obj.created_at, str) and file_obj.created_at
+                        else datetime.fromtimestamp(file_obj.created_at)
+                        if isinstance(file_obj.created_at, (int, float)) and file_obj.created_at
+                        else None
+                    )
+                ))
+            
+            return files
+            
+        except (Exception) as e:
+            raise FileTransferError("list", "openai", e) from e
+
+    def delete_file(self, file_id: str) -> bool:
+        """Delete a uploaded file from OpenAI.
+
+        Args:
+            file_id: ID of the file to delete
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            ValueError: If file_id is invalid
+            FileTransferError: If deletion fails
+        """
+        try:
+            if not file_id:
+                raise ValueError("file_id cannot be empty")
+            
+            # Delete file using OpenAI SDK
+            response = self.client.files.delete(file_id)
+            
+            # OpenAI returns {"deleted": true, "id": "file-123"} on success
+            return getattr(response, 'deleted', False)
+            
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and "file_id cannot be empty" in str(e):
+                raise
+            raise FileTransferError("delete", "openai", e) from e
+
     def generate_image(
         self, prompt: str, *, size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024", 
         quality: Literal["standard", "hd"] = "standard", n: int = 1
@@ -245,5 +378,8 @@ class OpenAIProvider(BaseProvider):
             image_urls = [image.url for image in response.data]
             return image_urls
             
-        except Exception as e:
+        except (Exception) as e:
+            # Don't wrap validation errors - let them propagate
+            if isinstance(e, ValueError) and ("prompt cannot be empty" in str(e) or "n must be between 1 and 10" in str(e)):
+                raise
             raise FileTransferError("image generation", "openai", e) from e

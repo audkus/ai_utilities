@@ -265,11 +265,18 @@ client = AiClient(settings)
 
 If you're still having trouble:
 
-1. **Check the demo app:**
+1. **Check the demo scripts:**
    ```bash
-   python -m ai_utilities.demo
+   # Run integration demo
+   python examples/demo_integration.py
+   
+   # Test setup flow
+   python examples/complete_flow_demo.py
+   
+   # Validate configuration
+   python examples/model_validation.py
    ```
-   This will show detailed status for all configured providers.
+   These will show detailed status for all configured providers.
 
 2. **Enable debug logging:**
    ```python

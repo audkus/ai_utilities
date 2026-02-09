@@ -21,6 +21,8 @@ jobs:
     
     - name: Install minimal package
       run: |
+        # Ensure clean installation from current source
+        pip uninstall -y ai-utilities || true
         # Install only core package (no providers)
         pip install .
     
@@ -60,7 +62,7 @@ jobs:
       run: |
         # Install pytest and run core tests
         pip install pytest
-        pytest tests/test_config_resolver.py -q --tb=no
+        pytest tests/unit/test_config_resolver.py -q --tb=no
         echo "OK: Core tests pass"
 
   install-options:
@@ -68,6 +70,7 @@ jobs:
     name: Test Installation Options
     
     strategy:
+      fail-fast: false
       matrix:
         option: ["", openai, dev, complete]
     

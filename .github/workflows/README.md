@@ -2,11 +2,65 @@
 
 This directory contains GitHub Actions workflows for automated testing, releases, and maintenance.
 
-## Workflow Overview
+## 🚨 CRITICAL: Blocking vs Non-Blocking Workflows
 
-### `ci.yml` - Main CI Pipeline
+### 🔴 BLOCKING Workflows (Must Pass for Release)
+These workflows **MUST** pass for any release. They block PRs and releases:
+
+- **`ci.yml`** - Main CI pipeline (core testing)
+- **`test_suite.yml`** - Comprehensive test suite
+- **`minimal-install.yml`** - Minimal installation verification
+
+### 🟡 NON-BLOCKING Workflows (Informational Only)
+These workflows **DO NOT** block releases. They provide additional signal and monitoring:
+
+- **`benchmarks.yml`** - Performance monitoring
+- **`provider-health.yml`** - External provider monitoring
+- **`dependency-update.yml`** - Dependency management
+- **`release.yml`** - Release automation (only runs after blocking workflows pass)
+
+## 🎯 Why This Approach?
+
+### ✅ Benefits of Blocking/Non-Blocking Separation
+
+#### **🚀 Faster Development Cycle**
+- **PRs aren't blocked** by non-critical issues
+- **Contributors stay motivated** with quick feedback
+- **False negatives reduced** - only core issues block
+
+#### **🛡️ Release Safety Maintained**
+- **Core functionality tested** by blocking workflows
+- **Quality gates preserved** where they matter most
+- **Release automation** still comprehensive
+
+#### **📊 Better Signal Management**
+- **Observational workflows** provide insights without friction
+- **Performance monitoring** continues without blocking development
+- **Provider health** tracked independently
+
+#### **👥 Contributor Experience**
+- **Less intimidating** contribution process
+- **Clear expectations** about what blocks vs what doesn't
+- **Faster onboarding** for new contributors
+
+### ⚠️ Risk Mitigation
+
+#### **✅ What We Protect**
+- **Core functionality** - Blocking workflows ensure main features work
+- **Installation integrity** - Minimal install verification
+- **Test coverage** - Comprehensive test suite validation
+
+#### **🟡 What We Accept**
+- **Performance variations** - Benchmarks provide trends, not gates
+- **External service issues** - Provider health is informational
+- **Dependency timing** - Updates can be reviewed and merged when ready
+
+## 📋 Workflow Overview
+
+### `ci.yml` - Main CI Pipeline 🔴 **BLOCKING**
 **Triggers**: Push to main/develop, Pull Requests  
 **Purpose**: Comprehensive testing and validation
+**Status**: **MUST PASS** for PRs and releases
 
 **Jobs:**
 - **test**: Multi-Python version testing (PRs: 3.9, 3.12 | Main: 3.9, 3.11, 3.12)
@@ -25,9 +79,29 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - Required (blocks PRs): test, minimal-install
 - Optional (informational): integration-test, security-scan, build-docs, compatibility-test
 
-### `release.yml` - Release Pipeline
+### `test_suite.yml` - Comprehensive Test Suite 🔴 **BLOCKING**
+**Triggers**: Push to main/develop, Pull Requests  
+**Purpose**: Extended testing beyond core CI
+**Status**: **MUST PASS** for PRs and releases
+
+**Jobs:**
+- **extended-tests**: Comprehensive test coverage
+- **integration-tests**: Real-world scenario testing
+- **performance-tests**: Performance regression testing
+
+### `minimal-install.yml` - Minimal Install Verification 🔴 **BLOCKING**
+**Triggers**: Push to main/develop, Pull Requests  
+**Purpose**: Verify minimal install works without providers
+**Status**: **MUST PASS** for PRs and releases
+
+**Jobs:**
+- **minimal-install**: Core functionality testing
+- **install-options**: Test all installation variants
+
+### `release.yml` - Release Pipeline 🟡 **NON-BLOCKING**
 **Triggers**: Git tags (v*)  
 **Purpose**: Automated PyPI releases
+**Status**: Runs after blocking workflows pass
 
 **Jobs:**
 - **validate-version**: Version consistency check
@@ -40,17 +114,10 @@ This directory contains GitHub Actions workflows for automated testing, releases
 **Requirements:**
 - `PYPI_API_TOKEN` secret for PyPI upload
 
-### `minimal-install.yml` - Minimal Install Verification
-**Triggers**: Push to main/develop, Pull Requests  
-**Purpose**: Verify minimal install works without providers
-
-**Jobs:**
-- **minimal-install**: Core functionality testing
-- **install-options**: Test all installation variants
-
-### `provider-health.yml` - Provider Health Monitoring
+### `provider-health.yml` - Provider Health Monitoring 🟡 **NON-BLOCKING**
 **Triggers**: Scheduled (every 6 hours), Manual dispatch  
 **Purpose**: Monitor external provider availability
+**Status**: Informational only, does not block releases
 
 **Jobs:**
 - **provider-health-check**: Test provider APIs and generate reports
@@ -60,16 +127,18 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - Artifact-based reporting (reports not committed)
 - Graceful handling of missing credentials
 
-### `dependency-update.yml` - Dependency Management
+### `dependency-update.yml` - Dependency Management 🟡 **NON-BLOCKING**
 **Triggers**: Weekly (Monday 9 AM UTC), Manual dispatch  
 **Purpose**: Keep dependencies up to date
+**Status**: Creates PRs for review, does not block
 
 **Jobs:**
 - **update-dependencies**: Updates requirements files and creates PR
 
-### `benchmarks.yml` - Performance Benchmarks
+### `benchmarks.yml` - Performance Benchmarks 🟡 **NON-BLOCKING**
 **Triggers**: Daily schedule, Manual dispatch  
 **Purpose**: Track performance over time
+**Status**: Observational monitoring only
 
 **Jobs:**
 - **benchmark**: Run performance tests and generate reports
@@ -81,6 +150,22 @@ This directory contains GitHub Actions workflows for automated testing, releases
 
 ## Key Features
 
+### 🚨 Blocking vs Non-Blocking Strategy
+
+#### **🔴 Blocking Workflows (Release Critical)**
+- **Core functionality validation** - Ensures main features work
+- **Installation integrity** - Verifies package installs correctly
+- **Test coverage** - Comprehensive test suite validation
+- **Required for PRs** - Block merges if they fail
+- **Required for releases** - Must pass before deployment
+
+#### **🟡 Non-Blocking Workflows (Observational)**
+- **Performance monitoring** - Track trends without blocking
+- **Provider health** - External service monitoring
+- **Dependency management** - Automated updates via PRs
+- **Release automation** - Runs after blocking workflows pass
+- **Informational only** - Provide insights, not gates
+
 ### Testing Strategy
 - **Required jobs**: Block PRs and ensure core functionality
 - **Optional jobs**: Provide additional signal without blocking
@@ -88,22 +173,22 @@ This directory contains GitHub Actions workflows for automated testing, releases
 - **Cross-platform**: Linux, Windows, macOS testing (optional)
 
 ### Release Safety
-- Version consistency validation (git tag vs pyproject.toml)
-- Automated PyPI publishing
-- GitHub release creation
-- Comprehensive validation pipeline
+- **Multi-layer validation**: Blocking workflows ensure quality
+- **Version consistency**: Automated checks before release
+- **Comprehensive testing**: Full validation pipeline
+- **Observational monitoring**: Continuous insights without friction
 
 ### Observational Monitoring
-- Provider health checks (scheduled, non-blocking)
-- Performance benchmarks (isolated, optional)
-- Dependency updates (automated PRs)
-- All reports stored as artifacts, not committed
+- **Provider health checks**: Scheduled, non-blocking monitoring
+- **Performance benchmarks**: Isolated, optional tracking
+- **Dependency updates**: Automated PRs for review
+- **Artifact-based reporting**: All reports stored as artifacts, not committed
 
 ### Quality Assurance
-- Type checking with mypy
-- Code linting with flake8
-- Security scanning with safety and bandit
-- Documentation validation
+- **Type checking**: mypy validation in blocking workflows
+- **Code linting**: flake8 validation in blocking workflows
+- **Security scanning**: Optional safety and bandit checks
+- **Documentation validation**: Optional docs and examples testing
 
 ## Setup Requirements
 
@@ -117,18 +202,41 @@ This directory contains GitHub Actions workflows for automated testing, releases
 
 ### Common Issues
 
-1. **Python version failures**: Check pyproject.toml for version compatibility
-2. **Mypy failures**: Check type annotations and mypy configuration
-3. **Security failures**: Review dependency updates and security advisories
-4. **Integration failures**: Check external service availability and API keys
+1. **Blocking workflow failures** (🔴 ci.yml, test_suite.yml, minimal-install.yml)
+   - **Impact**: Blocks PRs and releases
+   - **Action**: Must be fixed immediately
+   - **Check**: Core functionality, installation, test coverage
+
+2. **Non-blocking workflow failures** (🟡 benchmarks.yml, provider-health.yml, dependency-update.yml)
+   - **Impact**: Informational only, does not block releases
+   - **Action**: Review when convenient, create PR for fixes
+   - **Check**: Performance trends, external services, dependency updates
+
+3. **Python version failures**: Check pyproject.toml for version compatibility
+4. **Mypy failures**: Check type annotations and mypy configuration
+5. **Security failures**: Review dependency updates and security advisories
+6. **Integration failures**: Check external service availability and API keys
 
 ### Debugging Tips
 
-- Use workflow logs to identify specific failure points
-- Check artifact uploads for detailed reports (provider health, benchmarks)
-- Use `workflow_dispatch` to manually trigger workflows for debugging
-- Review dependency update PRs carefully before merging
-- Remember: Optional jobs (integration, security, benchmarks) don't block releases
+- **Use workflow logs** to identify specific failure points
+- **Check artifact uploads** for detailed reports (provider health, benchmarks)
+- **Use `workflow_dispatch`** to manually trigger workflows for debugging
+- **Review dependency update PRs** carefully before merging
+- **Remember**: Non-blocking jobs (integration, security, benchmarks) don't block releases
+- **Focus on blocking workflows** first for critical issues
+
+### Workflow Status Quick Reference
+
+| Workflow | Status | Action Required |
+|----------|--------|-----------------|
+| 🔴 ci.yml | **BLOCKING** | Fix immediately |
+| 🔴 test_suite.yml | **BLOCKING** | Fix immediately |
+| 🔴 minimal-install.yml | **BLOCKING** | Fix immediately |
+| 🟡 release.yml | **NON-BLOCKING** | Review after blocking pass |
+| 🟡 benchmarks.yml | **NON-BLOCKING** | Review when convenient |
+| 🟡 provider-health.yml | **NON-BLOCKING** | Monitor trends |
+| 🟡 dependency-update.yml | **NON-BLOCKING** | Review PRs when ready |
 
 ## Best Practices
 

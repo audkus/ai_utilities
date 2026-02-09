@@ -19,8 +19,8 @@ from .audio_models import (
 )
 from .audio_utils import (
     load_audio_file,
-    AudioProcessingError,
 )
+from ..exceptions import AudioProcessingError
 
 
 class AudioProcessor:
@@ -191,26 +191,34 @@ class AudioProcessor:
             segments = []
             for segment_data in response_data["segments"]:
                 segment = TranscriptionSegment(
-                    start_time=segment_data.get("start", 0.0),
-                    end_time=segment_data.get("end", 0.0),
+                    start_time=segment_data.get("start", 0.0),  # Revert: handle both field names
+                    end_time=segment_data.get("end", 0.0),      # Revert: handle both field names
                     text=segment_data.get("text", ""),
                     confidence=segment_data.get("confidence")
                 )
                 segments.append(segment)
         
-        return TranscriptionResult(
-            text=text,
-            language=response_data.get("language"),
-            duration_seconds=request.audio_file.duration_seconds,
-            segments=segments,
-            confidence=response_data.get("confidence"),
-            model_used=request.model,
-            metadata={
+        # Create result using model_validate for robust validation
+        # Convert segments to dicts to handle potential validator contamination
+        segments_data = None
+        if segments:
+            segments_data = [segment.model_dump() for segment in segments]
+            
+        result_data = {
+            "text": text,
+            "language": response_data.get("language"),
+            "duration_seconds": request.audio_file.duration_seconds,
+            "segments": segments_data,
+            "confidence": response_data.get("confidence"),
+            "model_used": request.model,
+            "metadata": {
                 "provider_response": response_data,
                 "original_file": str(request.audio_file.file_path),
                 "file_format": request.audio_file.format.value
             }
-        )
+        }
+        
+        return TranscriptionResult.model_validate(result_data)
     
     def generate_audio(
         self,

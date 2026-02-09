@@ -1,776 +1,666 @@
 # AI Utilities
 
-[![CI](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/audkus/ai_utilities/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/ai-utilities)](https://pypi.org/project/ai-utilities/)
+A Python library for AI model interaction with unified interface, intelligent caching, and type safety. Use OpenAI, Groq, Together AI, Ollama, and other providers with the same code.
 
-A Python library for AI model interaction with Pydantic configuration, clean architecture, dynamic rate limit management, and enterprise-grade testing infrastructure.
+## Who This Is For
 
-## Why This Library Exists
+AI Utilities is for developers who need to integrate AI capabilities into their applications without being locked into a single provider. It's designed for both beginners who want simple AI interactions and advanced users who need production-ready features like caching and rate limiting.
 
-- **Unified Interface** - Single API for multiple AI providers (OpenAI, Anthropic, local models)
-- **Smart Caching** - Automatic response caching with namespace isolation and TTL support
-- **Rate Limiting** - Built-in rate limit management prevents API throttling and cost overruns
-- **Type Safety** - Full Pydantic integration with comprehensive mypy support
-- **Enterprise Ready** - Production-tested with comprehensive error handling and monitoring
+## What Problem It Solves
 
-## 🆚 Compared to Using Provider SDK Directly
-
-| Feature | Direct SDK | AI Utilities |
-|---------|------------|--------------|
-| **Multi-provider** | X Separate SDKs needed | Single interface |
-| **Caching** | X Manual implementation | Built-in, automatic |
-| **Rate Limits** | X Manual tracking | Automatic management |
-| **Type Safety** | Basic types | Full Pydantic models |
-| **Error Handling** | Provider-specific | Unified exceptions |
-| **Configuration** | Environment variables | Pydantic settings |
-| **Testing** | X Manual mocking | Test utilities included |
-
-**Use AI Utilities when you need:**
-- Production applications with multiple AI providers
-- Cost control through intelligent caching and rate limiting
-- Type safety and comprehensive error handling
-- Enterprise features like monitoring and configuration management
-
-**Use direct SDK when you need:**
-- Maximum control over a single provider
-- Access to provider-specific features
-- Minimal dependencies for simple scripts
-
-## 👥 Who Is It For?
-
-- **Production Teams** building AI-powered applications with reliability requirements
-- **Startups** needing cost control through intelligent caching and rate limiting
-- **Enterprise Developers** requiring type safety, monitoring, and configuration management
-- **Data Scientists** who want to experiment with multiple providers without learning different APIs
-- **Teams** collaborating on AI projects with standardized error handling and logging
+Managing multiple AI providers is complex and error-prone. Each provider has different APIs, authentication methods, and error handling. AI Utilities solves this by providing a single, consistent interface that works across all major providers while adding enterprise features like intelligent caching and comprehensive error handling.
 
 ## Quickstart
 
-```bash
-# Install with provider support
-pip install ai-utilities[openai]
+### Install
 
-# Set API key
-export OPENAI_API_KEY="your-openai-key"
+```bash
+pip install ai-utilities[openai]
 ```
 
-### Recommended Usage
+### Basic Usage
 
 ```python
 from ai_utilities import AiClient
 
-# Create client with automatic caching
+# Create client (loads from .env file automatically)
 client = AiClient()
+
+# Make a request
+response = client.ask("What is the capital of France?")
+print(response)
+
+# Monitor usage (if tracking enabled)
+usage_stats = client.get_usage_stats()
+if usage_stats:
+    print(f"Tokens used: {usage_stats.total_tokens}")
+```
+
+### Configuration
+
+Create a `.env` file:
+
+```bash
+# Option 1: Auto-select among configured providers (recommended)
+AI_PROVIDER=auto
+
+# Option 2: Use specific provider
+# AI_PROVIDER=openai
+
+# Configure one or more providers below
+# OpenAI
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-4
+
+# Groq (fast inference)
+# GROQ_API_KEY=your-groq-key
+# GROQ_MODEL=llama3-70b-8192
+
+# Together AI (open source models)
+# TOGETHER_API_KEY=your-together-key
+# TOGETHER_MODEL=mistral-7b
+
+# OpenRouter (multiple model access)
+# OPENROUTER_API_KEY=your-openrouter-key
+# OPENROUTER_MODEL=anthropic/claude-3-haiku
+
+# Local providers (require model)
+# OLLAMA_BASE_URL=http://localhost:11434/v1
+# OLLAMA_MODEL=llama3.1
+
+# FastChat
+# FASTCHAT_BASE_URL=http://localhost:8000/v1
+# FASTCHAT_MODEL=your-model-name
+
+# Text Generation WebUI
+# TEXT_GENERATION_WEBUI_BASE_URL=http://localhost:5000/v1
+# TEXT_GENERATION_WEBUI_MODEL=your-model-name
+
+# OpenAI Compatible (custom endpoints)
+# AI_BASE_URL=https://your-endpoint.com/v1
+# AI_API_KEY=your-key
+# AI_MODEL=your-model
+
+# Optional: Override auto-selection order
+# AI_AUTO_SELECT_ORDER=openai,groq,openrouter,together,ollama,fastchat,text-generation-webui
+```
+
+Or run the interactive setup:
+
+```bash
+ai-utilities setup
+```
+
+## 🚀 API Stability & Compatibility
+
+### Stable Public API (v1.x)
+
+The following classes and functions are **guaranteed to remain stable** across v1.x releases:
+
+#### ✅ Core Classes (Stable)
+- `AiClient` - Main client class for AI interactions
+- `AsyncAiClient` - Async client class
+- `AiSettings` - Configuration settings
+- `create_client()` - Client factory function
+
+#### ✅ Response Types (Stable)
+- `AskResult` - Response from AI requests
+- `UploadedFile` - File upload result
+
+#### ✅ Error Handling (Stable)
+- `JsonParseError` - JSON parsing errors
+- `parse_json_from_text()` - JSON parsing utility
+
+#### ✅ Audio Processing (Stable)
+- `AudioProcessor` - Audio file processing
+- `load_audio_file()` - Load audio files
+- `save_audio_file()` - Save audio files
+- `validate_audio_file()` - Validate audio files
+- `get_audio_info()` - Get audio file information
+
+### 📦 Compatibility Exports (May Change)
+
+The following are available for backwards compatibility but **may change** in future releases:
+
+#### ⚠️ Usage Tracking (Compatibility)
+- `UsageTracker*` - Usage tracking classes
+- `create_usage_tracker()` - Usage tracker factory
+
+#### ⚠️ Rate Limiting (Compatibility)
+- `RateLimitFetcher` - Rate limit information
+- `RateLimitInfo` - Rate limit data
+
+#### ⚠️ Token Counting (Compatibility)
+- `TokenCounter` - Token counting utilities
+
+#### ⚠️ Provider Classes (Compatibility)
+- `BaseProvider` - Base provider class
+- `OpenAIProvider` - OpenAI provider
+- `create_provider()` - Provider factory
+- Other provider-specific classes
+
+#### ⚠️ Audio Models (Compatibility)
+- `AudioFormat` - Audio format enums
+- `TranscriptionRequest` - Transcription request
+- Other audio model classes
+
+### 🔄 Migration Path
+
+For new development, prefer the stable API:
+
+```python
+# ✅ Recommended (Stable API)
+from ai_utilities import AiClient, AiSettings
+client = AiClient()
+
+# ⚠️ Legacy (Compatibility API)
+from ai_utilities import UsageTracker, create_usage_tracker
+# Consider using ai_utilities.usage in future versions
+```
+
+### 📋 What This Means for Developers
+
+- **✅ Safe to use**: All stable API classes will work without breaking changes
+- **⚠️ May change**: Compatibility exports might be modified or moved in future releases
+- **🔄 Migration plan**: Compatibility exports will be available but gradually deprecated
+- **📚 Documentation**: Always check the stable API list above for guaranteed interfaces
+
+## Common Usage Examples
+
+### With Caching
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+
+# What is caching?
+# Caching stores AI responses locally so identical questions 
+# get instant answers without API calls or costs.
 
 # Ask questions with intelligent caching
 result = client.ask(
     "Explain quantum computing in simple terms",
-    cache_namespace="learning"
+    cache_namespace="learning"  # Groups related cached responses
 )
 
 print(result.text)
 
-# Monitor usage automatically
-print(f"Tokens used: {result.usage.total_tokens}")
+# First call: Hits API, costs tokens, stores response
+# Second call (same question): Instant response, $0 cost
 ```
 
-**Key Benefits:**
-- ✅ **Automatic caching** - Same question = instant response, no API cost
-- ✅ **Rate limiting** - Never get throttled or surprised by costs
-- ✅ **Type safety** - Full IDE support with autocomplete
-- ✅ **Error handling** - Clear, actionable error messages
-
-**Where to look next:**
-- **Getting Started** → [`examples/getting_started.py`](examples/getting_started.py) - **Recommended starting point**
-- **Examples Guide** → [`examples/README.md`](examples/README.md) - Progressive learning path
-- **Audio Processing Guide** → [`docs/audio_processing.md`](docs/audio_processing.md)
-- Configuration reference → [Configuration](#configuration)
-- **Error Handling Guide** → [`docs/error_handling.md`](docs/error_handling.md)
-- **Smart Caching Guide** → [`docs/caching.md`](docs/caching.md)
-- **Complete command reference** → [`docs/command_reference.md`](docs/command_reference.md)
-- **Quick cheat sheet** → [`docs/cheat_sheet.md`](docs/cheat_sheet.md)
-- **Test Dashboard** → [`docs/test_dashboard.md`](docs/test_dashboard.md)
-- API reference → Use `help(AiClient)` in Python
-- Changelog → [GitHub Releases](https://github.com/audkus/ai_utilities/releases)
-
----
-
-## Why use ai_utilities?
-
-This library is designed as a thin, opinionated utility layer for AI interactions. It is not a replacement for raw APIs, but rather provides consistent interfaces and common patterns for experimentation, testing, and long-term maintainability.
-
-### Without ai_utilities
-
-```python
-# Direct API usage - provider-specific and repetitive
-import openai
-
-client = openai.OpenAI(api_key="your-key")
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Explain AI"}],
-    temperature=0.7,
-    max_tokens=1000
-)
-
-# Manual error handling, no caching, no rate limiting
-# Different API for each provider
-# No structured JSON extraction
-# No usage tracking
-```
-
-### With ai_utilities
-
-```python
-# Consistent interface across providers
-from ai_utilities import AiClient
-
-client = AiClient()  # Automatic configuration
-response = client.ask("Explain AI")
-
-# Built-in caching, rate limiting, error handling
-# Same API for OpenAI, Anthropic, Ollama, etc.
-# Structured JSON extraction included
-# Usage tracking and monitoring
-```
-
-### Design Goals
-
-ai_utilities is intended to provide:
-
-- **Provider abstraction** - Switch between cloud and local models without code changes
-- **Configuration management** - Environment-based settings with Pydantic validation
-- **Test isolation** - Mock providers and deterministic testing patterns
-- **Caching and rate limiting** - Built-in cost control and performance optimization
-- **Error handling consistency** - Unified exception model across providers
-- **JSON robustness** - Reliable structured output extraction with error recovery
-- **Extensibility** - Designed for future multimodal and analytics features
-
-### Design Intent
-
-This library optimizes for development velocity and long-term maintainability rather than maximum feature access. It provides consistent patterns for common AI interaction tasks while allowing advanced users to access provider-specific capabilities through submodules when needed.
-
-The approach is designed to support experimentation, testing, and production applications that benefit from:
-- Unified interfaces across multiple providers
-- Built-in testing utilities and mock providers
-- Consistent error handling and logging
-- Automatic caching and rate limiting
-- Type safety and configuration validation
-
----
-
-## Install
-
-### Minimal Install
-```bash
-pip install ai-utilities
-```
-*Core library only - no provider SDKs included*
-
-### With Provider Support
-```bash
-pip install ai-utilities[openai]
-```
-*Includes OpenAI SDK for provider functionality*
-
-### Development Install
-```bash
-git clone https://github.com/audkus/ai_utilities.git
-cd ai_utilities
-pip install -e ".[dev]"
-```
-
-### With Audio Features
-```bash
-# Basic installation
-pip install ai-utilities
-
-# With audio processing capabilities
-pip install ai-utilities[audio]
-
-# Full installation with all features
-pip install ai-utilities[all]
-```
-
----
-
-## API Stability (v1.x)
-
-The following are considered stable public APIs and will follow semantic versioning:
-
-- `AiClient` - Main client for AI interactions
-- `AsyncAiClient` - Async version of AiClient  
-- `AiSettings` - Configuration and settings
-- `AskResult` - Response objects from AI requests
-
-**Internal modules** (providers, cache backends, dashboards, scripts) may change in minor or patch releases unless explicitly documented otherwise.
-
-**Version 1.x guarantees API stability**; new features may be added in minor releases.
-
-**Semantic Versioning**: This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) - version 1.x maintains backward compatibility for stable APIs.
-
-**Deprecation Policy**: Deprecated APIs will remain functional for at least one minor release and emit a warning before removal.
-
----
-
-## Audio Processing
-
-AI Utilities now includes comprehensive audio processing capabilities:
-
-### Audio Transcription (OpenAI Whisper)
-```python
-from ai_utilities import AiClient
-
-client = AiClient()
-result = client.transcribe_audio("podcast.mp3")
-print(f"Transcription: {result['text']}")
-```
-
-### Audio Generation (OpenAI TTS)
-```python
-# Generate speech from text
-audio_data = client.generate_audio("Hello world!", voice="alloy")
-with open("output.mp3", "wb") as f:
-    f.write(audio_data)
-```
-
-### Audio Validation & Analysis
-```python
-# Validate audio files
-validation = client.validate_audio_file("audio.wav")
-print(f"Valid: {validation['valid']}")
-
-# Extract metadata
-from ai_utilities.audio.audio_utils import load_audio_file
-audio_file = load_audio_file("music.mp3")
-print(f"Duration: {audio_file.duration_seconds}s")
-print(f"Metadata: {audio_file.metadata}")
-```
-
-### Format Conversion & Advanced Workflows
-```python
-from ai_utilities.audio.audio_utils import convert_audio_format
-from ai_utilities.audio.audio_models import AudioFormat
-
-# Convert between formats
-convert_audio_format("input.wav", "output.mp3", AudioFormat.MP3)
-
-# Complex workflows
-from ai_utilities.audio import AudioProcessor
-processor = AudioProcessor()
-transcription, new_audio = processor.transcribe_and_generate(
-    "speech.wav", target_voice="nova"
-)
-```
-
-**Complete Audio Guide → [`docs/audio_processing.md`](docs/audio_processing.md)**
-
----
-
-## Configuration
-
-### Environment Variables
-
-| Variable | AiSettings Field | Type | Default | Description |
-|----------|------------------|------|---------|-------------|
-| `AI_API_KEY` | `api_key` | str | None | OpenAI API key |
-| `AI_PROVIDER` | `provider` | str | "openai" | Provider name |
-| `AI_MODEL` | `model` | str | "test-model-1" | Default model to use |
-| `AI_TEMPERATURE` | `temperature` | float | 0.7 | Response randomness (0.0-2.0) |
-| `AI_BASE_URL` | `base_url` | str | None | Custom API endpoint |
-| `AI_TIMEOUT` | `timeout` | int | 30 | Request timeout (seconds) |
-
-### Configuration Precedence
-
-`AiSettings` loads values in this order (highest to lowest priority):
-
-1. Explicit `AiSettings(...)` parameters
-2. Environment variables (`os.environ`)
-3. `.env` file values (loaded via `pydantic-settings`)
-4. Defaults
-
----
-
-## 🧠 Smart Caching
-
-AI Utilities includes intelligent caching with multiple backends to reduce API costs and improve response times.
-
-### Quick Start
+### Different Providers
 
 ```python
 from ai_utilities import AiClient, AiSettings
-from pathlib import Path
 
-# Enable memory caching
+# Use Groq instead of OpenAI
 settings = AiSettings(
-    cache_enabled=True,
-    cache_backend="memory",
-    cache_ttl_s=3600  # 1 hour
+    provider="groq",
+    api_key="your-groq-key",
+    model="llama3-70b-8192"
 )
-client = AiClient(settings=settings)
 
-# First call hits the API
-response1 = client.ask("What is machine learning?")
-
-# Second call hits the cache (instant, no API cost)
-response2 = client.ask("What is machine learning?")
-```
-
-### Cache Backends
-
-| Backend | Persistence | Speed | Use Case |
-|---------|-------------|-------|----------|
-| **null** | None | Fastest | Testing, fresh responses |
-| **memory** | Process lifetime | Fast | Development, short-lived apps |
-| **sqlite** | Persistent | Medium | Production, long-running apps |
-
-### SQLite Cache with Namespaces
-
-```python
-settings = AiSettings(
-    cache_enabled=True,
-    cache_backend="sqlite",
-    cache_sqlite_path=Path.home() / ".ai_utilities" / "cache.sqlite",
-    cache_namespace="my-project",  # Isolates cache per project
-    cache_ttl_s=3600,
-    cache_sqlite_max_entries=1000
-)
-client = AiClient(settings=settings)
-```
-
-**Key Features:**
-- **Namespace isolation** - Prevents cross-project cache pollution
-- **TTL expiration** - Automatic cleanup of stale entries
-- **LRU eviction** - Memory-efficient size management
-- **Thread-safe** - Concurrent access support
-- **Persistent** - Survives process restarts
-
-[📖 **Complete Caching Guide** → `docs/caching.md`](docs/caching.md)
-
----
-
-## Providers
-
-### OpenAI (Default)
-```python
-from ai_utilities import AiClient
-client = AiClient()  # Uses OpenAI by default
-response = client.ask("Hello, world!")
-```
-
-### OpenAI-Compatible Providers
-
-#### Ollama
-```python
-from ai_utilities import AiClient, AiSettings
-
-settings = AiSettings(
-    provider="openai_compatible",
-    base_url="http://localhost:11434/v1",
-    api_key="dummy-key",  # Optional for local servers
-    model="llama3.2"
-)
 client = AiClient(settings)
+response = client.ask("What is machine learning?")
 ```
 
-#### LM Studio
-```python
-settings = AiSettings(
-    provider="openai_compatible", 
-    base_url="http://localhost:1234/v1",
-    api_key="dummy-key",  # Optional for local servers
-    model="your-model"
-)
-```
-
-#### FastChat
-```python
-settings = AiSettings(
-    provider="openai_compatible",
-    base_url="http://localhost:8000/v1", 
-    api_key="dummy-key",  # Optional for local servers
-    model="vicuna-7b-v1.5"
-)
-```
-
-**Note:** `api_key` is optional for local servers but required for cloud providers.
-
-### Provider Capabilities
-
-Legend:
-- full support
-- partial / best-effort (varies by provider/model; may require JSON repair)
-- X not supported
-
-| Provider Type | Text | JSON | Async | Streaming |
-|--------------|------|------|-------|-----------|
-| OpenAI (native) | full | full | full | full |
-| OpenAI-compatible cloud (Groq/Together/OpenRouter/etc.) | full | partial | full | partial |
-| OpenAI-compatible local (Ollama/LM Studio/FastChat/Text-Gen-WebUI/etc.) | full | partial | full | X |
-
-**Notes:**
-- "Async" means our AsyncAiClient concurrency (parallel calls), not streaming tokens.
-- Streaming is provider-dependent and not available on Ollama (and most local OpenAI-compatible servers).
-
-JSON and typed responses are guaranteed only when the underlying provider supports native JSON mode.
-On OpenAI-compatible providers (especially local servers), JSON is best-effort and may require repair/validation.
-
----
-
-## Core API
-
-### Synchronous Client
-
-```python
-from ai_utilities import AiClient
-
-client = AiClient()
-
-# Basic text response
-response = client.ask("What is AI?")
-
-# JSON response (best-effort parsing)
-data = client.ask("List 3 programming languages", return_format="json")
-
-# Structured JSON with repair
-data = client.ask_json("List 3 countries", max_repairs=1)
-
-# Typed response with Pydantic model
-from pydantic import BaseModel
-class Country(BaseModel):
-    name: str
-    population: int
-
-countries = client.ask_typed("List a country", Country)
-```
-
-### Asynchronous Client
+### Async Usage
 
 ```python
 import asyncio
-from ai_utilities import AsyncAiClient, AiSettings
+from ai_utilities import AsyncAiClient
 
 async def main():
-    settings = AiSettings(model="gpt-4")
-    client = AsyncAiClient(settings)
-    
-    response = await client.ask("What is async programming?")
+    client = AsyncAiClient()
+    response = await client.ask("Hello, world!")
     print(response)
 
 asyncio.run(main())
 ```
 
-### Convenience Functions
+## Metrics and Monitoring
+
+AI Utilities provides comprehensive metrics collection and monitoring capabilities for production use cases. Track performance, usage, and latency across all AI providers.
+
+### Basic Metrics Collection
 
 ```python
-from ai_utilities import create_client
+from ai_utilities.metrics import MetricsCollector
 
-# Quick client creation
-client = create_client(
-    provider="openai_compatible",
-    base_url="http://localhost:11434/v1",
-    api_key="dummy-key",
-    model="llama3.2"
-)
+# Create a metrics collector
+collector = MetricsCollector()
+
+# Record different types of metrics
+collector.increment_counter("api_requests", labels={"provider": "openai"})
+collector.set_gauge("active_connections", 5, labels={"service": "ai-api"})
+collector.observe_histogram("response_time", 1.5, labels={"endpoint": "/chat"})
+collector.record_timer("request_latency", 0.8, labels={"model": "gpt-4"})
+
+# Get all metrics for monitoring
+all_metrics = collector.get_all_metrics()
+for metric in all_metrics:
+    print(f"{metric.name}: {metric.value} ({metric.metric_type})")
 ```
 
-## Files API
+### Timer Metrics for Latency Tracking
 
-Upload and download files through AI providers. Currently supported by OpenAI provider.
+Timer metrics automatically generate comprehensive latency snapshots:
 
-### Quick Start
+```python
+from ai_utilities.metrics import MetricsCollector
+
+collector = MetricsCollector()
+
+# Record timer values (perfect for latency tracking)
+collector.record_timer("api_latency", 1.2, labels={"endpoint": "/chat"})
+collector.record_timer("api_latency", 0.8, labels={"endpoint": "/chat"})
+collector.record_timer("api_latency", 1.5, labels={"endpoint": "/chat"})
+
+# Timer snapshots are automatically exported as 5 metrics:
+# - api_latency_count: 3 (number of events)
+# - api_latency_sum_seconds: 3.5 (total duration)
+# - api_latency_min_seconds: 0.8 (minimum duration)
+# - api_latency_max_seconds: 1.5 (maximum duration)
+# - api_latency_last_seconds: 1.5 (last duration)
+
+metrics = collector.get_all_metrics()
+timer_metrics = {m.name: m.value for m in metrics if "api_latency" in m.name}
+print(timer_metrics)
+```
+
+### Export Metrics to Monitoring Systems
+
+```python
+from ai_utilities.metrics import MetricsCollector, PrometheusExporter, JSONExporter
+
+collector = MetricsCollector()
+# ... record metrics ...
+
+# Prometheus format (perfect for Grafana/Prometheus)
+prometheus_exporter = PrometheusExporter(collector)
+prometheus_output = prometheus_exporter.export()
+print(prometheus_output)
+
+# JSON format (perfect for APIs and dashboards)
+json_exporter = JSONExporter(collector)
+json_output = json_exporter.export()
+print(json_output)
+```
+
+### Context Manager for Easy Timing
+
+```python
+from ai_utilities.metrics import MetricsCollector
+
+collector = MetricsCollector()
+
+# Use context manager for automatic timing
+with collector.timer("database_query", labels={"table": "users"}):
+    # Your code here - automatically timed
+    result = some_database_operation()
+
+# Timer automatically records the duration
+```
+
+### Available Metric Types
+
+- **Counters**: Incrementing values (request counts, error counts)
+- **Gauges**: Current values (active connections, memory usage)
+- **Histograms**: Value distributions (response times)
+- **Timers**: Duration tracking with automatic statistics (latency, processing time)
+
+### Integration with AI Clients
 
 ```python
 from ai_utilities import AiClient
-from pathlib import Path
+from ai_utilities.metrics import MetricsCollector, PrometheusExporter
 
+# Set up metrics collection
+collector = MetricsCollector()
+
+# Monitor AI client usage
 client = AiClient()
 
-# Upload a file
-file = client.upload_file("document.pdf", purpose="assistants")
-print(f"Uploaded: {file.file_id}")
+# Manually track usage
+collector.increment_counter("ai_requests", labels={"provider": "openai"})
+collector.record_timer("ai_response_time", 2.1, labels={"model": "gpt-4"})
 
-# Download file content
-content = client.download_file(file.file_id)
+response = client.ask("What is machine learning?")
 
-# Download file to disk
-path = client.download_file(file.file_id, to_path="downloaded.pdf")
+# Export for monitoring
+exporter = PrometheusExporter(collector)
+print(exporter.export())
 ```
 
-### File Operations
+## Supported Providers
 
+- **OpenAI** - GPT-4, GPT-3.5-turbo, audio processing
+- **Groq** - Fast inference with Llama models
+- **Together AI** - Open source models
+- **OpenRouter** - Multiple model access
+- **Ollama** - Local server support
+- **OpenAI Compatible** - Custom endpoints
+
+## Troubleshooting
+
+### SSL Backend Requirements
+
+ai_utilities requires OpenSSL ≥ 1.1.1 for reliable HTTPS operations. Some macOS Python installations use LibreSSL, which is unsupported by urllib3 v2 (used by requests).
+
+**Symptoms:**
+- HTTPS requests may fail unexpectedly
+- Warning: `NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+`
+- Warning: `SSLBackendCompatibilityWarning: SSL Backend Compatibility Notice: Detected LibreSSL`
+
+**Check your SSL backend:**
 ```python
-# Upload with custom settings
-file = client.upload_file(
-    "data.csv",
-    purpose="fine-tune",
-    filename="training-data.csv"
-)
-
-# Async file operations
-from ai_utilities import AsyncAiClient
-
-async def main():
-    client = AsyncAiClient()
-    file = await client.upload_file("document.pdf")
-    content = await client.download_file(file.file_id)
-
-# Error handling
-from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
-
-try:
-    file = client.upload_file("report.pdf")
-except FileTransferError as e:
-    print(f"Upload failed: {e}")
-except ProviderCapabilityError as e:
-    print(f"Provider doesn't support files: {e}")
+import ssl
+print(ssl.OPENSSL_VERSION)
 ```
 
-### Document AI Workflow
+**Fixes:**
+- Use Python from python.org (recommended)
+- Install via Homebrew: `brew install python`
+- Use pyenv: `pyenv install 3.11.0`
+- Avoid system Python on macOS
 
-Upload documents and ask AI to analyze, summarize, or extract information:
+**Why OpenSSL is required:**
+- urllib3 v2 dropped LibreSSL support for security reasons
+- HTTPS behavior may be unreliable with LibreSSL
+- This is an environment compatibility notice, not a bug in ai_utilities
+- Network functionality may be affected
 
-```python
-# 1. Upload document
-client = AiClient()
-uploaded_file = client.upload_file("report.pdf", purpose="assistants")
-
-# 2. Ask AI to analyze the document
-summary = client.ask(
-    f"Please summarize document {uploaded_file.file_id} and extract key insights."
-)
-
-# 3. Ask follow-up questions
-recommendations = client.ask(
-    f"Based on document {uploaded_file.file_id}, what are your recommendations?"
-)
-
-# 4. Analyze multiple documents
-docs = [
-    client.upload_file("q1_report.pdf", purpose="assistants"),
-    client.upload_file("q2_report.pdf", purpose="assistants")
-]
-
-trend_analysis = client.ask(
-    f"Compare these reports: {[d.file_id for d in docs]}. "
-    "Identify trends and key changes."
-)
-```
-
-### Supported Providers
-
-| Provider | Upload | Download | Notes |
-|----------|--------|----------|-------|
-| **OpenAI** | full | full | Full support with all file types |
-| **OpenAI-Compatible** | X | X | Raises capability errors |
-
-**📖 Full Documentation:** See [`docs/files.md`](docs/files.md) for comprehensive Files API documentation.
-
----
-
-## Development
-
-### Releases & Publishing
-
-Releases are published automatically to PyPI when version tags are pushed:
-
-- **Trigger**: Push a tag matching `v*` (e.g., `v1.0.0`, `v1.0.0b1`)
-- **Authentication**: Uses PyPI Trusted Publishing (OIDC) - no secrets stored in GitHub
-- **Supports**: Both stable releases and pre-releases (beta, alpha, release candidate)
-
-Example release workflow:
+**Filtering warnings in pytest:**
 ```bash
-git tag -a v1.0.0b1 -m "Release v1.0.0b1"
-git push origin v1.0.0b1
-# GitHub Actions will automatically publish to PyPI
+pytest -W "ignore::SSLBackendCompatibilityWarning"
 ```
+
+### Top 5 Common Issues
+
+1. **"API key is required"**
+   ```bash
+   ai-utilities setup
+   # Or set: export AI_API_KEY=your-key
+   ```
+
+2. **"Provider not supported"**
+   ```bash
+   export AI_PROVIDER=openai  # Use lowercase name
+   ```
+
+3. **Network connection issues**
+   ```bash
+   # Check internet connection
+   curl -I https://api.openai.com/v1/models
+   ```
+
+4. **Model not found**
+   ```bash
+   # Use correct model names:
+   # OpenAI: gpt-4, gpt-3.5-turbo
+   # Groq: llama3-70b-8192
+   ```
+
+5. **Caching not working**
+   ```bash
+   export AI_CACHE_ENABLED=true
+export AI_CACHE_BACKEND=sqlite
+```
+
+## Testing
 
 ### Running Tests
 
-#### 🧪 Enhanced Test Dashboard (Recommended)
+This project uses pytest with timeout protection to prevent hanging tests.
 
-The AI Utilities Test Dashboard provides enterprise-grade testing with resilience, debugging, and comprehensive visibility.
+#### Unit Tests (Fast, No .env Required)
+```bash
+# Run unit tests only (no external API calls, deterministic)
+tox -e py311
+# or
+pytest -m "not integration" --timeout=30
+```
+
+#### Integration Tests (Requires API Keys, Opt-in .env Loading)
+
+Integration tests require explicit opt-in to load `.env` files and need API keys:
 
 ```bash
-# Standard test suite (excludes integration & dashboard tests)
-python scripts/dashboard.py
+# Option 1: Use tox with opt-in .env loading (recommended)
+tox -e integration
 
-# With integration tests (requires API key)
-python scripts/dashboard.py --integration
+# Option 2: Manual opt-in with environment variable
+AI_UTILITIES_LOAD_DOTENV=1 pytest -m integration --timeout=120
 
-# Complete project test suite with chunked execution
-python scripts/dashboard.py --full-suite
-
-# Full suite with integration tests
-python scripts/dashboard.py --full-suite --integration
-
-# Enhanced debugging for hangs
-python scripts/dashboard.py --full-suite --debug-hangs
-
-# Custom timeout settings
-python scripts/dashboard.py --full-suite --suite-timeout-seconds 600 --no-output-timeout-seconds 120
+# Option 3: Export API keys manually (alternative to .env)
+export OPENAI_API_KEY=your-openai-key
+export AI_OPENAI_API_KEY=your-alt-openai-key
+pytest -m integration --timeout=120
 ```
 
-**Enterprise Features:**
-- **Chunked Execution**: Individual file isolation prevents cascading failures
-- **Resilient Timeouts**: Robust hang detection with stack dump capabilities
-- **Complete Visibility**: Shows exactly which tests are excluded and why
-- **Accurate Reporting**: Partial progress tracking (e.g., "342/448 runnable tests passed")
+**Key Points:**
+- Unit tests never load `.env` files and remain deterministic
+- Integration tests only load `.env` when `AI_UTILITIES_LOAD_DOTENV=1` is set
+- Integration tests check both `OPENAI_API_KEY` and `AI_OPENAI_API_KEY` environment variables
+- Use tox environments for consistent testing across Python versions
 
-**Test Visibility Example:**
-```
-Test Discovery Summary:
-   Total tests available: 524
-   Integration tests: 46 (excluded by default)
-   Dashboard tests: 30 (excluded to prevent self-reference)
-   Tests to execute: 448
-   Excluded tests: 76
-```
+**Note**: Integration tests are automatically skipped if API keys are missing.
 
-**Debugging Features:**
-- `--debug-hangs`: Enable SIGQUIT stack dumps and verbose pytest output
-- `--suite-timeout-seconds`: Hard timeout for entire test suite
-- `--no-output-timeout-seconds`: Timeout if no output received
-- Continues execution even when individual files hang
-- Detailed diagnostics with last test nodeid and output tail
-
-#### Standard Pytest
+#### All Tests
 ```bash
-pytest                    # All tests (524 total)
-pytest -m "not integration and not dashboard"  # Same as dashboard default
-pytest -m integration     # Integration tests only (requires API key)
-pytest -m dashboard       # Dashboard self-tests only
-pytest tests/test_files_api.py  # Specific test files
+# Run all tests with appropriate timeouts
+pytest -m "not integration" --timeout=30  # Unit tests
+pytest -m "integration" --timeout=120     # Integration tests (if API key available)
 ```
 
-### Code Quality
+### Test Timeouts
+
+- **Unit tests**: 30 seconds per test (fail fast)
+- **Integration tests**: 120 seconds per test (allow for network latency)
+- **Request timeouts**: 30 seconds default (configurable via `AI_TIMEOUT`)
+
+### Test Categories
+
+- **Unit tests**: Fast tests without external dependencies
+- **Integration tests**: Tests that call real APIs (marked with `@pytest.mark.integration`)
+
+Integration tests are automatically skipped if API keys are missing. Other skipped test categories include:
+- **Live provider tests**: Require `RUN_LIVE_AI_TESTS=1` environment variable
+- **File integration tests**: Require `--run-integration` flag and test files
+- **Audio integration tests**: Require API keys and audio files
+- **Slow tests**: Require `--run-slow` flag (performance/settings tests)
+
+### Live Integration Tests
+
+For comprehensive testing with real API calls, run live integration tests:
+
 ```bash
-ruff check . --fix        # Lint and fix
-ruff format .             # Format code
-mypy src/                 # Type checking
+export RUN_LIVE_AI_TESTS=1 && python -m pytest -m integration --run-integration -v --timeout=120
 ```
 
-### Test Architecture
+**Requirements:**
+- `RUN_LIVE_AI_TESTS=1` environment variable must be set
+- Provider API keys configured in environment or `.env` file
+- Local provider servers running (if testing local providers)
 
-The project uses a clean, resilient test architecture designed for enterprise reliability:
+**Note:** Provider-specific tests may skip if their respective API keys or servers are not configured.
 
-**Test Categories:**
-- **Unit Tests** (447 tests): Core functionality, provider implementations, utilities
-- **Integration Tests** (46 tests): Real API calls, requires `AI_API_KEY` 
-- **Dashboard Tests** (30 tests): Self-validation of the dashboard runner
-- **Total**: 523 tests with clear separation and purpose
+### Coverage Testing
 
-**Test Isolation:**
-- Dashboard excludes its own tests to prevent self-reference issues
-- Integration tests excluded by default, opt-in via `--integration`
-- Chunked execution prevents cascading failures from hanging files
-- Environment variable isolation prevents test interference
+This repository uses tox for consistent coverage testing and reporting.
 
-**Resilience Features:**
-- Individual file timeouts prevent suite-wide hangs
-- Stack dump capabilities for debugging hanging tests
-- Partial progress reporting shows accurate completion status
-- Continues execution even when individual files fail
+#### Coverage Commands
 
-### Project Structure
+**Run tests with coverage:**
+```bash
+tox -e coverage
+```
+
+**Coverage Reports:**
+- Terminal report: Displayed during run
+- XML report: `coverage_reports/coverage.xml` (for CI tools)
+- HTML report: `coverage_reports/html/` (detailed browser view)
+
+**Run specific tests with coverage:**
+```bash
+tox -e coverage -- tests/test_specific_file.py
+```
+
+**Important Notes:**
+- Coverage reports are automatically generated in `coverage_reports/`
+- XML report at `coverage_reports/coverage.xml` for CI integration
+- HTML report at `coverage_reports/html/` for detailed viewing
+
+### Project Structure Protection
+
+This repository includes automated tests to prevent project structure pollution and maintain clean organization.
+
+**Protected Structure Rules:**
+- **Coverage reports**: Only in `coverage_reports/` at repository root
+- **No coverage files**: In `tests/` directory or subdirectories  
+- **No duplicate directories**: `htmlcov/`, `reports/` in wrong locations
+- **Test artifacts**: Only in appropriate locations (never in root except `.pytest_cache`)
+
+**Automated Enforcement:**
+```bash
+# Run structure validation tests
+python -m pytest tests/test_project_structure.py -v
+```
+
+**Directory Standards:**
 ```
 ai_utilities/
-├── src/ai_utilities/     # Core library
-├── tests/                # Test suite
-├── examples/             # Usage examples
-├── scripts/              # Utility tools
-├── docs/                 # Documentation
-└── pyproject.toml        # Package config
+├── coverage_reports/          # ✅ Only coverage reports location
+│   ├── .coverage              # Coverage data file
+│   ├── html/                  # HTML reports
+│   └── .gitignore             # Excludes all files except itself
+├── reports/                   # ✅ Manual reports and test outputs
+│   ├── manual_report_*.md     # Generated reports
+│   └── test_output/           # Test artifacts
+├── tests/                     # ✅ Test files only (no coverage data)
+│   └── test_*.py
+└── .pytest_cache              # ✅ Allowed standard pytest artifact
 ```
 
-## Documentation & Links
+This prevents the common problem of coverage reports and test artifacts being scattered throughout the project, maintaining a clean and predictable structure.
 
-- **Full Documentation** → [`docs/`](docs/)
-- **Support & Maintenance** → [`SUPPORT.md`](SUPPORT.md)
-- **Reliability Guide** → [`docs/reliability_guide.md`](docs/reliability_guide.md)
-- **Security Guide** → [`docs/security_guide.md`](docs/security_guide.md)
-- **Migration Guide** → [`MIGRATION.md`](MIGRATION.md)
-- **Usage Examples** → [`examples/`](examples/)
-- **Provider Setup** → [`docs/all-providers-guide.md`](docs/all-providers-guide.md)
-- **Testing Guide** → [`docs/testing-setup.md`](docs/testing-setup.md)
-- **Troubleshooting** → [`docs/provider_troubleshooting.md`](docs/provider_troubleshooting.md)
-- **GitHub Releases** → [Releases](https://github.com/audkus/ai_utilities/releases)
-- **Issues & Discussions** → [GitHub](https://github.com/audkus/ai_utilities)
-- **Contributing** → [CONTRIBUTING.md](CONTRIBUTING.md)
+### Test Hygiene
 
----
+**Tests must not write to repository root.** All test artifacts must be created in temporary directories.
 
-## Continuous Integration & Testing
+- **Use `tmp_path` fixture**: For per-test temporary files
+- **Use `tmp_path_factory`**: For session-scoped temporary directories  
+- **Never write to root**: Tests will fail if they create files in repository root
+- **Guardrail enforcement**: Automatic detection prevents root artifact creation
 
-### CI Pipeline Tiers
+#### Example
+```python
+def test_with_temp_files(tmp_path):
+    # Good: Use tmp_path for test files
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("content")
+    assert test_file.exists()
+    
+    # Bad: Don't write to repository root
+    # Path("root_file.txt").write_text("content")  # Will fail!
+```
 
-**Required Tier (Blocks Pull Requests)**
-- Unit tests across Python 3.9-3.12
-- Type checking with mypy
-- Code linting with flake8
-- Minimal installation verification
-
-**Optional Tier (Informational Only)**
-- Integration tests (requires API keys)
-- Security scanning with safety and bandit
-- Cross-platform compatibility tests
-- Documentation validation
-- Performance benchmarks
-
-### What CI Guarantees
-
-For v1.x releases, CI guarantees:
-- All unit tests pass
-- Type checking passes
-- Code follows style guidelines
-- Package installs correctly
-- No breaking changes to public API
-
-### What Is Informational
-
-The following are monitored but do not block releases:
-- External provider availability (provider health checks)
-- Performance benchmarks (for regression detection)
-- Security scan results (for awareness)
-- Integration test results (depends on API keys)
-
-### Running Tests Locally
+#### Convenience Commands (Makefile)
 
 ```bash
-# Required tests (what CI checks)
-pytest tests/ -m "not integration and not dashboard"
-
-# All tests including integration
-pytest tests/ -m "not dashboard"
-
-# Performance benchmarks (optional)
-python tools/benchmarks.py
+make test      # Run full test suite with coverage
+make test-fast # Run tests quietly  
+make cov       # Run tests with coverage reports (term + html)
+make help      # Show all available targets
 ```
 
----
+#### Handling Long Output
 
-## Manual Verification (Pre-Release)
-
-For pre-release verification, AI Utilities includes a comprehensive manual testing harness:
-
-### Quick Start
 ```bash
-# Run Tier 1 tests (all providers, no network required)
-./manual_tests/run_manual_tests.sh
-
-# Run Tier 1 + Tier 2 tests (OpenAI with real API calls)
-export AI_API_KEY="your-openai-key"
-./manual_tests/run_manual_tests.sh --tier2
+# Pipe coverage output to file and view last 100 lines
+python -m pytest --cov-report=term-missing > /tmp/cov.txt && tail -100 /tmp/cov.txt
 ```
 
-### Test Tiers
-- **Tier 1:** Validates all provider configurations without network access
-- **Tier 2:** End-to-end testing with real API calls (OpenAI only by default)
+⚠️ **Anti-footgun**: If you run `python -m coverage run -m pytest`, you'll see pytest-cov reports during the run, but `coverage report` afterwards will show 0% because the outer coverage session collected nothing.
 
-For detailed instructions and release criteria, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+For detailed testing guidelines, see [CI_TIMEOUT_GUIDELINES.md](CI_TIMEOUT_GUIDELINES.md) and [Testing Setup Guide](docs/testing-setup.md).
+
+## Troubleshooting: urllib3 LibreSSL warning (macOS)
+
+When running tests or using the library on macOS, you may see this warning:
+
+```
+urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+```
+
+### Why this happens
+- urllib3 v2 requires OpenSSL 1.1.1+ for optimal HTTPS operations
+- Apple Command Line Tools Python can be linked with LibreSSL instead of OpenSSL
+- This mismatch triggers a `NotOpenSSLWarning` but doesn't break functionality
+
+### Check your SSL backend
+```bash
+python -c "import ssl; print(ssl.OPENSSL_VERSION)"
+```
+
+If it shows "LibreSSL", you're using Apple's Python build.
+
+### How to resolve
+Use a Python build linked against OpenSSL:
+
+**Option 1: python.org installer**
+```bash
+# Download from python.org and reinstall your venv
+rm -rf .venv
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+**Option 2: Homebrew**
+```bash
+brew install python@3.11
+rm -rf .venv
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+**Option 3: pyenv**
+```bash
+pyenv install 3.11.7
+pyenv local 3.11.7
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Note for contributors
+- The warning is safe to ignore for development and testing
+- CI/Linux environments typically use OpenSSL, so you may not see it there
+- Only HTTPS-heavy production workloads need the OpenSSL-linked Python for optimal performance
+
+## Where to Go Next
+
+### User Documentation
+- [Getting Started Guide](docs/user/getting-started.md) - Detailed setup and examples
+- [Configuration Guide](docs/user/configuration.md) - All environment variables
+- [Provider Setup](docs/user/providers.md) - Provider-specific configuration
+- [Smart Caching](docs/user/caching.md) - Reduce API costs with caching
+- [Metrics and Monitoring](docs/user/metrics.md) - Track performance and usage
+- [Troubleshooting Guide](docs/user/troubleshooting.md) - Common issues and solutions
+
+### Development
+- For development setup see [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Development Documentation](docs/dev/development-setup.md)
+- [Architecture Overview](docs/dev/architecture.md)
+- [Testing Guide](docs/dev/testing.md)
+
+For development setup and contributing, see CONTRIBUTING.md
 
 ---
-
-## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

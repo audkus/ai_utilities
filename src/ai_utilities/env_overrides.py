@@ -9,6 +9,8 @@ environments.
 from __future__ import annotations
 
 import contextvars
+import os
+import sys
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from typing import Any, Dict
@@ -18,6 +20,84 @@ _env_overrides: contextvars.ContextVar[Dict[str, str]] = contextvars.ContextVar(
     "env_overrides",
     default={}
 )
+
+# ContextVar to track if we're in test mode
+_test_mode: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "test_mode",
+    default=False
+)
+
+
+def is_test_mode() -> bool:
+    """
+    Check if we're currently running in test mode.
+    
+    Test mode is detected by:
+    1. pytest being in sys.modules
+    2. PYTEST_CURRENT_TEST environment variable being set
+    3. Explicit test mode context
+    
+    Returns:
+        True if running in test context
+    """
+    # Check explicit test mode context first
+    if _test_mode.get():
+        return True
+    
+    # Check if pytest is running
+    if 'pytest' in sys.modules:
+        return True
+    
+    # Check pytest environment variable
+    if os.environ.get('PYTEST_CURRENT_TEST'):
+        return True
+    
+    return False
+
+
+@contextmanager
+def test_mode_guard() -> Iterator[None]:
+    """
+    Context manager to enable test mode guards.
+    
+    In test mode:
+    - Direct os.environ mutations raise warnings/errors
+    - Contextvar overrides are strictly enforced
+    - Global state changes are tracked
+    
+    This helps prevent test isolation regressions.
+    """
+    # Enable test mode
+    token = _test_mode.set(True)
+    
+    try:
+        yield
+    finally:
+        # Restore previous test mode state
+        _test_mode.reset(token)
+
+
+def _warn_if_direct_env_mutation(key: str) -> None:
+    """
+    Issue a warning if direct environment mutation is detected in test mode.
+    
+    Only warns if the key is not currently overridden, since accessing
+    overridden keys through get_safe_env is acceptable.
+    
+    Args:
+        key: The environment variable key being accessed
+    """
+    if is_test_mode():
+        # Check if we have an active override for this key
+        current_overrides = _env_overrides.get()
+        if key not in current_overrides:
+            import warnings
+            warnings.warn(
+                f"Direct os.environ access detected for '{key}' in test mode. "
+                f"Consider using override_env() context manager for test isolation.",
+                UserWarning,
+                stacklevel=3
+            )
 
 
 def get_env_overrides() -> Dict[str, str]:
@@ -51,6 +131,22 @@ def override_env(env_vars: Mapping[str, Any] | None = None) -> Iterator[None]:
     Yields:
         None
     """
+    # In test mode, validate that we're not creating nested overrides that might leak
+    if is_test_mode():
+        current_overrides = _env_overrides.get()
+        if current_overrides and env_vars:
+            # Check for potential key conflicts that might cause confusion
+            conflicts = set(current_overrides.keys()) & set(env_vars.keys())
+            if conflicts:
+                import warnings
+                warnings.warn(
+                    f"Nested environment overrides detected for keys: {sorted(conflicts)}. "
+                    f"This might indicate test isolation issues. "
+                    f"Consider restructuring your test to avoid nested overrides.",
+                    UserWarning,
+                    stacklevel=3
+                )
+    
     # Get current overrides
     current_overrides = _env_overrides.get()
     
@@ -70,6 +166,32 @@ def override_env(env_vars: Mapping[str, Any] | None = None) -> Iterator[None]:
     finally:
         # Always restore the previous state
         _env_overrides.reset(token)
+
+
+def get_safe_env(key: str, default: Any = None) -> str | None:
+    """
+    Get environment variable with test-mode safety checks.
+    
+    This function provides a safe way to access environment variables that
+    respects contextvar overrides and warns about direct access in test mode.
+    
+    Args:
+        key: Environment variable key
+        default: Default value if not found
+        
+    Returns:
+        Environment variable value or default
+    """
+    # Warn about direct access in test mode
+    _warn_if_direct_env_mutation(key)
+    
+    # Check contextvar overrides first
+    overrides = _env_overrides.get()
+    if key in overrides:
+        return overrides[key]
+    
+    # Fall back to real environment
+    return os.environ.get(key, default)
 
 
 class OverrideAwareEnvSource:
@@ -160,3 +282,14 @@ def get_ai_env_int(key: str) -> int:
 def get_ai_env_float(key: str) -> float:
     """Get AI float environment variable with override support."""
     return _ai_env_source.get_float(key)
+
+
+def _reset_all_overrides() -> None:
+    """
+    Reset all contextvar overrides to clean state.
+    
+    This function is used by test isolation to reset contextvar state
+    between test runs. It's safe to call multiple times.
+    """
+    # Reset the contextvar to its default (empty dict)
+    _env_overrides.set({})

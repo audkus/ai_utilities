@@ -4,13 +4,54 @@ openai_client.py
 Pure OpenAI API client with single responsibility for API communication.
 """
 
-import logging
-from typing import Any, Dict, Optional
+from __future__ import annotations
 
-from openai import OpenAI
-from openai.types.chat import ChatCompletion
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletion
+
+# OpenAI imports - lazy loaded to avoid import-time dependencies
+_openai = None
+OpenAI = None
+
+def _get_openai():
+    """Lazy import of openai module."""
+    global _openai, OpenAI
+    if _openai is None:
+        try:
+            import openai
+            _openai = openai
+            # Only set OpenAI if it's not already set (e.g., by tests)
+            if OpenAI is None:
+                OpenAI = openai.OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is required for OpenAI client. "
+                "Install it with: pip install 'ai-utilities[openai]'"
+            )
+    return _openai
+
+
+def _create_openai_sdk_client(api_key: str, base_url: Optional[str] = None, timeout: Optional[float] = None):
+    """
+    Create and return an OpenAI SDK client instance.
+    
+    This is the single boundary for SDK client creation, making it
+    the correct target for test patching.
+    
+    Args:
+        api_key: OpenAI API key
+        base_url: Custom base URL (optional)
+        timeout: Request timeout in seconds
+        
+    Returns:
+        OpenAI SDK client instance
+    """
+    openai_mod = _get_openai()
+    # Use the global OpenAI if set (e.g., by tests), otherwise get from module
+    ctor = OpenAI or getattr(openai_mod, 'OpenAI')
+    return ctor(api_key=api_key, base_url=base_url, timeout=timeout)
 
 
 class OpenAIClient:
@@ -21,7 +62,7 @@ class OpenAIClient:
     It doesn't handle rate limiting, response processing, or configuration.
     """
 
-    def __init__(self, api_key: str, base_url: Optional[str] = None, timeout: int = 30):
+    def __init__(self, api_key: str, base_url: Optional[str] = None, timeout: Optional[float] = None) -> None:
         """
         Initialize the OpenAI client.
         
@@ -33,12 +74,7 @@ class OpenAIClient:
         self.api_key = api_key
         self.base_url = base_url
         self.timeout = timeout
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=timeout
-        )
-        logger.debug("OpenAIClient initialized")
+        self.client = _create_openai_sdk_client(api_key=api_key, base_url=base_url, timeout=timeout)
 
     def create_chat_completion(
         self,
@@ -47,7 +83,7 @@ class OpenAIClient:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         **kwargs
-    ) -> ChatCompletion:
+    ):
         """
         Create a chat completion with OpenAI API.
         
@@ -64,8 +100,7 @@ class OpenAIClient:
         Raises:
             OpenAI API exceptions for API errors
         """
-        logger.debug(f"Creating chat completion with model: {model}")
-        
+        _get_openai()  # Ensure openai is imported
         params: Dict[str, Any] = {
             "model": model,
             "messages": messages,
@@ -74,14 +109,10 @@ class OpenAIClient:
         
         if max_tokens:
             params["max_tokens"] = max_tokens
-            
-        # Add any additional parameters
+        
         params.update(kwargs)
         
-        response = self.client.chat.completions.create(**params)
-        logger.debug("Chat completion created successfully")
-        
-        return response
+        return self.client.chat.completions.create(**params)
 
     def get_models(self):
         """
@@ -93,5 +124,4 @@ class OpenAIClient:
         Raises:
             OpenAI API exceptions for API errors
         """
-        logger.debug("Fetching available models")
         return self.client.models.list()

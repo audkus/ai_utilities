@@ -1,0 +1,379 @@
+[
+  {
+    "name": "ai_requests_failed",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total failed AI requests"
+  },
+  {
+    "name": "ai_requests_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total number of AI requests"
+  },
+  {
+    "name": "cache_size",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Current cache size"
+  },
+  {
+    "name": "tokens_used_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "model": ""
+    },
+    "unit": "",
+    "description": "Total tokens used"
+  },
+  {
+    "name": "response_time",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "rate_limit_hits_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total rate limit hits"
+  },
+  {
+    "name": "memory_usage_bytes",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Memory usage in bytes"
+  },
+  {
+    "name": "active_users",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Gauge metric active_users"
+  },
+  {
+    "name": "ai_response_duration_seconds",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "AI response duration in seconds"
+  },
+  {
+    "name": "ai_response_tokens",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "AI response token count"
+  },
+  {
+    "name": "provider_request_duration_seconds",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Provider request duration"
+  },
+  {
+    "name": "cache_misses_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache misses"
+  },
+  {
+    "name": "ai_requests_successful",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total successful AI requests"
+  },
+  {
+    "name": "requests_total",
+    "value": 1.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "method": "POST"
+    },
+    "unit": "",
+    "description": "Counter metric requests_total"
+  },
+  {
+    "name": "cache_hits_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache hits"
+  },
+  {
+    "name": "active_clients",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Number of active clients"
+  },
+  {
+    "name": "provider_errors_total",
+    "value": 0.0,
+    "metric_type": "counter",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "provider": ""
+    },
+    "unit": "",
+    "description": "Total provider errors"
+  },
+  {
+    "name": "ai_requests_failed",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total failed AI requests"
+  },
+  {
+    "name": "ai_requests_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total number of AI requests"
+  },
+  {
+    "name": "cache_size",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Current cache size"
+  },
+  {
+    "name": "tokens_used_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "model": ""
+    },
+    "unit": "",
+    "description": "Total tokens used"
+  },
+  {
+    "name": "response_time",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "rate_limit_hits_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total rate limit hits"
+  },
+  {
+    "name": "memory_usage_bytes",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Memory usage in bytes"
+  },
+  {
+    "name": "active_users",
+    "value": 42,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Gauge metric active_users"
+  },
+  {
+    "name": "ai_response_duration_seconds",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "AI response duration in seconds"
+  },
+  {
+    "name": "ai_response_tokens",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "AI response token count"
+  },
+  {
+    "name": "provider_request_duration_seconds",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Provider request duration"
+  },
+  {
+    "name": "cache_misses_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache misses"
+  },
+  {
+    "name": "ai_requests_successful",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total successful AI requests"
+  },
+  {
+    "name": "cache_hits_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Total cache hits"
+  },
+  {
+    "name": "active_clients",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {},
+    "unit": "",
+    "description": "Number of active clients"
+  },
+  {
+    "name": "requests_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "method": "POST"
+    },
+    "unit": "",
+    "description": "Counter metric requests_total"
+  },
+  {
+    "name": "provider_errors_total",
+    "value": 0.0,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "provider": ""
+    },
+    "unit": "",
+    "description": "Total provider errors"
+  },
+  {
+    "name": "response_time_count",
+    "value": 1,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "response_time_sum_seconds",
+    "value": 1.5,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "response_time_min_seconds",
+    "value": 1.5,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "response_time_max_seconds",
+    "value": 1.5,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  },
+  {
+    "name": "response_time_last_seconds",
+    "value": 1.5,
+    "metric_type": "gauge",
+    "timestamp": 1770437823.813007,
+    "labels": {
+      "endpoint": "/api"
+    },
+    "unit": "",
+    "description": "Timer metric response_time"
+  }
+]
