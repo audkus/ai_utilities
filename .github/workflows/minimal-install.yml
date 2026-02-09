@@ -70,6 +70,7 @@ jobs:
     name: Test Installation Options
     
     strategy:
+      fail-fast: false
       matrix:
         option: ["", openai, dev, complete]
     
