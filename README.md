@@ -32,6 +32,19 @@ response = client.ask("What is the capital of France?")
 print(response)
 ```
 
+### Error handling
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+
+try:
+    client.ask("Hello")
+except Exception as e:
+    print(type(e).__name__, e)
+```
+
 ### Minimal .env configuration
 
 Create `.env` with your preferred provider:
@@ -185,7 +198,7 @@ from ai_utilities import AiClient
 
 client = AiClient()
 
-# Index some documents
+# Index documents (stored locally and reused across runs)
 client.index_knowledge("reports/")
 
 # Ask with knowledge
