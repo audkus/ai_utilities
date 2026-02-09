@@ -1,6 +1,129 @@
 # AI Utilities Cheat Sheet
 
-Quick reference for the most commonly used commands and methods.
+Quick reference for installation, commands, and troubleshooting.
+
+## Installation Commands
+
+```bash
+# Basic installation
+pip install ai-utilities
+
+# With OpenAI support (recommended)
+pip install "ai-utilities[openai]"
+
+# Development installation
+pip install "ai-utilities[dev]"
+```
+
+## Environment Variables
+
+### Core Variables
+```bash
+# Primary provider selection
+AI_PROVIDER=auto
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-4o-mini
+
+# Alternative providers
+GROQ_API_KEY=your-groq-key
+GROQ_MODEL=llama3-70b-8192
+TOGETHER_API_KEY=your-together-key
+OPENROUTER_API_KEY=your-openrouter-key
+```
+
+### Local Providers
+```bash
+# Ollama
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1
+
+# FastChat
+FASTCHAT_BASE_URL=http://localhost:8000/v1
+FASTCHAT_MODEL=your-model
+
+# Text Generation WebUI
+TEXT_GENERATION_WEBUI_BASE_URL=http://localhost:5000/v1
+TEXT_GENERATION_WEBUI_MODEL=your-model
+```
+
+### Optional Settings
+```bash
+AI_CACHE_ENABLED=true
+AI_CACHE_BACKEND=sqlite
+AI_REQUEST_TIMEOUT_S=30
+AI_LOG_LEVEL=INFO
+```
+
+## Quick Commands
+
+### Sanity Checks
+```python
+# Basic connectivity
+python -c "from ai_utilities import AiClient; print(AiClient().ask('2+2='))"
+
+# Check provider
+python -c "from ai_utilities import AiClient; client = AiClient(); print(f'Provider: {client.settings.provider}')"
+
+# Test embeddings
+python -c "from ai_utilities import AiClient; print(len(AiClient().get_embeddings(['test'])[0]))"
+```
+
+### Testing Commands
+```bash
+# Unit tests
+pytest -m "not integration" --timeout=30
+
+# Integration tests (requires API keys)
+AI_UTILITIES_LOAD_DOTENV=1 pytest -m integration --timeout=120
+
+# Coverage testing
+tox -e coverage
+```
+
+## Common Troubleshooting
+
+### Missing API Key
+```
+Error: API key is required
+```
+**Solution:** Set environment variable or create `.env` file:
+```bash
+export OPENAI_API_KEY=your-key
+# or
+echo "OPENAI_API_KEY=your-key" > .env
+```
+
+### Missing Optional Dependency
+```
+Error: No module named 'openai'
+```
+**Solution:** Install with extras:
+```bash
+pip install "ai-utilities[openai]"
+```
+
+### Base URL Issues
+```
+Error: Connection refused
+```
+**Solution:** Check provider URL and server status:
+```bash
+# For Ollama
+curl http://localhost:11434/api/tags
+
+# For custom endpoints
+curl -H "Authorization: Bearer $key" https://your-endpoint.com/v1/models
+```
+
+### Import Errors
+```
+Error: cannot import name 'AiClient'
+```
+**Solution:** Ensure correct installation and Python version:
+```bash
+pip install --upgrade ai-utilities
+python --version  # Should be 3.8+
+```
 
 ## Quick Setup
 
@@ -14,367 +137,121 @@ client = AiClient()
 async_client = AsyncAiClient()
 ```
 
----
+## Core Methods
 
-## Text Generation
-
-### Basic
+### Text Generation
 ```python
 response = client.ask("What is AI?")
 data = client.ask("List 3 models", return_format="json")
-```
-
-### Advanced
-```python
-response = client.ask(
-    "Explain quantum computing",
-    temperature=0.7,
-    max_tokens=500
-)
-
-# Batch
 responses = client.ask_many(["Q1", "Q2", "Q3"])
 ```
 
----
-
-## 🎵 Audio Processing
-
-### Transcription
+### Embeddings
 ```python
-# Basic transcription
+texts = ["Hello", "World"]
+embeddings = client.get_embeddings(texts)
+print(f"Vector length: {len(embeddings[0])}")
+```
+
+### Files
+```python
+# Upload
+uploaded = client.upload_file("document.pdf")
+
+# List
+files = client.list_files()
+
+# Download
+content = client.download_file("file-id")
+```
+
+### Audio
+```python
+# Transcribe
 result = client.transcribe_audio("audio.wav")
 print(result['text'])
 
-# With options
-result = client.transcribe_audio(
-    "podcast.mp3",
-    language="en",
-    temperature=0.1
-)
+# Validate
+validate_audio_file("audio.wav")
 ```
 
-### Audio Generation
+### Images
 ```python
-# Generate speech
-audio_data = client.generate_audio("Hello world!", voice="alloy")
-with open("output.mp3", "wb") as f:
-    f.write(audio_data)
+# Generate
+image_bytes = client.generate_image("A red circle")
 
-# With different voice and speed
-audio_data = client.generate_audio(
-    "Welcome!",
-    voice="nova",
-    speed=1.2
-)
-```
-
-### Audio Validation
-```python
-# Validate audio file
-validation = client.validate_audio_file("audio.wav")
-if validation['valid']:
-    print(f"Duration: {validation['file_info']['duration_seconds']}s")
-```
-
-### Voices
-```python
-# List available voices
-voices = client.get_audio_voices()
-# alloy, echo, fable, onyx, nova, shimmer
-```
-
-### Advanced Audio
-```python
-from ai_utilities.audio import AudioProcessor
-from ai_utilities.audio.audio_utils import convert_audio_format
-
-# Load with metadata
-audio_file = load_audio_file("music.mp3")
-print(f"Metadata: {audio_file.metadata}")
-
-# Convert format
-convert_audio_format("input.wav", "output.mp3", "mp3")
-
-# Complex workflow
-processor = AudioProcessor()
-transcription, new_audio = processor.transcribe_and_generate(
-    "speech.wav", target_voice="nova"
-)
-```
-
----
-
-## Files API - Document Operations
-
-### Upload & Analyze
-```python
-# Upload document
-doc = client.upload_file("report.pdf", purpose="assistants")
-
-# Analyze document
-summary = client.ask(f"Summarize {doc.file_id}")
-insights = client.ask(f"Extract insights from {doc.file_id}")
-```
-
-### Download
-```python
-# Download as bytes
-content = client.download_file("file-abc123")
-
-# Download to file
-path = client.download_file("file-abc123", to_path="saved.pdf")
-```
-
-### Multi-Document
-```python
-docs = [
-    client.upload_file("q1.pdf", purpose="assistants"),
-    client.upload_file("q2.pdf", purpose="assistants")
-]
-
-comparison = client.ask(
-    f"Compare {[d.file_id for d in docs]} and identify trends"
-)
-```
-
----
-
-## Image Generation
-
-### Basic
-```python
-# Generate image
-urls = client.generate_image("A cute dog playing fetch")
-image_url = urls[0]
-```
-
-### Advanced
-```python
-# Multiple high-quality images
-urls = client.generate_image(
-    "A majestic landscape",
-    size="1792x1024",    # Wide format
-    quality="hd",        # High quality
-    n=3                  # 3 variations
-)
-```
-
-### Download Image
-```python
-import requests
-
-response = requests.get(urls[0])
+# Save
 with open("image.png", "wb") as f:
-    f.write(response.content)
+    f.write(image_bytes)
 ```
 
----
-
-## Async Operations
-
+### Knowledge
 ```python
-import asyncio
+# Index documents
+client.index_knowledge("reports/")
 
-async def main():
-    client = AsyncAiClient()
-    
-    # Concurrent requests
-    tasks = [
-        client.ask("What is Python?"),
-        client.generate_image("A cat"),
-        client.upload_file("doc.pdf")
-    ]
-    
-    results = await asyncio.gather(*tasks)
-    return results
-
-# Run
-results = asyncio.run(main())
+# Search with knowledge
+response = client.ask_with_knowledge("What are the findings?")
 ```
 
----
+### Usage Tracking
+```python
+# Make requests
+client.ask("What is machine learning?")
+
+# Check usage
+client.print_usage_summary()
+stats = client.get_usage_stats()
+```
+
+## Configuration
+
+### Environment Setup
+```python
+from ai_utilities import AiClient, AiSettings
+
+# Custom provider
+settings = AiSettings(
+    provider="groq",
+    api_key="your-key",
+    model="llama3-70b-8192"
+)
+client = AiClient(settings)
+```
+
+### Custom Endpoint
+```python
+settings = AiSettings(
+    provider="openai-compatible",
+    base_url="https://api.example.com/v1",
+    api_key="your-key",
+    model="your-model"
+)
+```
 
 ## Error Handling
 
 ```python
 from ai_utilities.providers.provider_exceptions import (
-    FileTransferError,
-    ProviderCapabilityError
+    ProviderCapabilityError,
+    FileTransferError
 )
 
 try:
-    images = client.generate_image("A dog")
+    result = client.generate_image("A dog")
 except ProviderCapabilityError as e:
     print(f"Provider doesn't support: {e.capability}")
 except FileTransferError as e:
-    print(f"Operation failed: {e}")
+    print(f"File operation failed: {e}")
 ```
 
----
+## Links to Detailed Documentation
 
-## Configuration
+- [Examples and tutorials](examples/README.md)
+- [File operations](files.md)
+- [Audio processing](audio_processing.md)
+- [Caching guide](caching.md)
+- [Provider troubleshooting](provider_troubleshooting.md)
+- [Main README](../README.md)
 
-### Environment Variables
-```bash
-export AI_API_KEY="your-key"
-export AI_MODEL="gpt-4"
-export AI_BASE_URL="http://localhost:11434/v1"
-```
-
-### Programmatic
-```python
-from ai_utilities import AiClient, create_client
-
-# Quick creation
-client = create_client(
-    provider="openai_compatible",
-    base_url="http://localhost:11434/v1",
-    model="llama3.2"
-)
-
-# Custom provider
-from ai_utilities.providers import OpenAICompatibleProvider
-provider = OpenAICompatibleProvider(base_url="http://localhost:11434/v1")
-client = AiClient(provider=provider)
-```
-
----
-
-## Common Workflows
-
-### Document Analysis
-```python
-# 1. Upload
-doc = client.upload_file("financial_report.pdf")
-
-# 2. Analyze
-summary = client.ask(f"Summarize {doc.file_id}")
-metrics = client.ask(f"Extract metrics from {doc.file_id}")
-
-# 3. Recommendations
-recommendations = client.ask(f"Recommendations based on {doc.file_id}")
-```
-
-### Content Creation
-```python
-# 1. Generate text
-content = client.ask("Write about remote work")
-
-# 2. Generate images
-images = client.generate_image(
-    "Remote workspace setup",
-    size="1792x1024",
-    n=2
-)
-
-# 3. Social media
-social = client.ask("Create LinkedIn post about remote work")
-```
-
-### Batch Processing
-```python
-# Process multiple documents
-docs = [client.upload_file(f) for f in file_list]
-analyses = [client.ask(f"Analyze {d.file_id}") for d in docs]
-summary = client.ask(f"Summarize: {' '.join(analyses)}")
-```
-
----
-
-## Parameters Reference
-
-### Text Generation
-- `temperature`: 0.0-2.0 (creativity)
-- `max_tokens`: response length
-- `top_p`: nucleus sampling
-- `frequency_penalty`: -2.0 to 2.0
-- `presence_penalty`: -2.0 to 2.0
-
-### Image Generation
-- `size`: "256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"
-- `quality`: "standard", "hd"
-- `n`: 1-10 (number of images)
-
-### File Upload
-- `purpose`: "assistants", "fine-tune"
-- `filename`: custom filename
-- `mime_type`: MIME type
-
----
-
-## Provider Support
-
-| Feature | OpenAI | OpenAI-Compatible |
-|---------|--------|-------------------|
-| Text Generation | ✅ | ✅ |
-| Image Generation | ✅ | ❌ |
-| File Upload | ✅ | ❌ |
-| File Download | ✅ | ❌ |
-
----
-
-## Quick Examples
-
-### Blog Post with Images
-```python
-# Generate content
-content = client.ask("Write about sustainable technology")
-
-# Generate illustrations
-images = client.generate_image(
-    "Sustainable technology concept",
-    size="1792x1024",
-    n=3
-)
-
-# Complete package
-blog = {
-    'content': content,
-    'images': images
-}
-```
-
-### Document Analysis
-```python
-# Upload and analyze
-doc = client.upload_file("contract.pdf")
-summary = client.ask(f"Summarize {doc.file_id}")
-risks = client.ask(f"Identify risks in {doc.file_id}")
-```
-
-### Async Content Creation
-```python
-async def create_content():
-    client = AsyncAiClient()
-    
-    content, images = await asyncio.gather(
-        client.ask("Write about AI ethics"),
-        client.generate_image("AI ethics concept", n=2)
-    )
-    
-    return {'content': content, 'images': images}
-```
-
----
-
-## One-Liners
-
-```python
-# Quick question
-answer = client.ask("What is machine learning?")
-
-# Generate image
-url = client.generate_image("A sunset")[0]
-
-# Upload and analyze
-doc = client.upload_file("report.pdf")
-summary = client.ask(f"Summarize {doc.file_id}")
-
-# Batch analysis
-results = client.ask_many(["Q1", "Q2", "Q3"])
-```
-
----
-
-**Save this cheat sheet for quick reference when building with ai_utilities!** 🚀
+**Save this cheat sheet for quick reference when building with ai_utilities!**
