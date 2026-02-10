@@ -23,9 +23,6 @@ def _reset_usage_tracker_state():
         # This fixes enum contamination issues
         module_names_to_remove = [
             'ai_utilities.usage_tracker',
-            'ai_utilities.usage_tracker.ThreadSafeUsageTracker',
-            'ai_utilities.usage_tracker.UsageScope',
-            'ai_utilities.usage_tracker.UsageStats'
         ]
         
         for module_name in module_names_to_remove:
@@ -204,6 +201,7 @@ def _reset_audio_processor_state() -> None:
             'ai_utilities.audio.audio_processor',
             'ai_utilities.audio.audio_utils',
             'ai_utilities.audio.audio_models',
+            'ai_utilities.audio',  # Also remove the main audio module
         ]
         
         for module_name in audio_modules:
