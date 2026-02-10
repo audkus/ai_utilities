@@ -368,11 +368,15 @@ class TestAiClientConfiguration:
         monkeypatch.setenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
         monkeypatch.setenv('OLLAMA_MODEL', 'llama3')
         
+        # Import the module first to ensure it's loaded before patching
+        # This avoids conflicts with auto_patch_openai_boundary_functions
+        import ai_utilities.providers.openai_compatible_provider
+        
         # Patch stable SDK creation boundary to avoid OpenAI dependency
         from unittest.mock import patch, MagicMock
         from types import SimpleNamespace
         
-        with patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client") as mock_create_client:
+        with patch.object(ai_utilities.providers.openai_compatible_provider, '_create_openai_sdk_client') as mock_create_client:
             # Create deterministic mock client and response
             mock_client = MagicMock()
             response = SimpleNamespace(
