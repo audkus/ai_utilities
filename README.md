@@ -59,6 +59,60 @@ OPENAI_MODEL=gpt-4o-mini
 # GROQ_MODEL=llama3-70b-8192
 ```
 
+### Two ways to configure providers
+
+`ai-utilities` supports both **provider-specific environment variables** and a
+**generic, provider-agnostic configuration**.
+
+You can use either style — or mix them — depending on your preference.
+
+#### Option A: Provider-specific variables (explicit)
+
+```bash
+# OpenAI
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-4o-mini
+
+# Groq
+GROQ_API_KEY=your-groq-key
+GROQ_MODEL=llama3-70b-8192
+```
+
+This style is useful when tuning provider-specific behavior.
+
+#### Option B: Generic AI_* variables (interchangeable)
+
+```bash
+AI_PROVIDER=openai
+AI_API_KEY=your-openai-key
+AI_MODEL=gpt-4o-mini
+```
+
+Switch providers without changing code:
+
+```bash
+AI_PROVIDER=groq
+AI_API_KEY=your-groq-key
+AI_MODEL=llama3-70b-8192
+```
+
+All examples in this README work unchanged with either configuration style.
+
+#### Multi-provider setup (recommended)
+
+```bash
+# Auto-select first available provider
+AI_PROVIDER=auto
+AI_AUTO_SELECT_ORDER=openai,groq,openrouter,together
+
+# Configure multiple providers simultaneously
+OPENAI_API_KEY=sk-your-openai-key
+GROQ_API_KEY=gsk-your-groq-key
+```
+
+No code changes are required when switching providers - ai_utilities will 
+automatically use the first available provider based on your keys.
+
 ### Minimal async call
 
 ```python
@@ -84,6 +138,8 @@ client = AiClient(settings)
 response = client.ask("What is machine learning?")
 print(response)
 ```
+
+Programmatic `AiSettings(provider=...)` overrides environment auto-selection for that client instance only.
 
 ### Structured JSON output
 
@@ -114,6 +170,37 @@ print(result2)
 ```
 
 ### Local Ollama usage
+
+Local providers behave exactly like cloud providers and can be configured
+either via environment variables or programmatically.
+
+#### Option A: Using .env (recommended)
+
+```bash
+AI_PROVIDER=ollama
+AI_BASE_URL=http://localhost:11434/v1
+AI_MODEL=llama3.1
+```
+
+Alternative: configure Ollama via .env with provider-specific variables:
+
+```bash
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1
+# Either AI_PROVIDER=ollama OR AI_PROVIDER=auto with Ollama included in order
+```
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+response = client.ask("Hello, local model!")
+print(response)
+```
+
+Both approaches are supported and interchangeable.
+
+#### Option B: Programmatic configuration
 
 ```python
 from ai_utilities import AiClient, AiSettings
@@ -235,6 +322,9 @@ echo "OPENAI_MODEL=gpt-4o-mini" >> .env
 python demo.py  # Where demo.py contains any example above
 ```
 
+The same example file can be reused across providers by changing only `.env`.
+No code changes are required.
+
 ## Why Use AI Utilities
 
 ### Raw OpenAI SDK
@@ -264,6 +354,49 @@ print(response)
 **AI Utilities eliminates boilerplate** while adding unified provider support, intelligent caching, and comprehensive error handling.
 
 For more examples, see [docs/examples/README.md](docs/examples/README.md) and the [cheat sheet](docs/cheat_sheet.md).
+
+## Engineering Guarantees
+
+This project is designed for stability and long-term reliability.
+
+### Testing Depth
+
+- **Extensive unit test coverage** across all public APIs and internal components
+- **Integration tests** (opt-in, API-key based) validate real provider interactions
+- **Contract tests** guard public APIs against undocumented breaking changes
+- **CI validation** runs across multiple Python versions and environments
+- **Documentation contract tests** ensure all README examples remain functional
+
+### Stability Philosophy
+
+- **Stable public API** with clearly marked compatibility exports
+- **Breaking changes treated as bugs**, not normal evolution
+- **Documentation examples treated as contracts**, not demos
+- **Version stability** - v1.0.0 APIs are guaranteed to remain stable
+
+### Operational Safety
+
+- **Environment isolation** - integration tests opt-in via .env configuration
+- **No repository pollution** - tests never write to project root
+- **Project structure enforcement** prevents accidental file creation
+- **Defensive programming** handles provider differences gracefully
+
+### Provider Volatility Handling
+
+- **Abstracted provider interfaces** isolate users from API changes
+- **Centralized error handling** provides consistent behavior across providers
+- **Graceful degradation** when providers change behavior
+- **Auto-selection logic** tested across multiple provider configurations
+
+### What Users Can Rely On
+
+- **README examples continue to work** across minor and patch releases
+- **Provider switching without code changes** through configuration
+- **Predictable behavior** across development and production environments
+- **Backward compatibility** for stable APIs within major versions
+- **Bug fixes** for any breaking change to documented functionality
+
+If a documented example breaks, it is considered a bug and will be fixed.
 
 ## Quickstart
 
@@ -510,7 +643,7 @@ print(exporter.export())
 
 ## Supported Providers
 
-- **OpenAI** - GPT-4, GPT-3.5-turbo, audio processing
+- **OpenAI** - GPT-4, GPT-4o-mini, audio processing
 - **Groq** - Fast inference with Llama models
 - **Together AI** - Open source models
 - **OpenRouter** - Multiple model access
@@ -573,7 +706,7 @@ pytest -W "ignore::SSLBackendCompatibilityWarning"
 4. **Model not found**
    ```bash
    # Use correct model names:
-   # OpenAI: gpt-4, gpt-3.5-turbo
+   # OpenAI: gpt-4, gpt-4o-mini
    # Groq: llama3-70b-8192
    ```
 
@@ -816,6 +949,22 @@ pip install -e ".[dev]"
 - The warning is safe to ignore for development and testing
 - CI/Linux environments typically use OpenSSL, so you may not see it there
 - Only HTTPS-heavy production workloads need the OpenSSL-linked Python for optimal performance
+
+## Testing & Stability
+
+This project is heavily tested by design.
+
+The test suite includes:
+- Extensive unit tests across all public APIs
+- Contract tests to prevent undocumented breaking changes
+- Coverage enforcement and CI validation across multiple Python versions
+- Regression tests for previously fixed edge cases
+
+The goal is simple:
+changes should be safe, refactors should be boring, and examples in the
+documentation should continue to work over time.
+
+If something breaks, it is considered a bug — not expected behavior.
 
 ## Where to Go Next
 
