@@ -13,6 +13,7 @@ env/
 # Manual test outputs
 .manual_venvs/
 reports/
+docs/analysis/_scratch/
 
 # Build artifacts
 /ai_statistics.json
