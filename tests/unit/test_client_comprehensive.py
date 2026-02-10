@@ -360,43 +360,36 @@ class TestAiClientConfiguration:
     """Test client configuration scenarios."""
     
     def test_client_without_settings_or_provider(self, monkeypatch):
-        """Test client creation without explicit settings or provider."""
-        # This should work if environment is set up properly
-        # But in our isolated test environment, it should use defaults
-        # For testing, we'll use a local provider that doesn't require API key
-        monkeypatch.setenv('AI_PROVIDER', 'ollama')  # Use local provider
-        monkeypatch.setenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
-        monkeypatch.setenv('OLLAMA_MODEL', 'llama3')
+        """Test client creation without explicit settings or provider fails fast with clear error."""
+        # Clear all AI-related environment variables to ensure no provider configuration
+        ai_env_vars = [
+            'AI_PROVIDER', 'AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL',
+            'OPENAI_API_KEY', 'OPENAI_BASE_URL', 'OPENAI_MODEL',
+            'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'OLLAMA_API_KEY',
+            'GROQ_API_KEY', 'GROQ_BASE_URL', 'GROQ_MODEL',
+            'TOGETHER_API_KEY', 'TOGETHER_BASE_URL', 'TOGETHER_MODEL',
+            'OPENROUTER_API_KEY', 'OPENROUTER_BASE_URL', 'OPENROUTER_MODEL',
+            'LMSTUDIO_BASE_URL', 'LMSTUDIO_MODEL', 'LMSTUDIO_API_KEY',
+            'FASTCHAT_BASE_URL', 'FASTCHAT_MODEL', 'FASTCHAT_API_KEY',
+            'TEXT_GENERATION_WEBUI_BASE_URL', 'TEXT_GENERATION_WEBUI_MODEL', 'TEXT_GENERATION_WEBUI_API_KEY'
+        ]
         
-        # Import the module first to ensure it's loaded before patching
-        # This avoids conflicts with auto_patch_openai_boundary_functions
-        import ai_utilities.providers.openai_compatible_provider
+        for var in ai_env_vars:
+            monkeypatch.delenv(var, raising=False)
         
-        # Patch stable SDK creation boundary to avoid OpenAI dependency
-        from unittest.mock import patch, MagicMock
-        from types import SimpleNamespace
+        # The client should fail fast with a clear error when no provider is configured
+        from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
         
-        with patch.object(ai_utilities.providers.openai_compatible_provider, '_create_openai_sdk_client') as mock_create_client:
-            # Create deterministic mock client and response
-            mock_client = MagicMock()
-            response = SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]
-            )
-            mock_client.chat.completions.create.return_value = response
-            mock_create_client.return_value = mock_client
-            
+        with pytest.raises(ProviderConfigurationError) as exc_info:
             client = AiClient()
-            
-            # Contract assertions
-            assert client is not None
-            assert hasattr(client, "provider")
-            assert client.provider is not None
-            assert client.settings.provider == 'ollama'
-            
-            # Optional: verify SDK boundary was called with correct base_url
-            mock_create_client.assert_called_once()
-            kwargs = mock_create_client.call_args.kwargs
-            assert kwargs["base_url"] == "http://localhost:11434/v1"
+        
+        # Verify the error message is helpful and indicates the configuration issue
+        error_message = str(exc_info.value)
+        assert "No providers are configured" in error_message
+        assert "OPENAI_API_KEY" in error_message or "OLLAMA_BASE_URL" in error_message
+        
+        # The error should mention that it's a provider configuration error
+        assert "Provider 'auto' configuration error" in error_message
     
     def test_client_with_minimal_settings(self):
         """Test client with minimal required settings."""
