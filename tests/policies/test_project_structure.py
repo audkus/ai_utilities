@@ -196,14 +196,18 @@ class TestProjectStructure:
             ".ai_utilities", "coverage_reports"
         }
         
+        # Documentation files that are allowed in root (commonly expected there)
+        allowed_docs_in_root = {
+            "CHANGELOG.md", "CONTRIBUTING.md"
+        }
+        
         # Files/dirs that should NOT be in root (should be in appropriate locations)
         forbidden_in_root = {
             # Development utilities that should be in scripts/ or tools/
             "run_all_tests_complete.py",
             
-            # Documentation that should be in docs/
-            "CHANGELOG.md", "CONTRIBUTING.md", "LOCAL_AI_SETUP.md", "MIGRATION.md",
-            "SUPPORT.md", "RELEASE.md", "RELEASE_CHECKLIST.md",
+            # Documentation that should be in docs/ (except allowed ones)
+            "LOCAL_AI_SETUP.md", "MIGRATION.md", "SUPPORT.md", "RELEASE.md", "RELEASE_CHECKLIST.md",
             
             # Temporary files that should not exist
             "model_worker_*.log", "openai_api_server.log", "controller.log",
@@ -243,10 +247,9 @@ class TestProjectStructure:
             # These directories are created when coverage runs
             # They may not exist during tests, and that's OK
         
-        # Check that key files are in the right places
+        # Check that key files are in the right places (excluding allowed root docs)
         expected_docs = {
-            "CHANGELOG.md", "CONTRIBUTING.md", "LOCAL_AI_SETUP.md", "MIGRATION.md",
-            "SUPPORT.md", "RELEASE.md", "RELEASE_CHECKLIST.md"
+            "LOCAL_AI_SETUP.md", "MIGRATION.md", "SUPPORT.md", "RELEASE.md", "RELEASE_CHECKLIST.md"
         }
         
         docs_files = {f.name for f in docs_dir.iterdir() if f.is_file()}
@@ -254,3 +257,8 @@ class TestProjectStructure:
         missing_docs = expected_docs - docs_files
         
         assert len(missing_docs) == 0, f"Missing files in docs/: {missing_docs}"
+        
+        # Verify allowed docs are actually in root (optional check)
+        allowed_docs_found = [f for f in root_files if f.name in allowed_docs_in_root]
+        if allowed_docs_found:
+            print(f"Note: Found allowed documentation files in root: {[f.name for f in allowed_docs_found]}")
