@@ -298,7 +298,8 @@ class TestAiSettingsIntegration:
         """Test that settings work correctly with AiClient."""
         # Client creation requires a configured provider; set hosted provider env.
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-        client = AiClient(fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(fake_settings, provider=fake_provider)
         assert client.settings.api_key == fake_settings.api_key
         assert client.settings.model == fake_settings.model
     

@@ -15,6 +15,7 @@ from ai_utilities.config_resolver import (
 )
 from ai_utilities.client import AiClient
 from ai_utilities.config_models import AiSettings
+from tests.fake_provider import FakeProvider
 
 
 def get_actual_tgwui_url():
@@ -143,7 +144,8 @@ class TestClientIntegration:
             }):
                 # Create settings with provider=None to force auto-detection
                 settings = AiSettings(provider=None, _env_file=None)
-                client = AiClient(settings=settings)
+                fake_provider = FakeProvider()
+                client = AiClient(settings=settings, provider=fake_provider)
                 # Should use text-generation-webui provider and resolve its base URL
                 assert client.settings.provider == "text-generation-webui"
                 assert client.settings.base_url == tgwui_url
@@ -161,7 +163,8 @@ class TestClientIntegration:
         """Test that explicit AI_PROVIDER takes precedence over base URL inference."""
         # Create settings that will auto-detect from environment
         settings = AiSettings(_env_file=None)  # Force reload of env
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         # Should use openai (explicit provider) despite text-generation-webui base URL
         assert client.settings.provider == "openai"
         assert client.settings.base_url == "https://api.openai.com/v1"
@@ -176,7 +179,8 @@ class TestClientIntegration:
         """Test that explicit base_url parameter takes precedence."""
         # Create settings with explicit base_url
         settings = AiSettings(base_url="http://custom.com/v1", _env_file=None)
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         assert client.settings.base_url == "http://custom.com/v1"
 
     @pytest.mark.usefixtures("auto_patch_openai_boundary_functions")
@@ -187,7 +191,8 @@ class TestClientIntegration:
     def test_provider_base_url_without_api_key_works(self):
         """Test that provider-specific base URL works without API key."""
         settings = AiSettings(provider="text-generation-webui", _env_file=None)  # Explicitly set provider
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         assert client.settings.provider == "text-generation-webui"
         assert client.settings.base_url == get_actual_tgwui_url()
         assert client.settings.api_key in (None, "webui")

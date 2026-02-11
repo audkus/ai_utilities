@@ -18,7 +18,8 @@ class TestCacheBehavior:
         fake_settings.cache_backend = "memory"
         fake_settings.cache_ttl_s = 3600
 
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
 
         # Build cache key for same request should be identical
         key1 = client._build_cache_key(
@@ -43,8 +44,10 @@ class TestCacheBehavior:
         """Test cache key differs for different inputs."""
         fake_settings.cache_enabled = True
         fake_settings.cache_backend = "memory"
+        fake_settings.cache_ttl_s = 3600
 
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
 
         base_params = {
             "prompt": "test prompt",
@@ -83,9 +86,10 @@ class TestCacheBehavior:
         """Test cache usage decision logic."""
         fake_settings.cache_enabled = True
         fake_settings.cache_backend = "memory"
-        fake_settings.cache_max_temperature = 0.7
+        fake_settings.cache_ttl_s = 3600
 
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
 
         # Should cache with low temperature
         params_low_temp = {
@@ -105,7 +109,7 @@ class TestCacheBehavior:
 
         # Should not cache when cache disabled
         fake_settings.cache_enabled = False
-        client = AiClient(settings=fake_settings)
+        client = AiClient(settings=fake_settings, provider=fake_provider)
         assert client._should_use_cache(params_low_temp) is False
 
     def test_caching_with_ask_single_prompt(self, fake_settings):
@@ -391,16 +395,15 @@ class TestCacheErrorHandling:
         """Test cache handling of non-JSON-serializable data."""
         fake_settings.cache_enabled = True
         fake_settings.cache_backend = "sqlite"
-        fake_settings.cache_sqlite_path = tmp_workdir / "error_test.db"
+        fake_settings.cache_sqlite_path = tmp_workdir / "test.db"
 
-        client = AiClient(settings=fake_settings)
-
-        # SQLite cache should handle non-serializable data gracefully
-        # This would be tested with actual provider responses that might contain
-        # non-serializable data
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
 
         # For now, test that normal caching works
         assert isinstance(client.cache, SqliteCache)
+        # This would be tested with actual provider responses that might contain
+        # non-serializable data
 
     def test_cache_with_corrupted_database(self, fake_settings, tmp_workdir):
         """Test cache behavior with corrupted database."""
@@ -420,8 +423,10 @@ class TestCacheErrorHandling:
         """Test memory cache with large data."""
         fake_settings.cache_enabled = True
         fake_settings.cache_backend = "memory"
+        fake_settings.cache_ttl_s = 3600
 
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
 
         # Test with large string data
         large_data = "x" * 1000000  # 1MB string

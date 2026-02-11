@@ -1,6 +1,66 @@
 # AI Utilities
 
+[![PyPI version](https://img.shields.io/pypi/v/ai-utilities.svg)](https://pypi.org/project/ai-utilities/)
+[![Python versions](https://img.shields.io/pypi/pyversions/ai-utilities.svg)](https://pypi.org/project/ai-utilities/)
+[![CI status](https://github.com/audkus/ai_utilities/workflows/CI/badge.svg)](https://github.com/audkus/ai_utilities/actions)
+[![Code coverage](https://codecov.io/gh/audkus/ai_utilities/branch/main/graph/badge.svg)](https://codecov.io/gh/audkus/ai_utilities)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Python library for AI model interaction with unified interface, intelligent caching, and type safety. Use OpenAI, Groq, Together AI, Ollama, and other providers with the same code.
+
+## Minimal usage (copy & paste)
+
+These examples work without cloning the repository and represent the simplest possible usage.
+
+### Basic question
+
+```bash
+pip install ai-utilities[openai]
+export OPENAI_API_KEY="your-api-key"
+```
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+response = client.ask("What is the capital of France?")
+print(response)
+```
+
+### With environment variable
+
+```bash
+pip install ai-utilities[openai]
+export AI_API_KEY="your-api-key"
+export AI_MODEL="gpt-4o-mini"
+```
+
+```python
+from ai_utilities import AiClient
+
+client = AiClient()
+response = client.ask("Explain photosynthesis in one sentence")
+print(response)
+```
+
+### Async version
+
+```bash
+pip install ai-utilities[openai]
+export OPENAI_API_KEY="your-api-key"
+```
+
+```python
+from ai_utilities import AsyncAiClient
+import asyncio
+
+async def main():
+    client = AsyncAiClient()
+    response = await client.ask("What is 2+2?")
+    print(response)
+
+asyncio.run(main())
+```
 
 ## Who This Is For
 
@@ -354,6 +414,32 @@ print(response)
 **AI Utilities eliminates boilerplate** while adding unified provider support, intelligent caching, and comprehensive error handling.
 
 For more examples, see [docs/examples/README.md](docs/examples/README.md) and the [cheat sheet](docs/cheat_sheet.md).
+
+## Stability and support
+
+### Supported Python versions
+- Python 3.9+
+- Tested on 3.9, 3.10, 3.11, 3.12
+
+### Stable public API
+The following APIs are considered stable and will not break without a major version bump:
+- `AiClient` and `AsyncAiClient` classes
+- `AiSettings` configuration
+- Core methods: `ask()`, `ask_with_knowledge()`, `get_embeddings()`
+- File operations: `upload_file()`, `download_file()`, `list_files()`
+- Usage tracking: `get_usage_stats()`, `print_usage_summary()`
+
+### Provider support
+- **OpenAI**: Full support with all features
+- **Groq, Together AI, OpenRouter**: Core text generation support
+- **Local providers (Ollama, FastChat, etc.)**: Best-effort support for text generation
+- **Advanced features** (JSON mode, streaming, tools): Provider-dependent
+
+### Support boundaries
+- Documentation errors and examples are fully supported
+- Core functionality issues across supported providers are prioritized
+- Provider-specific issues may be best-effort depending on provider stability
+- Local provider support depends on the underlying server implementation
 
 ## Engineering Guarantees
 
@@ -820,6 +906,42 @@ tox -e coverage -- tests/test_specific_file.py
 - XML report at `coverage_reports/coverage.xml` for CI integration
 - HTML report at `coverage_reports/html/` for detailed viewing
 
+### Packaging Smoke Tests
+
+Packaging smoke tests validate that the wheel can be installed and imported correctly in clean environments. These tests are critical for ensuring distribution quality.
+
+**How to run:**
+```bash
+# Run packaging smoke tests
+RUN_PACKAGING_TESTS=1 python -m pytest tests/packaging -v
+
+# Or use tox
+tox -e packaging
+```
+
+**What each test guarantees:**
+
+1. **Strict no-deps import** (`test_wheel_install_no_deps_import_smoke`)
+   - Wheel can be installed with `--no-deps` (no dependencies)
+   - `import ai_utilities` works without any external dependencies
+   - Validates that optional dependencies remain truly optional
+
+2. **Realistic install + CLI help** (`test_wheel_install_with_deps_cli_help_and_import`)
+   - Wheel can be installed normally (with dependencies resolved)
+   - `import ai_utilities` works with all runtime dependencies
+   - `ai-utilities --help` works (validates entry point from [project.scripts])
+
+3. **OpenAI extra + provider import** (`test_wheel_install_openai_extra_cli_help_and_openai_provider_import`)
+   - Package can be installed with the OpenAI extra dependency
+   - OpenAI provider module can be imported (offline validation)
+   - CLI help continues to work with optional dependencies
+
+**Key Features:**
+- **Environment isolation**: Each test runs in a clean virtual environment
+- **No network calls**: Tests validate offline import behavior only
+- **Gated execution**: Tests only run when `RUN_PACKAGING_TESTS=1` is set
+- **Comprehensive validation**: Covers wheel building, installation, import, and CLI functionality
+
 ### Project Structure Protection
 
 This repository includes automated tests to prevent project structure pollution and maintain clean organization.
@@ -973,14 +1095,13 @@ If something breaks, it is considered a bug — not expected behavior.
 - [Configuration Guide](docs/user/configuration.md) - All environment variables
 - [Provider Setup](docs/user/providers.md) - Provider-specific configuration
 - [Smart Caching](docs/user/caching.md) - Reduce API costs with caching
-- [Metrics and Monitoring](docs/user/metrics.md) - Track performance and usage
 - [Troubleshooting Guide](docs/user/troubleshooting.md) - Common issues and solutions
 
 ### Development
 - For development setup see [CONTRIBUTING.md](CONTRIBUTING.md)
 - [Development Documentation](docs/dev/development-setup.md)
 - [Architecture Overview](docs/dev/architecture.md)
-- [Testing Guide](docs/dev/testing.md)
+- [Testing Guide](docs/testing-guide.md)
 
 For development setup and contributing, see CONTRIBUTING.md
 

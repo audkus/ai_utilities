@@ -1565,3 +1565,40 @@ def ensure_coverage_reports_directory():
         except OSError:
             # Ignore cleanup errors
             pass
+
+
+@pytest.fixture
+def dummy_provider():
+    """Provide a DummyProvider instance for testing."""
+    from tests.utils.dummy_provider import DummyProvider
+    return DummyProvider()
+
+
+@pytest.fixture
+def dummy_async_provider():
+    """Provide an AsyncDummyProvider instance for testing."""
+    from tests.utils.dummy_provider import AsyncDummyProvider
+    return AsyncDummyProvider()
+
+
+@pytest.fixture
+def dummy_settings():
+    """Provide AiSettings configured for dummy provider."""
+    from ai_utilities.config_models import AiSettings
+    return AiSettings(provider="dummy", api_key="dummy-key", model="dummy-model")
+
+
+@pytest.fixture
+def ai_client_with_fake_provider(fake_provider):
+    """Provide an AiClient with explicit FakeProvider for unit tests."""
+    from ai_utilities import AiClient, AiSettings
+    settings = AiSettings(api_key="test-key", model="test-model")
+    return AiClient(settings, provider=fake_provider)
+
+
+@pytest.fixture
+def async_ai_client_with_fake_provider(fake_async_provider):
+    """Provide an AsyncAiClient with explicit FakeAsyncProvider for unit tests."""
+    from ai_utilities import AsyncAiClient, AiSettings
+    settings = AiSettings(api_key="test-key", model="test-model")
+    return AsyncAiClient(settings, provider=fake_async_provider)
