@@ -10,6 +10,7 @@ import tempfile
 import json
 import sys
 from ai_utilities.client import _sanitize_namespace, _default_namespace
+from tests.fake_provider import FakeProvider
 
 
 class TestClientUtilitiesCoverage:
@@ -271,7 +272,8 @@ class TestClientIntegrationCoverage:
                             
                             from ai_utilities.client import AiClient
                             
-                            client = AiClient(settings=mock_settings)
+                            fake_provider = FakeProvider()
+                            client = AiClient(settings=mock_settings, provider=fake_provider)
                             
                             assert client is not None
                             # Namespace should be sanitized
