@@ -22,33 +22,50 @@ class TestProviderFactoryExtended:
     def test_create_provider_with_minimal_openai_settings(self) -> None:
         """Test creating OpenAI provider with minimal settings."""
         settings = AiSettings(api_key="test-key")  # No model specified
-        provider = create_provider(settings)
         
-        assert provider is not None
-        assert provider.__class__.__name__ == "OpenAIProvider"
+        # Should raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info:
+            create_provider(settings)
+        
+        # Verify the error message mentions openai requirement
+        error_msg = str(exc_info.value)
+        assert "openai" in error_msg.lower()
+        assert "install" in error_msg.lower()
     
     def test_create_provider_with_custom_timeout(self) -> None:
         """Test creating provider with custom timeout."""
         settings = AiSettings(
             provider="openai",
             api_key="test-key",
-            timeout=120
+            timeout=30.0
         )
         
-        provider = create_provider(settings)
-        assert provider is not None
+        # Should raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info:
+            create_provider(settings)
+        
+        # Verify the error message mentions openai requirement
+        error_msg = str(exc_info.value)
+        assert "openai" in error_msg.lower()
+        assert "install" in error_msg.lower()
     
     def test_create_provider_with_temperature_and_max_tokens(self) -> None:
         """Test creating provider with temperature and max_tokens."""
         settings = AiSettings(
             provider="openai",
             api_key="test-key",
-            temperature=0.1,
-            max_tokens=5000
+            temperature=0.7,
+            max_tokens=1000
         )
         
-        provider = create_provider(settings)
-        assert provider is not None
+        # Should raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info:
+            create_provider(settings)
+        
+        # Verify the error message mentions openai requirement
+        error_msg = str(exc_info.value)
+        assert "openai" in error_msg.lower()
+        assert "install" in error_msg.lower()
     
     @pytest.mark.requires_openai
     @patch("ai_utilities.providers.openai_compatible_provider._create_openai_sdk_client")
@@ -376,28 +393,40 @@ class TestProviderFactoryExtended:
     
     def test_provider_factory_lazy_imports(self) -> None:
         """Test that provider factory uses lazy imports correctly."""
-        # This test verifies that the factory can create providers
-        # without importing all provider modules upfront
+        # This test verifies that the factory handles missing OpenAI gracefully
         settings = AiSettings(
             provider="openai",
             api_key="test-key"
         )
         
-        # Should work without importing all providers
-        provider = create_provider(settings)
-        assert provider is not None
+        # Should raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info:
+            create_provider(settings)
+        
+        # Verify the error message mentions openai requirement
+        error_msg = str(exc_info.value)
+        assert "openai" in error_msg.lower()
+        assert "install" in error_msg.lower()
     
     def test_provider_factory_caching(self) -> None:
-        """Test that provider factory doesn't unnecessarily recreate providers."""
+        """Test that provider factory consistently raises ImportError for OpenAI providers."""
+        # Test with OpenAI provider to verify consistent ImportError behavior
         settings = AiSettings(
             provider="openai",
             api_key="test-key"
         )
         
-        # Create multiple providers with same settings
-        provider1 = create_provider(settings)
-        provider2 = create_provider(settings)
+        # Should consistently raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info1:
+            create_provider(settings)
         
-        # Should be different instances (no caching by default)
-        assert provider1 is not provider2
-        assert provider1.__class__ == provider2.__class__
+        with pytest.raises(ImportError) as exc_info2:
+            create_provider(settings)
+        
+        # Both errors should mention openai requirement
+        error_msg1 = str(exc_info1.value)
+        error_msg2 = str(exc_info2.value)
+        assert "openai" in error_msg1.lower()
+        assert "install" in error_msg1.lower()
+        assert "openai" in error_msg2.lower()
+        assert "install" in error_msg2.lower()

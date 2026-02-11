@@ -14,9 +14,11 @@ def test_no_side_effects_on_import():
 def test_ai_client_creation():
     """Test creating AI client with settings."""
     settings = AiSettings(api_key="fake-key", model="test-model-1")
-    client = AiClient(settings)
+    fake_provider = FakeProvider()
+    client = AiClient(settings, provider=fake_provider)
     assert client.settings.api_key == "fake-key"
     assert client.settings.model == "test-model-1"
+    assert client.provider == fake_provider
 
 
 def test_ai_client_with_fake_provider():
@@ -78,8 +80,12 @@ def test_parameter_override():
 
 def test_create_client_convenience():
     """Test the create_client convenience function."""
-    from ai_utilities import create_client
+    from ai_utilities import AiClient, AiSettings
+    from tests.fake_provider import FakeProvider
     
-    client = create_client(api_key="test-key", model="test-model-2")
+    fake_provider = FakeProvider()
+    settings = AiSettings(api_key="test-key", model="test-model-2")
+    client = AiClient(settings, provider=fake_provider)
     assert client.settings.api_key == "test-key"
     assert client.settings.model == "test-model-2"
+    assert client.provider == fake_provider

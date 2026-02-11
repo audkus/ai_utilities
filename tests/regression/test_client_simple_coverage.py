@@ -11,6 +11,7 @@ from ai_utilities.client import (
 )
 from ai_utilities.config_models import AiSettings
 from ai_utilities.models import AskResult
+from tests.fake_provider import FakeProvider
 
 
 class TestClientUtilityFunctions:
@@ -354,7 +355,8 @@ class TestAiClientEdgeCases:
         
         # Mock the client method directly to avoid complex patching issues
         with patch.object(AiClient, 'reconfigure') as mock_reconfigure:
-            client = AiClient(settings=mock_settings)
+            fake_provider = FakeProvider()
+            client = AiClient(settings=mock_settings, provider=fake_provider)
             client.reconfigure()
             
             mock_reconfigure.assert_called_once()

@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
+from tests.fake_provider import FakeProvider
 
 def test_sanitize_namespace_comprehensive():
     """Test the _sanitize_namespace function comprehensively."""
@@ -46,11 +47,14 @@ def test_default_namespace():
 def test_client_initialization_minimal():
     """Test minimal client initialization."""
     from ai_utilities import AiClient, AiSettings
+    from tests.fake_provider import FakeProvider
     
     settings = AiSettings(api_key="test-key", _env_file=None)
-    client = AiClient(settings=settings)
+    fake_provider = FakeProvider()
+    client = AiClient(settings=settings, provider=fake_provider)
     
     assert client.settings.api_key == "test-key"
+    assert client.provider is fake_provider
     assert hasattr(client, 'provider')
 
 def test_client_with_explicit_provider():
@@ -69,10 +73,11 @@ def test_client_cache_configuration():
     """Test client cache configuration."""
     from ai_utilities import AiClient, AiSettings
     from ai_utilities.cache import NullCache
+    from tests.fake_provider import FakeProvider
     
     settings = AiSettings(api_key="test-key", _env_file=None)
     custom_cache = NullCache()
+    fake_provider = FakeProvider()
     
-    with patch('ai_utilities.providers.create_provider'):
-        client = AiClient(settings=settings, cache=custom_cache)
-        assert client.cache is custom_cache
+    client = AiClient(settings=settings, cache=custom_cache, provider=fake_provider)
+    assert client.cache is custom_cache

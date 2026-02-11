@@ -7,6 +7,7 @@ from ai_utilities.config_resolver import resolve_model, MissingModelError
 from ai_utilities.config_models import AiSettings
 from ai_utilities.client import AiClient
 from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
+from tests.fake_provider import FakeProvider
 
 
 class TestResolveModel:
@@ -120,7 +121,8 @@ class TestClientModelRequirement:
         with patch.dict('os.environ', {'AI_PROVIDER': 'openai', 'OPENAI_API_KEY': 'test-key'}, clear=True):
             # Should not raise an error if openai has defaults
             try:
-                client = AiClient()
+                fake_provider = FakeProvider()
+                client = AiClient(provider=fake_provider)
                 assert client is not None
             except ProviderConfigurationError as e:
                 # If it does raise, make sure it's not about missing model

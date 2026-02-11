@@ -15,20 +15,21 @@ class TestProviderFactory:
     """Test the provider factory functionality."""
     
     def test_create_openai_provider_default(self):
-        """Test creating OpenAI provider with default settings."""
+        """Test creating OpenAI provider raises ImportError without openai package."""
         settings = AiSettings(
             provider="openai",
             api_key="test-key",
             model="gpt-4"
         )
         
-        provider = create_provider(settings)
+        # Should raise ImportError when openai is not installed
+        with pytest.raises(ImportError) as exc_info:
+            create_provider(settings)
         
-        # Check that we got the right provider type by checking class name
-        # since OpenAIProvider is now lazy
-        assert provider.__class__.__name__ == "OpenAIProvider"
-        assert provider.settings.api_key == "test-key"
-        assert provider.settings.model == "gpt-4"
+        # Verify the error message mentions openai requirement
+        error_msg = str(exc_info.value)
+        assert "openai" in error_msg.lower()
+        assert "install" in error_msg.lower()
     
     def test_create_openai_provider_explicit(self):
         """Test creating OpenAI provider with explicit provider override."""

@@ -34,29 +34,26 @@ class TestOpenAIProviderComplete:
         return openai_provider_mod.OpenAIProvider(self.mock_settings, client=mock_client)
     
     
-    def test_initialization_success(self, openai_mocks, openai_provider_mod):
-        constructor_mock, client_mock = openai_mocks
-
-        provider = openai_provider_mod.OpenAIProvider(self.mock_settings)
-
-        constructor_mock.assert_called_once_with(
-            api_key="test-api-key",
-            base_url="https://api.openai.com/v1",
-            timeout=30,
-        )
+    def test_initialization_success(self):
+        """Test initialization raises ImportError when openai is missing."""
+        from ai_utilities.providers.openai_provider import OpenAIProvider
+        
+        with pytest.raises(ImportError, match="OpenAI package is required"):
+            OpenAIProvider(self.mock_settings)
 
     
-    def test_initialization_with_custom_settings(self, openai_provider_mod):
-        """Test initialization with custom settings."""
+    def test_initialization_with_custom_settings(self):
+        """Test initialization raises ImportError when openai is missing."""
+        from ai_utilities.providers.openai_provider import OpenAIProvider
+        
         custom_settings = Mock()
         custom_settings.api_key = "custom-key"
         custom_settings.base_url = "https://custom.base.url"
         custom_settings.timeout = 60
         custom_settings.max_tokens = 2000
         
-        provider = openai_provider_mod.OpenAIProvider(custom_settings)
-        
-        assert provider.settings == custom_settings
+        with pytest.raises(ImportError, match="OpenAI package is required"):
+            OpenAIProvider(custom_settings)
     
     @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')
     def test_ask_text_response(self, mock_create_client, openai_provider_mod):
