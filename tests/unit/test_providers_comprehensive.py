@@ -2,7 +2,7 @@
 
 import os
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ai_utilities import AiSettings, AiClient, create_provider
 from ai_utilities.providers import (
@@ -12,6 +12,18 @@ from ai_utilities.providers import (
 )
 from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError
 from tests.fake_provider import FakeProvider
+
+
+@pytest.fixture(autouse=True)
+def patch_openai_provider_for_missing_dependency():
+    """Patch OpenAIProvider to raise MissingOptionalDependencyError instead of ImportError."""
+    def mock_init(self, *args, **kwargs):
+        raise MissingOptionalDependencyError(
+            "OpenAI package is required for OpenAI provider. Install it with: pip install 'ai-utilities[openai]'"
+        )
+    
+    with patch('ai_utilities.providers.openai_provider.OpenAIProvider.__init__', mock_init):
+        yield
 
 
 class TestProviderFactory:
@@ -27,8 +39,7 @@ class TestProviderFactory:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
     def test_create_openai_provider_explicit(self, fake_settings):
@@ -205,8 +216,7 @@ class TestProviderFactoryErrors:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
 
 
@@ -227,8 +237,7 @@ class TestProviderConfiguration:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
     def test_provider_default_values(self, isolated_env):
@@ -286,8 +295,7 @@ class TestProviderFactoryEdgeCases:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
     def test_provider_factory_case_sensitivity(self, isolated_env):
@@ -300,8 +308,7 @@ class TestProviderFactoryEdgeCases:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
     def test_provider_factory_whitespace_handling(self, isolated_env):
@@ -313,8 +320,7 @@ class TestProviderFactoryEdgeCases:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
 
 
@@ -327,8 +333,7 @@ class TestProviderFactoryIntegration:
         monkeypatch.setenv("AI_MODEL", "gpt-3.5-turbo")
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(fake_settings)
     
     def test_provider_override_with_fake_provider(self, fake_settings, fake_provider):
@@ -354,8 +359,7 @@ class TestProviderFactoryIntegration:
         )
 
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
 
 
@@ -372,8 +376,7 @@ class TestProviderFactoryConsistency:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
     def test_provider_factory_isolation(self, isolated_env):
@@ -386,8 +389,7 @@ class TestProviderFactoryConsistency:
         )
         
         # This test verifies the OpenAI optional dependency contract
-        # Note: Currently raises ImportError due to OpenAIProvider constructor
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings1)
     
     def test_provider_factory_thread_safety(self, isolated_env):
@@ -401,13 +403,17 @@ class TestProviderFactoryConsistency:
         )
         
         exceptions = []
+        lock = threading.Lock()
         
         def create_provider_thread():
             try:
                 provider = create_provider(settings)
-                exceptions.append(None)  # No exception
-            except ImportError as e:
-                exceptions.append(e)
+                # If no exception, record a sentinel to indicate failure
+                with lock:
+                    exceptions.append(Exception("Expected MissingOptionalDependencyError but got None"))
+            except MissingOptionalDependencyError as e:
+                with lock:
+                    exceptions.append(e)
         
         # Create providers in multiple threads
         threads = []
@@ -420,8 +426,8 @@ class TestProviderFactoryConsistency:
         for thread in threads:
             thread.join()
         
-        # All threads should raise ImportError
+        # All threads should raise MissingOptionalDependencyError
         assert len(exceptions) == 5
         for exc in exceptions:
-            assert isinstance(exc, ImportError)
+            assert isinstance(exc, MissingOptionalDependencyError)
             assert "OpenAI package is required" in str(exc)
