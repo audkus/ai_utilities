@@ -268,7 +268,7 @@ class TestRateLimitFetcher:
         
         # Configure the mock client that was set up during RateLimitFetcher initialization
         fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
-        fetcher.client.create_chat_completion.return_value = mock_response
+        fetcher.client.create_chat_completion = Mock(return_value=mock_response)
         
         limits = fetcher._fetch_from_response_headers()
         
@@ -288,7 +288,7 @@ class TestRateLimitFetcher:
         
         # Configure the mock client
         fetcher = RateLimitFetcher(api_key=self.api_key, cache_dir=self.temp_dir)
-        fetcher.client.create_chat_completion.return_value = mock_response
+        fetcher.client.create_chat_completion = Mock(return_value=mock_response)
         
         limits = fetcher._fetch_from_response_headers()
         
