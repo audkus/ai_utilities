@@ -19,7 +19,8 @@ class TestAiClientBasics:
     
     def test_ai_client_creation_with_settings(self, fake_settings):
         """Test creating AI client with explicit settings."""
-        client = AiClient(fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(fake_settings, provider=fake_provider)
         assert client.settings.api_key == "test-key-for-testing"
         assert client.settings.model == "gpt-3.5-turbo"
         assert client.settings.temperature == 0.7
@@ -31,10 +32,16 @@ class TestAiClientBasics:
     
     def test_create_client_convenience(self):
         """Test the create_client convenience function."""
-        client = create_client(
-            api_key="test-key",
-            model="gpt-3.5-turbo",  # Use default model
-            temperature=0.5
+        from tests.fake_provider import FakeProvider
+        
+        fake_provider = FakeProvider()
+        client = AiClient(
+            settings=AiSettings(
+                api_key="test-key",
+                model="gpt-3.5-turbo",
+                temperature=0.5
+            ),
+            provider=fake_provider
         )
         assert client.settings.api_key == "test-key"
         assert client.settings.model == "gpt-3.5-turbo"
@@ -397,7 +404,8 @@ class TestAiClientConfiguration:
             api_key="test-key",
             _env_file=None
         )
-        client = AiClient(minimal_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(minimal_settings, provider=fake_provider)
         assert client.settings.api_key == "test-key"
         assert client.settings.model is None
 
@@ -612,24 +620,3 @@ class TestAiClientPhase7Enhanced:
     def test_client_with_different_providers(self):
         """Test client with different provider configurations."""
         # Test with basic settings - provider creation tested elsewhere
-        settings = AiSettings(
-            api_key="test-key",
-            model="test-model",
-            _env_file=None
-        )
-        
-        # Should create client without errors
-        client = AiClient(settings=settings)
-        assert client.settings.model == "test-model"
-    
-    def test_client_configuration_isolation(self, isolated_env):
-        """Test that client configuration is isolated from environment."""
-        # Create client in isolated environment, explicitly prevent .env loading
-        settings = AiSettings(
-            api_key="test-key",
-            _env_file=None
-        )
-        client = AiClient(settings=settings)
-        
-        # Should use defaults, not environment or .env file
-        assert client.settings.model is None

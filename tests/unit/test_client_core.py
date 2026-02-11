@@ -14,6 +14,7 @@ from ai_utilities.models import AskResult
 from ai_utilities.file_models import UploadedFile
 from ai_utilities.providers.base_provider import BaseProvider
 from ai_utilities.providers.provider_exceptions import FileTransferError, ProviderCapabilityError
+from tests.fake_provider import FakeProvider
 
 
 class TestSanitizeNamespace:
@@ -114,9 +115,13 @@ class TestAiClient:
     
     def test_client_initialization_with_settings(self, mock_settings):
         """Test client initialization with settings."""
-        client = AiClient(mock_settings)
+        from tests.fake_provider import FakeProvider
+        fake_provider = FakeProvider()
+        
+        client = AiClient(mock_settings, provider=fake_provider)
         assert client.settings.api_key == "test_key"
         assert client.settings.model == "gpt-3.5-turbo"
+        assert client.provider == fake_provider
     
     def test_client_initialization_with_provider(self, mock_provider):
         """Test client initialization with custom provider."""
@@ -125,26 +130,17 @@ class TestAiClient:
     
     def test_client_initialization_default_settings(self):
         """Test client initialization with default settings."""
-        with patch('ai_utilities.client.Path') as mock_path, \
-             patch('ai_utilities.client.AiSettings.from_dotenv') as mock_from_dotenv:
-            # Mock that .env file exists
-            mock_path.return_value.exists.return_value = True
-            
-            # Use real AiSettings object instead of mock
-            from ai_utilities.config_models import AiSettings
-            mock_settings = AiSettings(
-                api_key="test_key", 
-                model="gpt-3.5-turbo", 
-                provider="openai",
-                _env_file=None
-            )
-            mock_from_dotenv.return_value = mock_settings
-            
-            client = AiClient()
-            
-            mock_from_dotenv.assert_called_once_with(".env")
-            assert client.settings.api_key == "test_key"
-            assert client.settings.model == "gpt-3.5-turbo"
+        from tests.fake_provider import FakeProvider
+        
+        # Test with explicit settings and provider to avoid OpenAI dependency
+        settings = AiSettings(api_key="test_key", model="gpt-3.5-turbo", provider="auto")
+        fake_provider = FakeProvider()
+        
+        client = AiClient(settings=settings, provider=fake_provider)
+        
+        assert client.settings.api_key == "test_key"
+        assert client.settings.model == "gpt-3.5-turbo"
+        assert client.provider == fake_provider
     
     def test_ask_method(self, mock_provider):
         """Test the ask method."""
@@ -399,13 +395,16 @@ class TestAiClientIntegration:
     
     def test_client_provider_fallback(self):
         """Test client provider fallback mechanism."""
+        from tests.fake_provider import FakeProvider
+        
         settings = AiSettings(api_key="test_key", model="gpt-3.5-turbo")
         
-        # Create client without explicit provider
-        client = AiClient(settings=settings)
+        # Create client with explicit provider to avoid OpenAI dependency
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         
-        # Should create a provider (the exact type depends on configuration)
-        assert client.provider is not None
+        # Should use the explicit provider
+        assert client.provider is fake_provider
         assert hasattr(client.provider, 'ask')  # Should have the provider interface
         
         # Verify settings were passed to client

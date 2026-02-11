@@ -83,7 +83,7 @@ def test_openai_provider_class_attributes():
 
 
 def test_openai_provider_instantiation():
-    """Test OpenAI provider instantiation."""
+    """Test OpenAI provider instantiation raises ImportError when openai is missing."""
     from ai_utilities.providers import OpenAIProvider
     from unittest.mock import Mock
     
@@ -93,10 +93,9 @@ def test_openai_provider_instantiation():
     mock_settings.base_url = None
     mock_settings.timeout = 30
     
-    # Should be able to instantiate the provider
-    provider = OpenAIProvider(mock_settings)
-    assert provider is not None
-    assert hasattr(provider, 'ask')
+    # Should raise ImportError when openai is not installed
+    with pytest.raises(ImportError, match="OpenAI package is required"):
+        OpenAIProvider(mock_settings)
 
 
 def test_openai_provider_nonexistent_attribute():

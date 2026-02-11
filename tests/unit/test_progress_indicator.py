@@ -12,7 +12,8 @@ def test_progress_indicator_enabled_by_default():
     """Test that progress indicator is enabled by default."""
     from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
-    client = AiClient(settings)
+    fake_provider = FakeProvider()
+    client = AiClient(settings, provider=fake_provider)
     assert client.show_progress is True
 
 
@@ -20,7 +21,8 @@ def test_progress_indicator_can_be_disabled():
     """Test that progress indicator can be disabled."""
     from ai_utilities import AiSettings
     settings = AiSettings(api_key="test-key-for-testing")
-    client = AiClient(settings, show_progress=False)
+    fake_provider = FakeProvider()
+    client = AiClient(settings, provider=fake_provider, show_progress=False)
     assert client.show_progress is False
 
 
