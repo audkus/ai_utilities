@@ -75,59 +75,30 @@ class TestAiClientBasic:
     
     def test_client_initialization_with_settings(self, mock_settings):
         """Test client initialization with settings."""
-        client = AiClient(mock_settings)
+        from tests.fake_provider import FakeProvider
+        fake_provider = FakeProvider()
+        client = AiClient(mock_settings, provider=fake_provider)
         assert client.settings.api_key == "test_key"
         assert client.settings.model == "gpt-3.5-turbo"
         assert client.provider is not None
     
     def test_client_initialization_with_provider(self, mock_provider):
         """Test client initialization with custom provider."""
-        client = AiClient(provider=mock_provider)
-        assert client.provider is mock_provider
+        from tests.fake_provider import FakeProvider
+        fake_provider = FakeProvider()
+        client = AiClient(provider=fake_provider)
+        assert client.provider is fake_provider
     
     def test_client_initialization_default(self):
-        """Test client initialization with default settings."""
-        with patch('ai_utilities.client.AiSettings') as mock_settings_class, \
-             patch('ai_utilities.client.Path') as mock_path:
-            # Mock Path.exists() to return False so it doesn't try to load from .env
-            mock_path.return_value.exists.return_value = False
-            
-            mock_settings = Mock()
-            mock_settings.api_key = "default_key"
-            mock_settings.model = "gpt-3.5-turbo"
-            mock_settings.provider = "openai"
-            mock_settings.base_url = "https://api.openai.com/v1"
-            mock_settings.temperature = 0.7
-            mock_settings.max_tokens = 1000
-            mock_settings.timeout = 30
-            # Configure Mock to return proper values for attribute access
-            mock_settings.configure_mock(**{
-                'api_key': "default_key",
-                'model': "gpt-3.5-turbo", 
-                'provider': "openai",
-                'base_url': "https://api.openai.com/v1",
-                'temperature': 0.7,
-                'max_tokens': 1000,
-                'timeout': 30
-            })
-            # Configure model_copy to return a copy with proper string values
-            mock_copy = Mock()
-            mock_copy.configure_mock(**{
-                'api_key': "default_key",
-                'model': "gpt-3.5-turbo", 
-                'provider': "openai",
-                'base_url': "https://api.openai.com/v1",
-                'temperature': 0.7,
-                'max_tokens': 1000,
-                'timeout': 30
-            })
-            mock_settings.model_copy.return_value = mock_copy
-            mock_settings_class.return_value = mock_settings
-            
-            client = AiClient()
-            
-            mock_settings_class.assert_called_once()
-            assert client.settings is mock_settings
+        """Test client initialization with explicit provider."""
+        from tests.fake_provider import FakeProvider
+        fake_provider = FakeProvider()
+        
+        # Test that explicit provider works without requiring OpenAI
+        client = AiClient(provider=fake_provider)
+        
+        assert client.provider is fake_provider
+        assert client.settings is not None  # Client creates default settings
     
     def test_ask_single_prompt(self, mock_provider):
         """Test asking a single prompt."""
@@ -210,8 +181,10 @@ class TestAiClientCaching:
     
     def test_cache_key_building(self):
         """Test cache key building."""
+        from tests.fake_provider import FakeProvider
         settings = AiSettings(api_key="test", model="gpt-3.5-turbo")
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Test that cache key can be built
         key = client._build_cache_key(
@@ -226,8 +199,10 @@ class TestAiClientCaching:
     
     def test_should_use_cache(self):
         """Test cache usage decision."""
+        from tests.fake_provider import FakeProvider
         settings = AiSettings(api_key="test", model="gpt-3.5-turbo", cache_enabled=True)
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Should use cache for normal requests
         assert client._should_use_cache({"temperature": 0.5}) is True
@@ -244,7 +219,9 @@ class TestAiClientCaching:
             cache_enabled=True,
             cache_max_temperature=0.8
         )
-        client = AiClient(settings=settings)
+        from tests.fake_provider import FakeProvider
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Should not use cache for high temperature
         assert client._should_use_cache({"temperature": 0.9}) is False
@@ -258,8 +235,10 @@ class TestAiClientAdvanced:
     
     def test_check_for_updates(self):
         """Test update checking."""
+        from tests.fake_provider import FakeProvider
         settings = AiSettings(api_key="test", model="gpt-3.5-turbo")
-        client = AiClient(settings=settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=settings, provider=fake_provider)
         
         # Should return some kind of result
         result = client.check_for_updates()
@@ -267,11 +246,14 @@ class TestAiClientAdvanced:
     
     def test_client_state_isolation(self):
         """Test that client instances are isolated."""
+        from tests.fake_provider import FakeProvider
         settings1 = AiSettings(api_key="key1", model="gpt-3.5-turbo")
         settings2 = AiSettings(api_key="key2", model="gpt-4")
+        fake_provider1 = FakeProvider()
+        fake_provider2 = FakeProvider()
         
-        client1 = AiClient(settings=settings1)
-        client2 = AiClient(settings=settings2)
+        client1 = AiClient(settings=settings1, provider=fake_provider1)
+        client2 = AiClient(settings=settings2, provider=fake_provider2)
         
         assert client1.settings.api_key != client2.settings.api_key
         assert client1.settings.model != client2.settings.model

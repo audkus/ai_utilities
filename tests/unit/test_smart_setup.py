@@ -147,7 +147,8 @@ class TestSmartSetup:
                 'cached': False
             }
             
-            client = AiClient()
+            fake_provider = FakeProvider()
+            client = AiClient(provider=fake_provider)
             result = client.check_for_updates()
             
             mock_check.assert_called_once_with("test-key", 30)
@@ -164,12 +165,12 @@ class TestSmartSetup:
                 'cached': False
             }
             
-            with patch.dict(os.environ, {"AI_API_KEY": "test-key"}):
-                client = AiClient()
-                result = client.check_for_updates(force_check=True)
-                
-                mock_check.assert_called_once_with("test-key", check_interval_days=0)
-                assert result['has_updates'] is False
+            fake_provider = FakeProvider()
+            client = AiClient(provider=fake_provider)
+            result = client.check_for_updates(force_check=True)
+            
+            mock_check.assert_called_once_with("test-key", check_interval_days=0)
+            assert result['has_updates'] is False
 
     def test_ai_client_check_for_updates_no_api_key(self) -> None:
         """Test AiClient.check_for_updates when no API key is configured."""
@@ -195,7 +196,8 @@ class TestSmartSetup:
         fake_provider = FakeProvider()
         client = AiClient(provider=fake_provider)
         
-        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive:
+        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive, \
+             patch('ai_utilities.providers.openai_provider.OpenAIProvider', return_value=fake_provider):
             mock_settings = AiSettings(api_key="new-key", model="test-model-1o")
             mock_interactive.return_value = mock_settings
             

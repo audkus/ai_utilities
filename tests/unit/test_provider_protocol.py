@@ -256,50 +256,50 @@ class TestAsyncProviderProtocol:
     async def test_async_client_json_format(self):
         """Test async client returns dict for json format."""
         from ai_utilities.async_client import AsyncAiClient
+        from tests.fake_provider import FakeAsyncProvider
         
-        with override_env({"AI_API_KEY": "test-key"}):
-            settings = AiSettings()
-            async_client = AsyncAiClient(settings)
-            
-            # Mock the async provider to return predictable response
-            class MockAsyncProvider:
-                async def ask(self, prompt, *, return_format="text", **kwargs):
-                    if return_format == "json":
-                        return {"answer": f"Async response to: {prompt}"}
-                    return f"Async response to: {prompt}"
-            
-            async_client.provider = MockAsyncProvider()
-            
-            response = await async_client.ask("test prompt", return_format="json")
-            
-            assert isinstance(response, dict)
-            # Contract: verify async JSON response structure (provider contract)
-            assert len(response) >= 1  # Should have at least one key
-            assert isinstance(response["answer"], str)  # Value should be string
+        fake_provider = FakeAsyncProvider()
+        async_client = AsyncAiClient(provider=fake_provider)
+        
+        # Mock the async provider to return predictable response
+        class MockAsyncProvider:
+            async def ask(self, prompt, *, return_format="text", **kwargs):
+                if return_format == "json":
+                    return {"answer": f"Async response to: {prompt}"}
+                return f"Async response to: {prompt}"
+        
+        async_client.provider = MockAsyncProvider()
+        
+        response = await async_client.ask("test prompt", return_format="json")
+        
+        assert isinstance(response, dict)
+        # Contract: verify async JSON response structure (provider contract)
+        assert len(response) >= 1  # Should have at least one key
+        assert isinstance(response["answer"], str)  # Value should be string
     
     async def test_async_client_kwargs_forwarding(self):
         """Test async client forwards kwargs to provider."""
         from ai_utilities.async_client import AsyncAiClient
+        from tests.fake_provider import FakeAsyncProvider
         
-        with override_env({"AI_API_KEY": "test-key"}):
-            settings = AiSettings()
-            async_client = AsyncAiClient(settings)
-            
-            # Mock provider to capture kwargs
-            received_kwargs = {}
-            
-            class MockAsyncProvider:
-                async def ask(self, prompt, *, return_format="text", **kwargs):
-                    nonlocal received_kwargs
-                    received_kwargs = kwargs
-                    return "response"
-            
-            async_client.provider = MockAsyncProvider()
-            
-            await async_client.ask("test", model="test-model-1", temperature=0.5)
-            
-            assert received_kwargs["model"] == "test-model-1"
-            assert received_kwargs["temperature"] == 0.5
+        fake_provider = FakeAsyncProvider()
+        async_client = AsyncAiClient(provider=fake_provider)
+        
+        # Mock provider to capture kwargs
+        received_kwargs = {}
+        
+        class MockAsyncProvider:
+            async def ask(self, prompt, *, return_format="text", **kwargs):
+                nonlocal received_kwargs
+                received_kwargs = kwargs
+                return "response"
+        
+        async_client.provider = MockAsyncProvider()
+        
+        await async_client.ask("test", model="test-model-1", temperature=0.5)
+        
+        assert received_kwargs["model"] == "test-model-1"
+        assert received_kwargs["temperature"] == 0.5
 
 
 @pytest.mark.asyncio
@@ -310,51 +310,51 @@ class TestCancellationFriendliness:
     async def test_cancellation_stops_background_tasks(self):
         """Test cancelling ask_many stops background tasks."""
         from ai_utilities.async_client import AsyncAiClient
+        from tests.fake_provider import FakeAsyncProvider
         
-        with override_env({"AI_API_KEY": "test-key"}):
-            settings = AiSettings()
-            async_client = AsyncAiClient(settings)
+        fake_provider = FakeAsyncProvider()
+        async_client = AsyncAiClient(provider=fake_provider)
+        
+        # Create a slow provider
+        class SlowAsyncProvider:
+            def __init__(self):
+                self.calls_made = 0
             
-            # Create a slow provider
-            class SlowAsyncProvider:
-                def __init__(self):
-                    self.calls_made = 0
-                
-                async def ask(self, prompt, *, return_format="text", **kwargs):
-                    self.calls_made += 1
-                    await asyncio.sleep(0.1)  # Simulate slow operation
-                    return f"Response to: {prompt}"
-            
-            provider = SlowAsyncProvider()
-            async_client.provider = provider
+            async def ask(self, prompt, *, return_format="text", **kwargs):
+                self.calls_made += 1
+                await asyncio.sleep(0.1)  # Simulate slow operation
+                return f"Response to: {prompt}"
+        
+        provider = SlowAsyncProvider()
+        async_client.provider = provider
             
             # Start task with many prompts
-            prompts = [f"prompt{i}" for i in range(10)]
-            task = asyncio.create_task(
-                async_client.ask_many(prompts, concurrency=5)
-            )
-            
-            # Let it start a few operations
-            await asyncio.sleep(0.05)
-            
-            # Cancel the task
-            task.cancel()
-            
-            # Should raise CancelledError
-            with pytest.raises(asyncio.CancelledError):
-                await task
-            
-            # Verify not all prompts were processed
-            assert provider.calls_made < 10
-            
-            # Give a moment for any cleanup
-            await asyncio.sleep(0.01)
-            
-            # Verify no pending tasks (this is harder to test directly, but we can 
-            # check that the provider wasn't called more after cancellation)
-            initial_calls = provider.calls_made
-            await asyncio.sleep(0.1)
-            assert provider.calls_made == initial_calls
+        prompts = [f"prompt{i}" for i in range(10)]
+        task = asyncio.create_task(
+            async_client.ask_many(prompts, concurrency=5)
+        )
+        
+        # Let it start a few operations
+        await asyncio.sleep(0.05)
+        
+        # Cancel the task
+        task.cancel()
+        
+        # Should raise CancelledError
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        
+        # Verify not all prompts were processed
+        assert provider.calls_made < 10
+        
+        # Give a moment for any cleanup
+        await asyncio.sleep(0.01)
+        
+        # Verify no pending tasks (this is harder to test directly, but we can 
+        # check that the provider wasn't called more after cancellation)
+        initial_calls = provider.calls_made
+        await asyncio.sleep(0.1)
+        assert provider.calls_made == initial_calls
 
 
 class TestFailFastCorrectness:

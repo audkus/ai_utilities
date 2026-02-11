@@ -16,9 +16,10 @@ class TestAsyncAiClientBasics:
     @pytest.mark.asyncio
     async def test_async_client_creation_default(self, openai_mocks):
         """Test creating AsyncAiClient with default settings."""
-        constructor_mock, client_mock = openai_mocks
+        from tests.fake_provider import FakeAsyncProvider
+        fake_async_provider = FakeAsyncProvider()
         
-        client = AsyncAiClient()
+        client = AsyncAiClient(provider=fake_async_provider)
         
         assert client.settings is not None
         assert client.provider is not None
@@ -50,8 +51,11 @@ class TestAsyncAiClientBasics:
     @pytest.mark.asyncio
     async def test_async_client_show_progress_option(self, fake_settings):
         """Test AsyncAiClient show_progress option."""
-        client_with_progress = AsyncAiClient(settings=fake_settings, show_progress=True)
-        client_without_progress = AsyncAiClient(settings=fake_settings, show_progress=False)
+        from tests.fake_provider import FakeAsyncProvider
+        fake_async_provider = FakeAsyncProvider()
+        
+        client_with_progress = AsyncAiClient(settings=fake_settings, provider=fake_async_provider, show_progress=True)
+        client_without_progress = AsyncAiClient(settings=fake_settings, provider=fake_async_provider, show_progress=False)
         
         assert client_with_progress.show_progress is True
         assert client_without_progress.show_progress is False
@@ -348,8 +352,16 @@ class TestAsyncAiClientIntegration:
     @pytest.mark.asyncio
     async def test_async_client_with_sync_provider_pattern(self, fake_settings):
         """Test that async client works with sync provider pattern."""
-        # This tests the actual AsyncOpenAIProvider pattern
-        client = AsyncAiClient(settings=fake_settings)
+        # Use explicit async provider to avoid OpenAI dependency
+        from tests.fake_provider import FakeAsyncProvider
+        fake_async_provider = FakeAsyncProvider()
+        
+        client = AsyncAiClient(settings=fake_settings, provider=fake_async_provider)
+        
+        # Test basic functionality
+        response = await client.ask("test prompt")
+        assert isinstance(response, str)
+        assert len(response) > 0
         
         # Should be able to create client without errors
         assert client is not None

@@ -2,11 +2,13 @@
 
 import pytest
 import importlib
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from typing import Tuple
 from types import ModuleType
 import sys
 
+# Mock the openai module at system level to avoid import errors
+sys.modules['openai'] = MagicMock()
 
 @pytest.fixture
 def openai_client_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType:

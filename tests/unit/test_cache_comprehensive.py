@@ -321,7 +321,8 @@ class TestCacheIntegration:
     def test_client_cache_disabled_by_default(self, fake_settings):
         """Test that cache is disabled by default."""
         fake_settings.cache_enabled = False
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
         
         assert isinstance(client.cache, NullCache)
     
@@ -331,7 +332,8 @@ class TestCacheIntegration:
         fake_settings.cache_backend = "memory"
         fake_settings.cache_ttl_s = 3600
         
-        client = AiClient(settings=fake_settings)
+        fake_provider = FakeProvider()
+        client = AiClient(settings=fake_settings, provider=fake_provider)
         
         assert isinstance(client.cache, MemoryCache)
         assert client.cache._default_ttl_s == 3600
@@ -342,8 +344,9 @@ class TestCacheIntegration:
         fake_settings.cache_backend = "sqlite"
         # No explicit path set
         
+        fake_provider = FakeProvider()
         with patch('ai_utilities.client._running_under_pytest', return_value=True):
-            client = AiClient(settings=fake_settings)
+            client = AiClient(settings=fake_settings, provider=fake_provider)
             # Should be NullCache due to pytest isolation
             assert isinstance(client.cache, NullCache)
     
@@ -353,9 +356,11 @@ class TestCacheIntegration:
         fake_settings.cache_backend = "sqlite"
         fake_settings.cache_sqlite_path = tmp_workdir / "test.db"
         
+        fake_provider = FakeProvider()
         with patch('ai_utilities.client._running_under_pytest', return_value=True):
-            client = AiClient(settings=fake_settings)
+            client = AiClient(settings=fake_settings, provider=fake_provider)
             assert isinstance(client.cache, SqliteCache)
+            assert client.cache.db_path == tmp_workdir / "test.db"
     
     def test_explicit_cache_override(self, fake_settings):
         """Test explicit cache backend override."""

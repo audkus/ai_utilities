@@ -156,7 +156,7 @@ class TestAiClientContract:
         """Test reconfigure method."""
         mock_provider = Mock()
         
-        with patch('ai_utilities.providers.provider_factory.create_provider', return_value=mock_provider):
+        with patch('ai_utilities.providers.openai_provider.OpenAIProvider', return_value=mock_provider):
             client = AiClient(self.settings)
             
             # Mock the interactive setup

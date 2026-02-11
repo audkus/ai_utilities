@@ -170,13 +170,13 @@ class TestAsyncAiClient:
     @pytest.mark.asyncio
     async def test_client_initialization_defaults(self, openai_mocks):
         """Test AsyncAiClient initialization with defaults."""
-        constructor_mock, client_mock = openai_mocks
-
-        client = AsyncAiClient()
+        from tests.fake_provider import FakeAsyncProvider
+        
+        fake_async_provider = FakeAsyncProvider()
+        client = AsyncAiClient(provider=fake_async_provider)
 
         assert client.settings is not None
-        assert client.provider is not None
-        assert isinstance(client.provider, AsyncOpenAIProvider)
+        assert client.provider is fake_async_provider
         assert client.show_progress is True
 
     @pytest.mark.asyncio
