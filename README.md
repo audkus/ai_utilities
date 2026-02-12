@@ -1088,6 +1088,48 @@ documentation should continue to work over time.
 
 If something breaks, it is considered a bug — not expected behavior.
 
+## Pre-release staging on PyPI
+
+### Automatic Pre-release Publishing
+
+Pre-release tags (containing `a`, `b`, or `rc`) are automatically published to real PyPI as pre-releases:
+
+```bash
+git tag v1.0.1b1
+git push origin v1.0.1b1
+```
+
+The workflow includes an automatic smoke test that installs the published package from PyPI and verifies it works correctly.
+
+### Manual Pre-release Publishing
+
+You can manually trigger a pre-release publish in GitHub Actions:
+1. Go to Actions tab in GitHub
+2. Select "Publish Pre-release to PyPI" workflow
+3. Click "Run workflow"
+
+### Installing Pre-releases
+
+Test pre-release versions before they're published as stable releases:
+
+```bash
+pip install --pre ai-utilities
+python -c "import ai_utilities; print(ai_utilities.__version__)"
+ai-utilities --help
+```
+
+Or install a specific pre-release version:
+
+```bash
+pip install ai-utilities==1.0.1b1 --pre
+```
+
+### Production Publishing
+
+Stable release tags (e.g., `v1.0.0`) are published to PyPI via the main `publish.yml` workflow.
+
+**Note:** TestPyPI is not usable for this project name due to similarity restrictions, so we use real PyPI pre-releases for staging.
+
 ## Where to Go Next
 
 ### User Documentation
