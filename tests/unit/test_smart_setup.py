@@ -206,6 +206,7 @@ class TestSmartSetup:
             mock_interactive.assert_called_once_with(force_reconfigure=True)
             assert client.settings.api_key == "new-key"
             assert client.settings.model == "test-model-1o"
+            assert client.provider == fake_provider
 
     def validate_model_availability(cls, api_key: str, model: str, *, strict: bool = True) -> bool:
         """Check if a model is available in the OpenAI API.
