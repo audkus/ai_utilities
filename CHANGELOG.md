@@ -9,11 +9,16 @@ For detailed release notes and process, see [RELEASE.md](docs/RELEASE.md).
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-02-13
+
 ### Added
 - Documentation API contract test suite
 - Engineering guarantees section in README
 - Provider configuration normalization
 - Multi-provider setup documentation
+- PyPI prerelease staging workflow with automatic smoke testing
+- Enhanced tag detection to prevent accidental matches with suffixes
+- Real PyPI pre-releases instead of TestPyPI (due to name similarity restrictions)
 
 ### Changed
 - Updated default model from gpt-3.5-turbo to gpt-4o-mini
@@ -26,6 +31,12 @@ For detailed release notes and process, see [RELEASE.md](docs/RELEASE.md).
 ### Fixed
 - SSL backend compatibility warnings
 - Import-time dependency handling
+- Rate limit fetching tests with proper method mocking
+- Provider initialization tests with improved error handling
+- Environment variable contamination in test isolation
+
+### Security
+- Enhanced release workflow permissions for GitHub release creation
 
 ## [1.0.0b3] - 2025-02-13
 
