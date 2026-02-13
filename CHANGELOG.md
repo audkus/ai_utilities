@@ -19,10 +19,25 @@ For detailed release notes and process, see [RELEASE.md](docs/RELEASE.md).
 - Updated default model from gpt-3.5-turbo to gpt-4o-mini
 - Clarified documentation boundaries and analysis file handling
 - Improved provider configuration examples
+- Enhanced PyPI prerelease staging workflow with improved tag detection
+- Added smoke testing for prerelease releases
+- Improved error handling and retry logic for PyPI publishing
 
 ### Fixed
 - SSL backend compatibility warnings
 - Import-time dependency handling
+
+## [1.0.0b3] - 2025-02-13
+
+### Added
+- PyPI prerelease staging workflow with automatic smoke testing
+- Enhanced tag detection to prevent accidental matches with suffixes
+- Real PyPI pre-releases instead of TestPyPI (due to name similarity restrictions)
+
+### Fixed
+- Rate limit fetching tests with proper method mocking
+- Provider initialization tests with improved error handling
+- Environment variable contamination in test isolation
 
 ## [1.0.0] - 2024-02-10
 
