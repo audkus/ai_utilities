@@ -51,7 +51,7 @@ jobs:
       
     - name: Verify built version
       run: |
-        PYPROJECT_VERSION="$(python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml','rb').read())['project']['version'])")"
+        PYPROJECT_VERSION="$(python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])")"
         echo "pyproject.toml version: $PYPROJECT_VERSION"
 
         if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
@@ -109,7 +109,7 @@ jobs:
           echo "Using tag version: $VERSION"
         else
           # For workflow_dispatch, use pyproject version
-          VERSION="$(python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml','rb').read())['project']['version'])")"
+          VERSION="$(python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])")"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Using pyproject version: $VERSION"
         fi
