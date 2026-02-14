@@ -1139,6 +1139,24 @@ Stable release tags (e.g., `v1.0.0`) are published to PyPI via the main `publish
 - [Smart Caching](docs/user/caching.md) - Reduce API costs with caching
 - [Troubleshooting Guide](docs/user/troubleshooting.md) - Common issues and solutions
 
+### Releasing
+
+#### Stable Releases
+1. Update version in `pyproject.toml` to stable version (e.g., `1.0.0`)
+2. Run Actions workflow "Create Release Tag" which:
+   - Reads version from `pyproject.toml`
+   - Validates version is stable (no pre-release identifiers)
+   - Runs unit tests
+   - Creates and pushes tag `v<version>`
+3. Tag triggers "Publish to PyPI" workflow automatically
+
+#### Pre-releases
+1. Update version in `pyproject.toml` to pre-release version (e.g., `1.0.0b1`, `1.0.0a1`, `1.0.0rc1`)
+2. Push tag `v<version>` to trigger "Publish Pre-release to PyPI"
+   - OR run "Publish Pre-release to PyPI" workflow manually
+
+**Important**: Tags must match `pyproject.toml` version exactly. Workflows enforce this consistency and will fail if tag version differs from project version.
+
 ### Development
 - For development setup see [CONTRIBUTING.md](CONTRIBUTING.md)
 - [Development Documentation](docs/dev/development-setup.md)
