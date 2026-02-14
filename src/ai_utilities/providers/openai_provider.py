@@ -30,10 +30,9 @@ def _get_openai():
             OpenAI = openai.OpenAI
     except ImportError as e:
         # Convert any ImportError to MissingOptionalDependencyError
-        from ai_utilities.exceptions import MissingOptionalDependencyError
+        from .provider_exceptions import MissingOptionalDependencyError
         raise MissingOptionalDependencyError(
-            "OpenAI package is required for OpenAI provider. "
-            "Install it with: pip install 'ai-utilities[openai]'"
+            dependency="OpenAI package is required for OpenAI provider. Install it with: pip install 'ai-utilities[openai]'"
         ) from e
     return _openai
 
@@ -58,8 +57,7 @@ def _create_openai_sdk_client(**client_kwargs: Any) -> Any:
     if OpenAI is None:
         from .provider_exceptions import MissingOptionalDependencyError
         raise MissingOptionalDependencyError(
-            "OpenAI package is required for OpenAI provider. "
-            "Install it with: pip install 'ai-utilities[openai]'"
+            dependency="OpenAI package is required for OpenAI provider. Install it with: pip install 'ai-utilities[openai]'"
         )
     return OpenAI(**client_kwargs)
 
