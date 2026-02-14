@@ -36,7 +36,8 @@ class TestAsyncOpenAIProvider:
         mock_sync_instance.ask.return_value = "Test response"
         mock_sync_instance.ask_many.return_value = ["Response 1", "Response 2"]
         
-        with patch('ai_utilities.providers.openai_provider.OpenAIProvider', return_value=mock_sync_instance):
+        # Patch at the module level where AsyncOpenAIProvider imports OpenAIProvider
+        with patch('ai_utilities.async_client.OpenAIProvider', return_value=mock_sync_instance):
             provider = AsyncOpenAIProvider(mock_settings)
             return provider, mock_sync_instance
 
