@@ -56,7 +56,7 @@ jobs:
       run: |
         mkdir -p coverage_reports
         python -m coverage erase
-        python -m coverage run -m python tests/automated_test_runner.py --category core_library
+        python -m coverage run tests/automated_test_runner.py --category core_library
         python -m coverage xml -o coverage_reports/coverage.xml
         python -m coverage report -m
     
