@@ -54,9 +54,13 @@ jobs:
         PYPROJECT_VERSION="$(python3 - << 'PY'
         try:
             import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
         except ImportError:
             import tomli as tomllib
-        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+            with open('pyproject.toml', 'r') as f:
+                data = tomllib.load(f)
+        print(data['project']['version'])
         PY)"
         echo "pyproject.toml version: $PYPROJECT_VERSION"
 
@@ -118,9 +122,13 @@ jobs:
           VERSION="$(python3 - << 'PY'
           try:
               import tomllib
+              with open('pyproject.toml', 'rb') as f:
+                  data = tomllib.load(f)
           except ImportError:
               import tomli as tomllib
-          print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+              with open('pyproject.toml', 'r') as f:
+                  data = tomllib.load(f)
+          print(data['project']['version'])
           PY)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Using pyproject version: $VERSION"
