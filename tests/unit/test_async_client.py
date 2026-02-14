@@ -36,8 +36,8 @@ class TestAsyncOpenAIProvider:
         mock_sync_instance.ask.return_value = "Test response"
         mock_sync_instance.ask_many.return_value = ["Response 1", "Response 2"]
         
-        # Patch the boundary function that creates the OpenAI SDK client
-        with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client'):
+        # Patch the _get_openai function to prevent the import error
+        with patch('ai_utilities.providers.openai_provider._get_openai'):
             provider = AsyncOpenAIProvider(mock_settings)
             # Replace the internal sync provider with our mock
             provider._sync_provider = mock_sync_instance
