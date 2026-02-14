@@ -38,12 +38,15 @@ jobs:
       id: toml-version
       run: |
         # Extract version from pyproject.toml
-        VERSION=$(python -c "
-        import tomllib
-        with open('pyproject.toml', 'rb') as f:
+        VERSION=$(python - << 'PY'
+        try:
+            import tomllib
+        except ImportError:
+            import tomli as tomllib
+        with open('pyproject.toml', 'r') as f:
             data = tomllib.load(f)
         print(data['project']['version'])
-        ")
+        PY)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "pyproject.toml version: $VERSION"
     
@@ -103,7 +106,7 @@ jobs:
     
     - name: Install build dependencies
       run: |
-        pip install build twine
+        pip install build twine tomli
     
     - name: Clean previous build artifacts
       run: |
@@ -114,7 +117,13 @@ jobs:
       run: |
         python -m build
         echo "Built package with version:"
-        python -c "import tomllib; print(tomllib.loads(open('pyproject.toml', 'rb').read())['project']['version'])"
+        python - << 'PY'
+        try:
+            import tomllib
+        except ImportError:
+            import tomli as tomllib
+        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+        PY
     
     - name: Check package
       run: |
