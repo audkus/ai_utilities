@@ -40,9 +40,16 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip build
     
+    - name: Clean previous build artifacts
+      run: |
+        rm -rf dist/ build/ *.egg-info
+        echo "Cleaned previous build artifacts"
+    
     - name: Build package
       run: |
         python3 -m build
+        echo "Built package with version:"
+        python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml', 'rb').read())['project']['version'])"
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
@@ -51,3 +58,4 @@ jobs:
         # Publish to the main PyPI repository (not TestPyPI)
         # Both stable and pre-release versions are accepted
         verbose: true
+        skip-existing: true

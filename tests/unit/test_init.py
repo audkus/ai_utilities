@@ -1,10 +1,25 @@
 """Tests for ai_utilities.__init__.py module."""
 
 import importlib
-import pytest
+import pathlib
+import sys
 from unittest.mock import patch, MagicMock
 
 import ai_utilities
+import pytest
+
+
+def _read_project_version_from_pyproject() -> str:
+    """Read project version from pyproject.toml (source of truth)."""
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    
+    pyproject_path = pathlib.Path(__file__).parent.parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        data = tomllib.load(f)
+    return data["project"]["version"]
 
 
 class TestInitModule:
@@ -190,7 +205,6 @@ class TestInitModule:
         
         # Re-import to test version handling
         import importlib
-        import sys
         
         # Remove ai_utilities from modules if present
         if 'ai_utilities' in sys.modules:
@@ -199,8 +213,9 @@ class TestInitModule:
         # Re-import
         import ai_utilities as fresh_ai_utilities
         
-        # Should fall back to hardcoded version
-        assert fresh_ai_utilities.__version__ == "1.0.0"
+        # Should fall back to hardcoded version (from pyproject.toml)
+        expected_version = _read_project_version_from_pyproject()
+        assert fresh_ai_utilities.__version__ == expected_version
 
     @patch('importlib.metadata.version')
     def test_version_from_metadata(self, mock_version: MagicMock) -> None:
