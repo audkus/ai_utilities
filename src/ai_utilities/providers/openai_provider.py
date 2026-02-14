@@ -14,22 +14,27 @@ ChatCompletion = None
 OpenAI = None
 
 def _get_openai():
-    """Lazy import of openai module."""
+    """Get OpenAI SDK with proper error handling."""
     global _openai, ChatCompletion, OpenAI
-    if _openai is None:
-        try:
-            import openai
-            from openai.types.chat import ChatCompletion
-            _openai = openai
-            ChatCompletion = ChatCompletion
-            # Only set OpenAI if it's not already set (e.g., by tests)
-            if OpenAI is None:
-                OpenAI = openai.OpenAI
-        except ImportError:
-            raise ImportError(
-                "OpenAI package is required for OpenAI provider. "
-                "Install it with: pip install 'ai-utilities[openai]'"
-            )
+    
+    if _openai is not None:
+        return _openai
+        
+    try:
+        import openai
+        from openai.types.chat import ChatCompletion
+        _openai = openai
+        ChatCompletion = ChatCompletion
+        # Only set OpenAI if it's not already set (e.g., by tests)
+        if OpenAI is None:
+            OpenAI = openai.OpenAI
+    except ImportError as e:
+        # Convert any ImportError to MissingOptionalDependencyError
+        from ai_utilities.exceptions import MissingOptionalDependencyError
+        raise MissingOptionalDependencyError(
+            "OpenAI package is required for OpenAI provider. "
+            "Install it with: pip install 'ai-utilities[openai]'"
+        ) from e
     return _openai
 
 
