@@ -4,6 +4,7 @@ Simple tests for providers/__init__.py to achieve 100% coverage.
 
 import pytest
 from unittest.mock import Mock, patch
+from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError
 
 # Test imports work correctly
 def test_imports():
@@ -67,7 +68,7 @@ def test_openai_provider_direct_import():
 def test_openai_provider_import_error():
     """Test OpenAI provider import error handling."""
     # This test verifies the import mechanism works
-    # In real scenarios, ImportError would be handled by the lazy loading in __init__.py
+    # In real scenarios, MissingOptionalDependencyError would be handled by the lazy loading in __init__.py
     from ai_utilities.providers import OpenAIProvider
     
     # Should be able to import the class successfully
@@ -84,19 +85,19 @@ def test_openai_provider_class_attributes():
         # Real OpenAI provider is available
         assert callable(OpenAIProvider)
     else:
-        # Placeholder class - verify it raises ImportError on instantiation
+        # Placeholder class - verify it raises MissingOptionalDependencyError on instantiation
         from unittest.mock import Mock
         mock_settings = Mock()
         mock_settings.api_key = "test_key"
         mock_settings.base_url = None
         mock_settings.timeout = 30
         
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
             OpenAIProvider(mock_settings)
 
 
 def test_openai_provider_instantiation():
-    """Test OpenAI provider instantiation raises ImportError when openai is missing."""
+    """Test OpenAI provider instantiation raises MissingOptionalDependencyError when openai is missing."""
     from ai_utilities.providers import OpenAIProvider
     from unittest.mock import Mock
     
@@ -106,8 +107,8 @@ def test_openai_provider_instantiation():
     mock_settings.base_url = None
     mock_settings.timeout = 30
     
-    # Should raise ImportError when openai is not installed
-    with pytest.raises(ImportError, match="OpenAI package is required"):
+    # Should raise MissingOptionalDependencyError when openai is not installed
+    with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
         OpenAIProvider(mock_settings)
 
 
@@ -219,7 +220,7 @@ def test_openai_provider_consistency():
             try:
                 mock_instance = provider1(mock_settings)
                 assert mock_instance.provider_name == "openai"
-            except ImportError:
+            except MissingOptionalDependencyError:
                 # OpenAI not available, can't test property value
                 pass
         else:

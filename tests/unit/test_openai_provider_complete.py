@@ -13,7 +13,7 @@ import json
 from typing import Tuple
 from types import ModuleType, SimpleNamespace
 from ai_utilities.file_models import UploadedFile
-from ai_utilities.providers.provider_exceptions import FileTransferError
+from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError, FileTransferError
 
 
 class TestOpenAIProviderComplete:
@@ -35,15 +35,15 @@ class TestOpenAIProviderComplete:
     
     
     def test_initialization_success(self):
-        """Test initialization raises ImportError when openai is missing."""
+        """Test initialization raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
             OpenAIProvider(self.mock_settings)
 
     
     def test_initialization_with_custom_settings(self):
-        """Test initialization raises ImportError when openai is missing."""
+        """Test initialization raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         
         custom_settings = Mock()
@@ -52,7 +52,7 @@ class TestOpenAIProviderComplete:
         custom_settings.timeout = 60
         custom_settings.max_tokens = 2000
         
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
             OpenAIProvider(custom_settings)
     
     @patch('ai_utilities.providers.openai_provider._create_openai_sdk_client')

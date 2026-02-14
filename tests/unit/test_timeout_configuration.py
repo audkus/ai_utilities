@@ -6,6 +6,7 @@ import os
 import pytest
 from unittest.mock import patch, MagicMock
 from ai_utilities import AiSettings, create_provider
+from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError
 
 
 class TestTimeoutConfiguration:
@@ -24,7 +25,7 @@ class TestTimeoutConfiguration:
     def test_timeout_passed_to_openai_client(self):
         """Test that timeout is passed to OpenAI client constructor."""
         # This test requires OpenAI to be installed
-        with pytest.raises(ImportError, match="OpenAI package is required"):
+        with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
             from ai_utilities.providers.provider_factory import create_provider
             settings = AiSettings(api_key="test-key", timeout=45)
             create_provider(settings)
@@ -35,7 +36,7 @@ class TestTimeoutConfiguration:
         with patch.dict(os.environ, {'AI_TIMEOUT': '25'}):
             settings = AiSettings(api_key="test-key")
             # This test requires OpenAI to be installed
-            with pytest.raises(ImportError, match="OpenAI package is required"):
+            with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
                 from ai_utilities.providers.provider_factory import create_provider
                 create_provider(settings)
     
@@ -48,7 +49,7 @@ class TestTimeoutConfiguration:
             # Verify timeout from environment was used
             assert settings.request_timeout_s == 15.5
             # This test requires OpenAI to be installed
-            with pytest.raises(ImportError, match="OpenAI package is required"):
+            with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
                 from ai_utilities.providers.provider_factory import create_provider
                 create_provider(settings)
     

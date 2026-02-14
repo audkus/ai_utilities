@@ -9,21 +9,22 @@ from ai_utilities.providers import (
     ProviderConfigurationError,
     ProviderCapabilityError
 )
+from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError
 
 
 class TestProviderFactory:
     """Test the provider factory functionality."""
     
     def test_create_openai_provider_default(self):
-        """Test creating OpenAI provider raises ImportError without openai package."""
+        """Test creating OpenAI provider raises MissingOptionalDependencyError without openai package."""
         settings = AiSettings(
             provider="openai",
             api_key="test-key",
             model="gpt-4"
         )
         
-        # Should raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info:
+        # Should raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info:
             create_provider(settings)
         
         # Verify the error message mentions openai requirement

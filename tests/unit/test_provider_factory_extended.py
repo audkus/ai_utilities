@@ -9,6 +9,7 @@ from ai_utilities.providers import (
     ProviderConfigurationError,
     ProviderCapabilityError
 )
+from ai_utilities.providers.provider_exceptions import MissingOptionalDependencyError
 
 
 class TestProviderFactoryExtended:
@@ -23,8 +24,8 @@ class TestProviderFactoryExtended:
         """Test creating OpenAI provider with minimal settings."""
         settings = AiSettings(api_key="test-key")  # No model specified
         
-        # Should raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info:
+        # Should raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info:
             create_provider(settings)
         
         # Verify the error message mentions openai requirement
@@ -40,8 +41,8 @@ class TestProviderFactoryExtended:
             timeout=30.0
         )
         
-        # Should raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info:
+        # Should raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info:
             create_provider(settings)
         
         # Verify the error message mentions openai requirement
@@ -58,8 +59,8 @@ class TestProviderFactoryExtended:
             max_tokens=1000
         )
         
-        # Should raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info:
+        # Should raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info:
             create_provider(settings)
         
         # Verify the error message mentions openai requirement
@@ -399,8 +400,8 @@ class TestProviderFactoryExtended:
             api_key="test-key"
         )
         
-        # Should raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info:
+        # Should raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info:
             create_provider(settings)
         
         # Verify the error message mentions openai requirement
@@ -409,18 +410,18 @@ class TestProviderFactoryExtended:
         assert "install" in error_msg.lower()
     
     def test_provider_factory_caching(self) -> None:
-        """Test that provider factory consistently raises ImportError for OpenAI providers."""
-        # Test with OpenAI provider to verify consistent ImportError behavior
+        """Test that provider factory consistently raises MissingOptionalDependencyError for OpenAI providers."""
+        # Test with OpenAI provider to verify consistent MissingOptionalDependencyError behavior
         settings = AiSettings(
             provider="openai",
             api_key="test-key"
         )
         
-        # Should consistently raise ImportError when openai is not installed
-        with pytest.raises(ImportError) as exc_info1:
+        # Should consistently raise MissingOptionalDependencyError when openai is not installed
+        with pytest.raises(MissingOptionalDependencyError) as exc_info1:
             create_provider(settings)
         
-        with pytest.raises(ImportError) as exc_info2:
+        with pytest.raises(MissingOptionalDependencyError) as exc_info2:
             create_provider(settings)
         
         # Both errors should mention openai requirement
