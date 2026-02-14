@@ -1,0 +1,12 @@
+[run]
+relative_files = True
+source =
+    src/ai_utilities
+
+[report]
+omit =
+    tests/*
+    examples/*
+    docs/*
+    scripts/*
+    tools/*
