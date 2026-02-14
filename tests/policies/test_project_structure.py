@@ -262,3 +262,58 @@ class TestProjectStructure:
         allowed_docs_found = [f for f in root_files if f.name in allowed_docs_in_root]
         if allowed_docs_found:
             print(f"Note: Found allowed documentation files in root: {[f.name for f in allowed_docs_found]}")
+
+    def test_github_workflows_have_valid_yaml_syntax(self, project_root):
+        """Test that all GitHub workflow files have valid YAML syntax."""
+        import yaml
+        
+        workflows_dir = project_root / ".github" / "workflows"
+        if not workflows_dir.exists():
+            pytest.skip(".github/workflows directory not found")
+        
+        yaml_files = list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        
+        assert yaml_files, "No YAML workflow files found in .github/workflows/"
+        
+        for yaml_file in yaml_files:
+            try:
+                with open(yaml_file, 'r') as f:
+                    yaml.safe_load(f)
+            except yaml.YAMLError as e:
+                pytest.fail(f"Invalid YAML syntax in {yaml_file.name}: {e}")
+
+    def test_coverage_commands_have_valid_syntax(self, project_root):
+        """Test that coverage commands in workflows have correct syntax."""
+        import yaml
+        
+        workflows_dir = project_root / ".github" / "workflows"
+        if not workflows_dir.exists():
+            pytest.skip(".github/workflows directory not found")
+        
+        yaml_files = list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        
+        for yaml_file in yaml_files:
+            with open(yaml_file, 'r') as f:
+                workflow = yaml.safe_load(f)
+            
+            # Check all run steps for coverage commands
+            if 'jobs' in workflow:
+                for job_name, job in workflow['jobs'].items():
+                    if 'steps' in job:
+                        for step in job['steps']:
+                            if 'run' in step and 'coverage' in step['run']:
+                                run_command = step['run']
+                                
+                                # Check for invalid coverage command patterns
+                                invalid_patterns = [
+                                    'python -m coverage run -m python',  # The error we just fixed
+                                    'coverage run -m python',  # Missing python -m prefix
+                                ]
+                                
+                                for pattern in invalid_patterns:
+                                    if pattern in run_command:
+                                        pytest.fail(
+                                            f"Invalid coverage command pattern found in {yaml_file.name}, "
+                                            f"job '{job_name}': '{pattern}'. "
+                                            f"Full command: {run_command}"
+                                        )
