@@ -96,14 +96,25 @@ jobs:
         # Defensive cleanup of any stray coverage files from root
         rm -f .coverage .coverage.* || true
     
+    - name: Debug coverage file
+      if: matrix.python-version == '3.9'
+      run: |
+        echo "Coverage file location:"
+        ls -la coverage_reports/
+        echo "Coverage file size:"
+        wc -l coverage_reports/coverage.xml || echo "File not found"
+        echo "First 10 lines of coverage file:"
+        head -10 coverage_reports/coverage.xml || echo "Cannot read file"
+    
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage_reports/coverage.xml
+        files: ./coverage_reports/coverage.xml
         flags: unittests
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
     
     - name: Upload HTML coverage report
       if: matrix.python-version == '3.9'
