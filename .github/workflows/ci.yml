@@ -1,0 +1,289 @@
+# CI Pipeline - Core Testing and Validation
+#
+# PURPOSE: Fast, deterministic feedback for pull requests and main branch
+# BLOCKS PRs: Yes - test job failures will block PRs
+# EXPECTED RUNTIME: ~5-8 minutes for PRs, ~15 minutes for main branch
+#
+# TIERS:
+# - REQUIRED (blocking): unit tests, mypy, lint, minimal install
+# - OPTIONAL (non-blocking): performance, integration, security, compatibility
+#
+# MATRIX RATIONALE:
+# - Python 3.9: Minimum supported version (oldest dependencies)
+# - Python 3.10: Middle version (comprehensive coverage)
+# - Python 3.11: Middle version (most common in production)
+# - Python 3.12: Latest version (future compatibility)
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # REQUIRED TIER - These jobs block PRs
+  test:
+    name: Unit Tests (Required)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Use minimal matrix for PRs (oldest + newest), full matrix for main
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Ensure clean installation from current source
+        pip uninstall -y ai-utilities || true
+        pip install -e ".[dev,openai]"
+    
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Type check with mypy
+      run: |
+        mypy src/ai_utilities/ --no-error-summary
+    
+    - name: Clean up root coverage artifacts (CI only)
+      run: |
+        # Remove any leftover coverage fragments from repository root before pytest
+        rm -f .coverage .coverage.* || true
+        # Ensure coverage_reports directory exists before pytest
+        mkdir -p coverage_reports
+    
+    - name: Test with pytest
+      env:
+        COVERAGE_FILE: coverage_reports/.coverage
+      run: |
+        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
+    
+    - name: Combine coverage data
+      run: |
+        # Set coverage file location and combine any parallel fragments
+        export COVERAGE_FILE=coverage_reports/.coverage
+        # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
+        (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
+        # Generate reports in the correct locations
+        python -m coverage xml -o coverage_reports/coverage.xml
+        python -m coverage html -d coverage_reports/html
+    
+    - name: Clean up coverage artifacts
+      run: |
+        # Defensive cleanup of any stray coverage files from root
+        rm -f .coverage .coverage.* || true
+    
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.9'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage_reports/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
+    
+    - name: Upload HTML coverage report
+      if: matrix.python-version == '3.9'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: coverage_reports/
+        retention-days: 30
+
+  minimal-install:
+    name: Minimal Install Test (Required)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Use minimal matrix for PRs (oldest + newest), full matrix for main
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.9", "3.12"]') || fromJson('["3.9", "3.10", "3.11", "3.12"]') }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Test minimal installation
+      run: |
+        pip install .
+        python -c "import ai_utilities; print('OK: Minimal install works')"
+
+  # OPTIONAL TIER - These jobs do NOT block PRs
+  # RATIONALE: These jobs provide additional signal but are allowed to fail
+  # - Integration tests: Require API keys, depend on external services
+  # - Security scan: Provides awareness but doesn't affect functionality
+  # - Documentation: Important but not critical for code correctness
+  # - Compatibility: Cross-platform testing is nice-to-have
+  # NOTE: All use continue-on-error: true to prevent blocking releases
+  
+  integration-test:
+    name: Integration Tests (Optional)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    continue-on-error: true  # Never block releases
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install package
+      run: |
+        pip install .
+    
+    - name: Test basic import
+      run: |
+        python -c "import ai_utilities; print('OK: Import works')"
+    
+    - name: Test examples
+      run: |
+        python examples/quickstarts/minimal_openai.py || echo "Expected failure without API key"
+        python examples/tutorial/step_01_setup.py || echo "Expected failure without API key"
+
+  security-scan:
+    name: Security Scan (Optional)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    continue-on-error: true  # Never block releases
+    
+    env:
+      SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        pip install safety bandit
+    
+    - name: Check for security vulnerabilities
+      run: |
+        safety --key "$SAFETY_API_KEY" scan --detailed-output --exit-code
+    
+    - name: Run bandit security linter
+      run: |
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ --severity-level high  # Only fail on high severity issues
+
+  build-docs:
+    name: Documentation Test (Optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Never block releases
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install -e ".[dev]"
+    
+    - name: Test documentation build
+      run: |
+        # Test that all examples can be imported
+        python -c "
+        import examples.quickstarts.minimal_openai
+        import examples.tutorial.step_01_setup
+        print('OK: All examples import successfully')
+        "
+
+  compatibility-test:
+    name: Cross-Platform Compatibility (Optional)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    continue-on-error: true  # Never block releases
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install package
+      run: |
+        pip install .
+    
+    - name: Test cross-platform compatibility
+      run: |
+        python -c "
+        import ai_utilities
+        from ai_utilities import AiClient, AiSettings, AskResult
+        print(f'OK: Platform: ${{ matrix.os }} works')
+        "
+
+  # Simplified notification - only report on REQUIRED tier
+  # RATIONALE: Focus on what actually blocks development
+  # Optional job failures are visible in GitHub Actions UI but don't need notification
+  notify:
+    name: CI Results
+    runs-on: ubuntu-latest
+    needs: [test, minimal-install]
+    if: always()
+    
+    steps:
+    - name: Notify results
+      run: |
+        echo "REQUIRED TIER RESULTS:"
+        echo "Unit Tests: ${{ needs.test.result }}"
+        echo "Minimal Install: ${{ needs.minimal-install.result }}"
+        
+        if [[ "${{ needs.test.result }}" == "success" && "${{ needs.minimal-install.result }}" == "success" ]]; then
+          echo "SUCCESS: All required checks passed!"
+          exit 0
+        else
+          echo "FAIL: Required checks failed!"
+          exit 1
+        fi
