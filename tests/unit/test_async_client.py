@@ -31,16 +31,14 @@ class TestAsyncOpenAIProvider:
     @pytest.fixture
     def async_provider(self, mock_settings):
         """Create AsyncOpenAIProvider instance."""
-        with patch('ai_utilities.providers.openai_provider.OpenAIProvider') as mock_sync_provider:
-            mock_sync_instance = MagicMock()
-            mock_sync_provider.return_value = mock_sync_instance
-            
-            # Mock the _create_openai_sdk_client to avoid dependency issues
-            with patch('ai_utilities.providers.openai_provider._create_openai_sdk_client'):
-                provider = AsyncOpenAIProvider(mock_settings)
-                # Replace the sync provider with our mock
-                provider._sync_provider = mock_sync_instance
-                return provider, mock_sync_instance
+        # Mock OpenAIProvider class to avoid import dependency
+        mock_sync_instance = MagicMock()
+        mock_sync_instance.ask.return_value = "Test response"
+        mock_sync_instance.ask_many.return_value = ["Response 1", "Response 2"]
+        
+        with patch('ai_utilities.providers.openai_provider.OpenAIProvider', return_value=mock_sync_instance):
+            provider = AsyncOpenAIProvider(mock_settings)
+            return provider, mock_sync_instance
 
     @pytest.mark.asyncio
     async def test_async_provider_ask(self, async_provider):
