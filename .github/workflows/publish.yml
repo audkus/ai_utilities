@@ -49,7 +49,27 @@ jobs:
       run: |
         python3 -m build
         echo "Built package with version:"
-        python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml', 'rb').read())['project']['version'])"
+        python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])"
+    
+    - name: Verify tag matches built version
+      run: |
+        TAG="${GITHUB_REF_NAME#v}"
+        PYPROJECT_VERSION="$(python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])")"
+        echo "Tag version: $TAG"
+        echo "pyproject.toml version: $PYPROJECT_VERSION"
+        test "$TAG" = "$PYPROJECT_VERSION"
+
+        echo "Built dist:"
+        ls -la dist/
+        python3 - << 'PY'
+        import os
+        import glob
+
+        ref = os.environ["GITHUB_REF_NAME"]
+        tag = ref[1:] if ref.startswith("v") else ref
+        files = glob.glob("dist/*")
+        assert any(tag in f for f in files), f"Expected version {tag} in dist files, got: {files}"
+        PY
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
