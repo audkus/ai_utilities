@@ -60,6 +60,7 @@ dev = [
   "types-requests>=2.32.4",
   "python-dotenv>=0.21.0,<1",
   "build>=1,<2",
+  "PyYAML>=6.0,<7",
   "ai-utilities[providers]",  # Include providers for dev
 ]
 
