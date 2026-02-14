@@ -41,12 +41,15 @@ jobs:
         VERSION=$(python - << 'PY'
         try:
             import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
         except ImportError:
             import tomli as tomllib
-        with open('pyproject.toml', 'r') as f:
-            data = tomllib.load(f)
+            with open('pyproject.toml', 'r') as f:
+                data = tomllib.load(f)
         print(data['project']['version'])
-        PY)
+        PY
+        )
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "pyproject.toml version: $VERSION"
     
@@ -120,9 +123,13 @@ jobs:
         python - << 'PY'
         try:
             import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
         except ImportError:
             import tomli as tomllib
-        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+            with open('pyproject.toml', 'r') as f:
+                data = tomllib.load(f)
+        print(data['project']['version'])
         PY
     
     - name: Check package

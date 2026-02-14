@@ -52,9 +52,13 @@ jobs:
         python3 - << 'PY'
         try:
             import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
         except ImportError:
             import tomli as tomllib
-        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+            with open('pyproject.toml', 'r') as f:
+                data = tomllib.load(f)
+        print(data['project']['version'])
         PY
     
     - name: Verify tag matches built version
@@ -63,9 +67,13 @@ jobs:
         PYPROJECT_VERSION="$(python3 - << 'PY'
         try:
             import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
         except ImportError:
             import tomli as tomllib
-        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+            with open('pyproject.toml', 'r') as f:
+                data = tomllib.load(f)
+        print(data['project']['version'])
         PY)"
         echo "Tag version: $TAG"
         echo "pyproject.toml version: $PYPROJECT_VERSION"
