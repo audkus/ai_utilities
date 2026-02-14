@@ -41,13 +41,45 @@ jobs:
     - name: Install build dependencies
       run: python -m pip install --upgrade pip build
       
+    - name: Clean previous build artifacts
+      run: |
+        rm -rf dist/ build/ *.egg-info
+        echo "Cleaned previous build artifacts"
+      
     - name: Build package
       run: python -m build
+      
+    - name: Verify built version
+      run: |
+        PYPROJECT_VERSION="$(python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml','rb').read())['project']['version'])")"
+        echo "pyproject.toml version: $PYPROJECT_VERSION"
+
+        if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "Tag version: $TAG"
+          test "$TAG" = "$PYPROJECT_VERSION"
+          EXPECT="$TAG"
+        else
+          EXPECT="$PYPROJECT_VERSION"
+        fi
+
+        echo "Built dist:"
+        ls -la dist/
+        python3 - << 'PY'
+        import os, glob
+        expect = os.environ["EXPECT"]
+        files = glob.glob("dist/*")
+        assert files, "dist/ is empty"
+        assert any(expect in f for f in files), f"Expected version {expect} in dist files, got: {files}"
+        PY
+      env:
+        EXPECT: ${{ github.ref_name }}
       
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         verbose: true
+        skip-existing: true
 
   smoke-install:
     name: Smoke Test Install from PyPI
@@ -67,12 +99,20 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Extract version from tag
+    - name: Extract version from tag or pyproject
       run: |
-        # Strip leading 'v' from tag to get version
-        VERSION="${{ github.ref_name }}"
-        VERSION="${VERSION#v}"
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+          # For tag pushes, use the tag version
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Using tag version: $VERSION"
+        else
+          # For workflow_dispatch, use pyproject version
+          VERSION="$(python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml','rb').read())['project']['version'])")"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Using pyproject version: $VERSION"
+        fi
         echo "Installing version: $VERSION"
         
     - name: Create virtual environment
