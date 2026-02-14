@@ -105,9 +105,16 @@ jobs:
       run: |
         pip install build twine
     
+    - name: Clean previous build artifacts
+      run: |
+        rm -rf dist/ build/ *.egg-info
+        echo "Cleaned previous build artifacts"
+    
     - name: Build package
       run: |
         python -m build
+        echo "Built package with version:"
+        python -c "import tomllib; print(tomllib.loads(open('pyproject.toml', 'rb').read())['project']['version'])"
     
     - name: Check package
       run: |
