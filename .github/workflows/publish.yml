@@ -49,12 +49,24 @@ jobs:
       run: |
         python3 -m build
         echo "Built package with version:"
-        python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])"
+        python3 - << 'PY'
+        try:
+            import tomllib
+        except ImportError:
+            import tomli as tomllib
+        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+        PY
     
     - name: Verify tag matches built version
       run: |
         TAG="${GITHUB_REF_NAME#v}"
-        PYPROJECT_VERSION="$(python3 -c "try:\n    import tomllib\nexcept ImportError:\n    import tomli as tomllib\nprint(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])")"
+        PYPROJECT_VERSION="$(python3 - << 'PY'
+        try:
+            import tomllib
+        except ImportError:
+            import tomli as tomllib
+        print(tomllib.loads(open('pyproject.toml', 'r').read())['project']['version'])
+        PY)"
         echo "Tag version: $TAG"
         echo "pyproject.toml version: $PYPROJECT_VERSION"
         test "$TAG" = "$PYPROJECT_VERSION"
