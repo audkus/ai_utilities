@@ -85,3 +85,11 @@ class AudioProcessingError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         logging.error(f"AudioProcessingError: {message}")
+
+
+class MissingOptionalDependencyError(Exception):
+    """Exception raised when an optional dependency is required but not installed."""
+    
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        logging.error(f"MissingOptionalDependencyError: {message}")
