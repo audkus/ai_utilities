@@ -52,20 +52,34 @@ jobs:
       run: |
         python tests/automated_test_runner.py --category performance --timeout 600
     
-    - name: Generate coverage report
-      env:
-        COVERAGE_FILE: coverage_reports/.coverage
+    - name: Run tests with coverage (generate XML)
       run: |
-        # Ensure coverage_reports directory exists before pytest
         mkdir -p coverage_reports
-        pytest --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html
+        python -m coverage erase
+        python -m coverage run tests/automated_test_runner.py --category core_library
+        python -m coverage xml -o coverage_reports/coverage.xml
+        python -m coverage report -m
+    
+    - name: Debug coverage.xml before Codecov upload
+      run: |
+        echo "PWD:"
+        pwd
+        echo "Repo root listing:"
+        ls -la
+        echo "coverage_reports listing:"
+        ls -la coverage_reports || true
+        python -c "from pathlib import Path; p=Path('coverage_reports/coverage.xml'); print('exists:', p.exists()); print('size:', p.stat().st_size if p.exists() else None)"
+        echo "First 40 lines of coverage.xml:"
+        head -n 40 coverage_reports/coverage.xml || true
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage_reports/coverage.xml
+        files: coverage_reports/coverage.xml
         flags: unittests
         name: codecov-umbrella
+        verbose: true
+        fail_ci_if_error: true
     
     - name: Archive test results
       uses: actions/upload-artifact@v4

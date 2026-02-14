@@ -68,53 +68,36 @@ jobs:
       run: |
         mypy src/ai_utilities/ --no-error-summary
     
-    - name: Clean up root coverage artifacts (CI only)
+    - name: Run tests with coverage (generate XML)
       run: |
-        # Remove any leftover coverage fragments from repository root before pytest
-        rm -f .coverage .coverage.* || true
-        # Ensure coverage_reports directory exists before pytest
         mkdir -p coverage_reports
-    
-    - name: Test with pytest
-      env:
-        COVERAGE_FILE: coverage_reports/.coverage
-      run: |
-        pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
-    
-    - name: Combine coverage data
-      run: |
-        # Set coverage file location and combine any parallel fragments
-        export COVERAGE_FILE=coverage_reports/.coverage
-        # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
-        (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
-        # Generate reports in the correct locations
+        python -m coverage erase
+        python -m coverage run -m pytest tests/ -v --tb=short -m "not integration and not slow and not packaging and not hanging and not dashboard"
         python -m coverage xml -o coverage_reports/coverage.xml
-        python -m coverage html -d coverage_reports/html
+        python -m coverage report -m
     
-    - name: Clean up coverage artifacts
-      run: |
-        # Defensive cleanup of any stray coverage files from root
-        rm -f .coverage .coverage.* || true
-    
-    - name: Debug coverage file
+    - name: Debug coverage.xml before Codecov upload
       if: matrix.python-version == '3.9'
       run: |
-        echo "Coverage file location:"
-        ls -la coverage_reports/
-        echo "Coverage file size:"
-        wc -l coverage_reports/coverage.xml || echo "File not found"
-        echo "First 10 lines of coverage file:"
-        head -10 coverage_reports/coverage.xml || echo "Cannot read file"
+        echo "PWD:"
+        pwd
+        echo "Repo root listing:"
+        ls -la
+        echo "coverage_reports listing:"
+        ls -la coverage_reports || true
+        python -c "from pathlib import Path; p=Path('coverage_reports/coverage.xml'); print('exists:', p.exists()); print('size:', p.stat().st_size if p.exists() else None)"
+        echo "First 40 lines of coverage.xml:"
+        head -n 40 coverage_reports/coverage.xml || true
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.9'
       uses: codecov/codecov-action@v4
       with:
-        files: ./coverage_reports/coverage.xml
+        files: coverage_reports/coverage.xml
         flags: unittests
         name: codecov-umbrella
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
+        verbose: true
+        fail_ci_if_error: true
     
     - name: Upload HTML coverage report
       if: matrix.python-version == '3.9'
