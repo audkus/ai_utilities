@@ -8,6 +8,8 @@
 
 A Python library for AI model interaction with unified interface, intelligent caching, and type safety. Use OpenAI, Groq, Together AI, Ollama, and other providers with the same code.
 
+<!-- CI trigger check -->
+
 ## Minimal usage (copy & paste)
 
 These examples work without cloning the repository and represent the simplest possible usage.
