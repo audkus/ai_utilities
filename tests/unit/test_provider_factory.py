@@ -246,10 +246,10 @@ class TestOpenAICompatibleProvider:
             )
             
             response = provider.ask("Test prompt", return_format="json")
-            # Contract: verify provider was called and returned a result (passthrough)
+            # Contract: verify provider was called and returned a result (parsed JSON)
             assert response is not None
-            assert isinstance(response, str)  # Verify return type contract
-            assert response == mock_response.choices[0].message.content  # Verify passthrough
+            assert isinstance(response, dict)  # Verify JSON was parsed
+            assert response == {"key": "value"}  # Verify parsed content
     
     def test_ask_json_mode_parse_error(self):
         """Test ask method handles JSON parse errors gracefully."""
