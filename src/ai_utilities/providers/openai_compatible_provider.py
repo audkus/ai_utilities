@@ -253,7 +253,7 @@ class OpenAICompatibleProvider(BaseProvider):
             if return_format == "json" and content:
                 try:
                     return json.loads(content)
-                except json.JSONDecodeError as e:
+                except (json.JSONDecodeError, TypeError) as e:
                     logger.error(f"Failed to parse JSON response: {e}")
                     # Return raw text if JSON parsing fails
                     return content

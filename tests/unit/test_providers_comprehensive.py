@@ -15,8 +15,13 @@ from tests.fake_provider import FakeProvider
 
 
 @pytest.fixture(autouse=True)
-def patch_openai_provider_for_missing_dependency():
+def patch_openai_provider_for_missing_dependency(request):
     """Patch OpenAIProvider to raise MissingOptionalDependencyError instead of ImportError."""
+    # Skip patching for tests marked with requires_openai
+    if request.node.get_closest_marker('requires_openai'):
+        yield
+        return
+        
     def mock_init(self, *args, **kwargs):
         raise MissingOptionalDependencyError(
             "OpenAI package is required for OpenAI provider. Install it with: pip install 'ai-utilities[openai]'"
@@ -285,7 +290,7 @@ class TestProviderFactoryEdgeCases:
         with pytest.raises((TypeError, ValueError, ProviderConfigurationError)):
             create_provider(None)
     
-    def test_provider_factory_with_minimal_settings(self, isolated_env, monkeypatch):
+    def test_provider_factory_openai_with_env_vars(self, isolated_env, monkeypatch):
         """Test provider factory with minimal settings."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.setenv("AI_MODEL", "gpt-3.5-turbo")
@@ -366,7 +371,7 @@ class TestProviderFactoryIntegration:
 class TestProviderFactoryConsistency:
     """Test provider factory consistency and reliability."""
     
-    def test_provider_factory_deterministic(self, isolated_env):
+    def test_provider_factory_invalid_provider(self, isolated_env):
         """Test that provider factory is deterministic."""
         settings = AiSettings(
             provider="openai",
@@ -379,7 +384,7 @@ class TestProviderFactoryConsistency:
         with pytest.raises(MissingOptionalDependencyError, match=r"OpenAI package is required"):
             create_provider(settings)
     
-    def test_provider_factory_isolation(self, isolated_env):
+    def test_provider_factory_missing_api_key(self, isolated_env):
         """Test that provider factory calls are isolated."""
         settings1 = AiSettings(
             provider="openai",
