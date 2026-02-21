@@ -55,12 +55,13 @@ VALID_PROVIDERS: frozenset[str] = frozenset(
 
 
 DEFAULT_AUTO_SELECT_ORDER: tuple[str, ...] = (
-    "openai",
+    "ollama",
+    "lmstudio", 
     "groq",
     "openrouter",
     "together",
-    "ollama",
-    "lmstudio",
+    "deepseek",
+    "openai",
     "fastchat",
     "text-generation-webui",
 )

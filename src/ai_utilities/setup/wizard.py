@@ -23,6 +23,8 @@ class SetupResult:
     base_url: Optional[str]
     model: Optional[str]
     dotenv_lines: List[str]
+    dotenv_path: Optional[str] = None
+    backup_created: bool = False
 
 
 class SetupWizard:

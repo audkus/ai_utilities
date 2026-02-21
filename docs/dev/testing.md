@@ -473,4 +473,60 @@ jobs:
 - Don't ignore test failures
 - Don't commit with failing tests
 
+## Failure Classification
+
+The test suite includes automatic failure classification that distinguishes between different types of test failures:
+
+### Failure Categories
+
+**BLOCKED**: Collection and setup failures
+- Import errors during test collection
+- Fixture setup failures
+- Configuration errors that prevent test execution
+- These failures indicate fundamental issues that must be resolved first
+
+**REAL**: Test execution failures
+- Assertion failures in test logic
+- Runtime errors during test execution
+- Business logic failures
+- These are the "real" test failures that indicate actual issues
+
+**TEARDOWN**: Cleanup failures
+- Fixture teardown failures
+- Finalizer errors
+- Resource cleanup issues
+- These may indicate resource management problems
+
+### CI Gate Behavior
+
+The CI pipeline includes a gate that fails early when BLOCKED > 0, even if there are also REAL failures. This ensures that fundamental issues are addressed before investigating test logic failures.
+
+### Local Usage
+
+Enable JSON output for detailed failure analysis:
+
+```bash
+AIU_PYTEST_FAILURE_JSON=1 pytest
+```
+
+This creates `.pytest_artifacts/failure_classification.json` with detailed failure information.
+
+### Sample Output
+
+```
+=== Failure Classification ===
+BLOCKED: 2
+REAL: 5
+TEARDOWN: 1
+
+BLOCKED:
+  tests/test_config.py::test_import_error
+  tests/test_setup.py::test_fixture_setup
+
+REAL:
+  tests/test_logic.py::test_assertion_failure
+  tests/test_logic.py::test_runtime_error
+  ...
+```
+
 For development setup, see [Development Setup](development-setup.md).

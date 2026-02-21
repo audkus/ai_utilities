@@ -10,22 +10,38 @@ For detailed release notes and process, see [RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
-- Documentation API contract test suite
-- Engineering guarantees section in README
-- Provider configuration normalization
-- Multi-provider setup documentation
+- Interactive CLI setup command (`ai-utilities setup`) for cross-platform provider configuration
+- Support for creating and patching .env files with provider selections
+- Multi-provider mode with `AI_PROVIDER=auto` and `AI_AUTO_SELECT_ORDER`
+- Optional dependency detection and install command guidance
+- Cross-platform environment variable setup instructions
 
 ### Changed
-- Updated default model from gpt-3.5-turbo to gpt-4o-mini
-- Clarified documentation boundaries and analysis file handling
-- Improved provider configuration examples
-- Enhanced PyPI prerelease staging workflow with improved tag detection
-- Added smoke testing for prerelease releases
-- Improved error handling and retry logic for PyPI publishing
+- **BREAKING**: Auto provider selection now respects `AI_AUTO_SELECT_ORDER` and prefers local providers by default
+- **BREAKING**: No silent default to OpenAI when no provider is configured - raises `ProviderConfigurationError` instead
+- Updated default provider order to prefer local providers: ollama,lmstudio,groq,openrouter,together,deepseek,openai
+- Improved provider resolution with explicit configuration requirements
 
 ### Fixed
-- SSL backend compatibility warnings
-- Import-time dependency handling
+- Environment variable contamination in provider auto-selection
+- Missing provider configuration error messages with clear setup guidance
+
+## [1.0.1] - 2025-02-20
+
+### Added
+- Interactive CLI setup workflow for provider configuration
+- Cross-platform .env file creation and patching
+- Multi-provider auto-selection with configurable order
+- Optional dependency detection and install guidance
+
+### Changed
+- Auto provider selection respects AI_AUTO_SELECT_ORDER (defaults to local-first)
+- Removed silent OpenAI fallback when no provider configured
+- Enhanced error messages for missing provider configuration
+
+### Fixed
+- Provider configuration precedence and resolution logic
+- Environment variable handling in multi-provider setups
 
 ## [1.0.0b3] - 2025-02-13
 

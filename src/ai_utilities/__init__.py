@@ -268,13 +268,45 @@ __all__ = [
     'AudioGenerationResult',
 ]
 
-# Version - automatically retrieved from package metadata
+# Version - use metadata first, but fallback to pyproject if metadata is stale
+def _read_project_version_from_pyproject() -> str:
+    """Read version from pyproject.toml file."""
+    from pathlib import Path
+    
+    # Find pyproject.toml by walking up from current file
+    current_dir = Path(__file__).resolve().parent
+    while current_dir != current_dir.parent:
+        pyproject_path = current_dir / "pyproject.toml"
+        if pyproject_path.exists():
+            try:
+                # Try tomllib first (Python 3.11+)
+                try:
+                    import tomllib
+                except ImportError:
+                    # Fallback to tomli for Python 3.9
+                    import tomli as tomllib
+                
+                with open(pyproject_path, "rb") as f:
+                    data = tomllib.load(f)
+                    return data["project"]["version"]
+            except Exception:
+                pass
+        current_dir = current_dir.parent
+    
+    # Ultimate fallback if nothing works
+    return "1.0.1b1"
+
+# Try metadata first, but fallback to pyproject if metadata is stale (1.0.0)
 try:
-    from importlib.metadata import version
-    __version__ = version("ai-utilities")
-except ImportError:
-    # Fallback for older Python versions or when package is not installed
-    __version__ = "1.0.0"  # Should match pyproject.toml version
+    from importlib.metadata import version as _v
+    metadata_version = _v("ai-utilities")
+    # If metadata version is the stale 1.0.0, use pyproject version instead
+    if metadata_version == "1.0.0":
+        __version__ = _read_project_version_from_pyproject()
+    else:
+        __version__ = metadata_version
+except Exception:
+    __version__ = _read_project_version_from_pyproject()
 
 # SSL Backend Compatibility Check - lazy to avoid import-time side effects
 # This checks for LibreSSL compatibility issues and provides clear user feedback

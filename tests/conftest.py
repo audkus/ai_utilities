@@ -97,6 +97,22 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers", "order_dependent: marks tests that verify order independence"
     )
     config.addinivalue_line("markers", "slow: marks tests as slow running")
+    
+    # Register failure classification plugin
+    try:
+        # Ensure src is in Python path
+        import sys
+        from pathlib import Path
+        src_path = str(Path(__file__).parent.parent / "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+        
+        from ai_utilities.testing.pytest_failure_classification import FailureClassificationPlugin
+        plugin = FailureClassificationPlugin()
+        config.pluginmanager.register(plugin, "failure_classification")
+    except ImportError:
+        # Plugin not available - skip registration
+        pass
 
 
 def pytest_collection_modifyitems(config, items):
