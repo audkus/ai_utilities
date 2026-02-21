@@ -196,17 +196,35 @@ class TestSmartSetup:
         fake_provider = FakeProvider()
         client = AiClient(provider=fake_provider)
         
-        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive, \
-             patch('ai_utilities.providers.openai_provider.OpenAIProvider', return_value=fake_provider):
-            mock_settings = AiSettings(api_key="new-key", model="test-model-1o")
-            mock_interactive.return_value = mock_settings
+        with patch('ai_utilities.AiSettings.interactive_setup') as mock_interactive:
+            # Patch the specific import path used in reconfigure method
+            import sys
+            original_module = sys.modules.get('ai_utilities.providers.openai_provider')
             
-            client.reconfigure()
+            # Create a mock module
+            mock_module = MagicMock()
+            mock_module.OpenAIProvider = MagicMock(return_value=fake_provider)
+            sys.modules['ai_utilities.providers.openai_provider'] = mock_module
             
-            mock_interactive.assert_called_once_with(force_reconfigure=True)
-            assert client.settings.api_key == "new-key"
-            assert client.settings.model == "test-model-1o"
-            assert client.provider == fake_provider
+            try:
+                mock_settings = AiSettings(api_key="new-key", model="test-model-1o")
+                mock_interactive.return_value = mock_settings
+                
+                client.reconfigure()
+                
+                mock_interactive.assert_called_once_with(force_reconfigure=True)
+                assert client.settings.api_key == "new-key"
+                assert client.settings.model == "test-model-1o"
+                assert client.provider == fake_provider
+                
+                # Verify OpenAIProvider was called with the new settings
+                mock_module.OpenAIProvider.assert_called_once_with(mock_settings)
+            finally:
+                # Restore original module
+                if original_module is not None:
+                    sys.modules['ai_utilities.providers.openai_provider'] = original_module
+                elif 'ai_utilities.providers.openai_provider' in sys.modules:
+                    del sys.modules['ai_utilities.providers.openai_provider']
 
     def validate_model_availability(cls, api_key: str, model: str, *, strict: bool = True) -> bool:
         """Check if a model is available in the OpenAI API.
