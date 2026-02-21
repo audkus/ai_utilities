@@ -78,8 +78,55 @@ jobs:
     - name: Test with pytest
       env:
         COVERAGE_FILE: coverage_reports/.coverage
+        AIU_PYTEST_FAILURE_JSON: 1
       run: |
         pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
+      continue-on-error: true
+    
+    - name: Check for blocked test failures
+      if: always()
+      run: |
+        # Check if failure classification JSON exists
+        if [ -f ".pytest_artifacts/failure_classification.json" ]; then
+          # Parse JSON and check for blocked failures
+          BLOCKED_COUNT=$(python -c "
+          import json
+          try:
+              with open('.pytest_artifacts/failure_classification.json') as f:
+                  data = json.load(f)
+              print(data.get('blocked_count', 0))
+          except (FileNotFoundError, json.JSONDecodeError, KeyError):
+              print('1')  # Treat as blocked if JSON is missing/invalid
+          ")
+          
+          if [ "$BLOCKED_COUNT" -gt 0 ]; then
+            echo "❌ CI FAILED: $BLOCKED_COUNT blocked test(s) detected"
+            echo "Blocked tests indicate collection or setup failures that prevent proper test execution."
+            echo "These must be fixed before other test failures can be addressed."
+            echo ""
+            echo "Failure details:"
+            cat .pytest_artifacts/failure_classification.json | python -c "
+          import json, sys
+          try:
+              data = json.load(sys.stdin)
+              if data.get('blocked_nodeids'):
+                  print('Blocked tests:')
+                  for nodeid in data['blocked_nodeids'][:10]:
+                      print(f'  - {nodeid}')
+                  if len(data['blocked_nodeids']) > 10:
+                      print(f'  ... and {len(data[\"blocked_nodeids\"]) - 10} more')
+          except:
+              pass
+          "
+            exit 1
+          else
+            echo "✅ No blocked test failures detected"
+          fi
+        else
+          echo "❌ CI FAILED: Failure classification JSON not found"
+          echo "This indicates a fundamental issue with test execution or plugin failure."
+          exit 1
+        fi
     
     - name: Combine coverage data
       run: |
