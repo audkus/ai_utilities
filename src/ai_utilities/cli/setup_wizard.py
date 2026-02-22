@@ -263,8 +263,8 @@ class SetupWizard:
         """Select providers for multi-provider mode."""
         if not self._is_interactive():
             raise RuntimeError("Provider selection requires interactive environment")
-        selected_providers = []
-        providers_config = {}
+        selected_providers: List[str] = []
+        providers_config: Dict[str, Dict[str, str]] = {}
         available_providers = list(self.providers.keys())
         
         while True:
@@ -274,10 +274,11 @@ class SetupWizard:
             choices = []
             for i, provider_key in enumerate(available_providers):
                 info = self.providers[provider_key]
-                if provider_key in selected_providers:
-                    choices.append(f"{info['name']} - {info['description']} (already selected)")
-                else:
-                    choices.append(f"{info['name']} - {info['description']}")
+                if isinstance(info, dict):
+                    if provider_key in selected_providers:
+                        choices.append(f"{info['name']} - {info['description']} (already selected)")
+                    else:
+                        choices.append(f"{info['name']} - {info['description']}")
             
             choices.append("Done selecting providers")
             
@@ -295,15 +296,16 @@ class SetupWizard:
             # Find the provider key from the choice
             for i, provider_key in enumerate(available_providers):
                 info = self.providers[provider_key]
-                choice_text = f"{info['name']} - {info['description']}"
-                if choice == choice_text or choice.startswith(choice_text):
-                    if provider_key in selected_providers:
-                        print(f"{provider_key} is already selected. Please choose a different provider.")
-                    else:
-                        selected_providers.append(provider_key)
-                        # Configure provider immediately after selection
-                        providers_config[provider_key] = self._configure_provider(provider_key)
-                    break
+                if isinstance(info, dict):
+                    choice_text = f"{info['name']} - {info['description']}"
+                    if choice == choice_text or choice.startswith(choice_text):
+                        if provider_key in selected_providers:
+                            print(f"{provider_key} is already selected. Please choose a different provider.")
+                        else:
+                            selected_providers.append(provider_key)
+                            # Configure provider immediately after selection
+                            providers_config[provider_key] = self._configure_provider(provider_key)
+                        break
         
         # Store the configurations for later use
         self._temp_providers_config = providers_config
@@ -313,16 +315,19 @@ class SetupWizard:
         """Configure a single provider."""
         provider_info = self.providers[provider_key]
         
+        if not isinstance(provider_info, dict):
+            raise ValueError(f"Provider info for {provider_key} must be a dictionary")
+        
         print(f"\n=== {provider_info['name']} Configuration ===")
         
         config = {
-            "base_url": provider_info["default_base_url"],
-            "model": provider_info["default_model"],
+            "base_url": provider_info.get("base_url", ""),
+            "model": provider_info.get("default_model", ""),
             "api_key": None
         }
         
         # API key
-        if provider_info["requires_api_key"]:
+        if provider_info.get("requires_api_key", False):
             env_var = f"{provider_key.upper()}_API_KEY"
             print(f"Get your API key from the {provider_info['name']} dashboard")
             print(f"You can also set environment variable: {env_var}")
@@ -389,7 +394,7 @@ class SetupWizard:
         
         # Let user customize order
         print("Customize the order (providers will be tried from top to bottom):")
-        custom_order = []
+        custom_order: List[str] = []
         remaining_providers = ordered_providers.copy()
         
         while remaining_providers:
@@ -398,11 +403,22 @@ class SetupWizard:
             
             for i, provider in enumerate(remaining_providers, 1):
                 info = self.providers[provider]
-                print(f"  {i}. {info['name']}")
+                if isinstance(info, dict):
+                    print(f"  {i}. {info['name']}")
+            
+            # Build choice list properly
+            provider_choices = []
+            for p in remaining_providers:
+                provider_info = self.providers[p]
+                if isinstance(provider_info, dict):
+                    name = provider_info.get('name')
+                    if isinstance(name, str):
+                        provider_choices.append(name)
+            provider_choices.append("Done ordering")
             
             choice = self._prompt_choice(
                 "Select next provider (or 'Done' if finished):",
-                [f"{self.providers[p]['name']}" for p in remaining_providers] + ["Done ordering"],
+                provider_choices,
                 allow_done_response=True
             )
             
@@ -414,7 +430,8 @@ class SetupWizard:
             
             # Find provider from choice
             for provider in remaining_providers:
-                if choice == self.providers[provider]['name']:
+                provider_info = self.providers[provider]
+                if isinstance(provider_info, dict) and choice == provider_info['name']:
                     custom_order.append(provider)
                     remaining_providers.remove(provider)
                     break
@@ -427,9 +444,10 @@ class SetupWizard:
         
         for provider_key in providers:
             provider_info = self.providers[provider_key]
-            for dep in provider_info.get("optional_deps", []):
-                if importlib.util.find_spec(dep) is None:
-                    missing_deps.add(dep)
+            if isinstance(provider_info, dict):
+                for dep in provider_info.get("optional_deps", []):
+                    if importlib.util.find_spec(dep) is None:
+                        missing_deps.add(dep)
         
         if missing_deps:
             print(f"\n=== Optional Dependencies ===")
@@ -473,7 +491,8 @@ class SetupWizard:
         # Select provider
         provider_choices = []
         for key, info in self.providers.items():
-            provider_choices.append(f"{info['name']} - {info['description']}")
+            if isinstance(info, dict):
+                provider_choices.append(f"{info['name']} - {info['description']}")
         
         choice = self._prompt_choice(
             "Select AI provider:",
@@ -484,7 +503,7 @@ class SetupWizard:
         # Find the provider key from the choice
         provider_key = None
         for key, info in self.providers.items():
-            if choice.startswith(info['name']):
+            if isinstance(info, dict) and choice.startswith(info['name']):
                 provider_key = key
                 break
         
@@ -622,11 +641,13 @@ class SetupWizard:
                 raise ValueError("Provider must be specified for single provider mode")
             
             provider_info = self.providers[provider]
+            if not isinstance(provider_info, dict):
+                raise ValueError(f"Provider info for {provider} must be a dictionary")
             
             config = {
                 "provider": provider,
-                "base_url": base_url or provider_info["default_base_url"],
-                "model": model or provider_info["default_model"],
+                "base_url": base_url or provider_info.get("base_url", ""),
+                "model": model or provider_info.get("default_model", ""),
                 "api_key": api_key
             }
             
@@ -651,11 +672,13 @@ class SetupWizard:
                 raise ValueError("Provider must be specified for improved mode")
             
             provider_info = self.providers[provider]
+            if not isinstance(provider_info, dict):
+                raise ValueError(f"Provider info for {provider} must be a dictionary")
             
             config = {
                 "provider": provider,
-                "base_url": base_url or provider_info["default_base_url"],
-                "model": model or provider_info["default_model"],
+                "base_url": base_url or provider_info.get("base_url", ""),
+                "model": model or provider_info.get("default_model", ""),
                 "api_key": api_key
             }
             
@@ -685,6 +708,14 @@ class SetupWizard:
         
         try:
             if provider in ["openai", "groq", "together", "openrouter", "deepseek"]:
+                # Ensure api_key is not None for _probe_hosted
+                if api_key is None:
+                    return ProbeResult(
+                        success=False,
+                        provider=provider,
+                        base_url=base_url,
+                        message="API key required for connection probe"
+                    )
                 return self._probe_hosted(provider, base_url, api_key)
             elif provider == "ollama":
                 return self._probe_ollama(base_url)

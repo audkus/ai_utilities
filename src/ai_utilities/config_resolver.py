@@ -117,7 +117,10 @@ def resolve_provider(
     # 3) Environment AI_PROVIDER
     if env_provider:
         if env_provider == "auto":
-            return _resolve_auto_provider()
+            auto_provider = _resolve_auto_provider()
+            if auto_provider is None:
+                raise ValueError("No providers configured for auto mode. Set up API keys or base URLs.")
+            return auto_provider
         return _validate(env_provider)
     
     # 4) Infer from base_url
@@ -190,9 +193,9 @@ def _is_strict_test_context() -> bool:
     try:
         # Go up the call stack to find the test context
         for _ in range(10):  # Check up to 10 frames up
-            frame = frame.f_back
-            if frame is None:
+            if frame is None or frame.f_back is None:
                 break
+            frame = frame.f_back
             
             filename = frame.f_code.co_filename
             # Check if we're in the unit test files that expect strict behavior
