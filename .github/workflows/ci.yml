@@ -70,8 +70,8 @@ jobs:
     
     - name: Clean up root coverage artifacts (CI only)
       run: |
-        # Remove any leftover coverage fragments from repository root before pytest
-        rm -f .coverage .coverage.* || true
+        # Remove any leftover coverage fragments from both repository root and coverage_reports
+        rm -f .coverage .coverage.* coverage_reports/.coverage coverage_reports/.coverage.* || true
         # Ensure coverage_reports directory exists before pytest
         mkdir -p coverage_reports
     
@@ -110,14 +110,14 @@ jobs:
         export COVERAGE_FILE=coverage_reports/.coverage
         # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
         (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
-        # Generate reports in the correct locations
-        python -m coverage xml -o coverage_reports/coverage.xml
-        python -m coverage html -d coverage_reports/html
+        # Generate reports in the correct locations with ignore-errors to handle missing source files
+        python -m coverage xml -o coverage_reports/coverage.xml --ignore-errors
+        python -m coverage html -d coverage_reports/html --ignore-errors
     
     - name: Clean up coverage artifacts
       run: |
-        # Defensive cleanup of any stray coverage files from root
-        rm -f .coverage .coverage.* || true
+        # Defensive cleanup of any stray coverage files from both root and coverage_reports
+        rm -f .coverage .coverage.* coverage_reports/.coverage coverage_reports/.coverage.* || true
     
     - name: Debug coverage file
       if: matrix.python-version == '3.9'
