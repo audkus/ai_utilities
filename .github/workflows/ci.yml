@@ -111,8 +111,10 @@ jobs:
         # Only run combine if .coverage* files exist (check in coverage_reports/ and root)
         (ls -1 .coverage* >/dev/null 2>&1 || ls -1 coverage_reports/.coverage* >/dev/null 2>&1) && python -m coverage combine || echo "No data to combine"
         # Generate reports in the correct locations with ignore-errors to handle missing source files
-        python -m coverage xml -o coverage_reports/coverage.xml --ignore-errors
-        python -m coverage html -d coverage_reports/html --ignore-errors
+        python -m coverage xml -o coverage_reports/coverage.xml --ignore-errors || true
+        python -m coverage html -d coverage_reports/html --ignore-errors || true
+        # Explicitly check that XML file exists - CI should fail if coverage generation completely failed
+        test -f coverage_reports/coverage.xml
     
     - name: Clean up coverage artifacts
       run: |
