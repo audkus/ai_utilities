@@ -321,7 +321,7 @@ class SetupWizard:
         print(f"\n=== {provider_info['name']} Configuration ===")
         
         config = {
-            "base_url": provider_info.get("base_url", ""),
+            "base_url": provider_info.get("default_base_url", ""),
             "model": provider_info.get("default_model", ""),
             "api_key": None
         }
@@ -349,9 +349,10 @@ class SetupWizard:
         
         # Base URL (for custom endpoints)
         if provider_key in ["ollama", "lmstudio", "fastchat", "text-generation-webui"]:
-            print(f"Default URL: {config['base_url']}")
-            custom_url = self._prompt("Base URL (press Enter for default)", config["base_url"])
-            if custom_url:
+            default_url = config["base_url"]
+            print(f"Default URL: {default_url}")
+            custom_url = self._prompt("Base URL (press Enter for default)", default_url)
+            if custom_url and custom_url != default_url:
                 config["base_url"] = custom_url
         
         # Model (required for local providers)
@@ -646,7 +647,7 @@ class SetupWizard:
             
             config = {
                 "provider": provider,
-                "base_url": base_url or provider_info.get("base_url", ""),
+                "base_url": base_url or provider_info.get("default_base_url", ""),
                 "model": model or provider_info.get("default_model", ""),
                 "api_key": api_key
             }
@@ -677,7 +678,7 @@ class SetupWizard:
             
             config = {
                 "provider": provider,
-                "base_url": base_url or provider_info.get("base_url", ""),
+                "base_url": base_url or provider_info.get("default_base_url", ""),
                 "model": model or provider_info.get("default_model", ""),
                 "api_key": api_key
             }

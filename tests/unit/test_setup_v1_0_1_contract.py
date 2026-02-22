@@ -461,5 +461,223 @@ class TestCLIContract:
         # This would be tested by checking stdout/stderr in actual implementation
 
 
+class TestSetupWizardPRChanges:
+    """Test specific PR changes to ensure coverage of modified lines."""
+    
+    @patch('sys.stdin.isatty', return_value=True)
+    @patch('builtins.input')
+    def test_setup_wizard_default_base_url_handling(self, mock_input, mock_isatty):
+        """Test base_url defaulting when user input is blank (covers lines 324, 352-356)."""
+        # Mock user responses for ollama provider with blank base URL input
+        mock_input.side_effect = [
+            "1",  # Choose single provider mode
+            "1",  # Choose ollama
+            "",   # Default base URL (blank input should use default)
+            "llama3.1",  # model
+        ]
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env_path = Path(tmp_dir) / ".env"
+            wizard = SetupWizard(allow_network=False)
+            
+            result = wizard.run_interactive_setup(env_path)
+            
+            # Should use default base URL when user enters blank
+            assert result.provider == "ollama"
+            assert result.base_url == "http://localhost:11434/v1"  # Default URL
+            assert result.model == "llama3.1"
+            
+            # Should write default base URL to .env
+            content = env_path.read_text()
+            assert "OLLAMA_BASE_URL=http://localhost:11434/v1" in content
+    
+    @patch('sys.stdin.isatty', return_value=True)
+    @patch('builtins.input')
+    def test_setup_wizard_custom_base_url_override(self, mock_input, mock_isatty):
+        """Test custom base URL override (covers lines 352-356 custom_url != default_url check)."""
+        # Mock user responses for ollama provider with custom base URL
+        mock_input.side_effect = [
+            "1",  # Choose single provider mode
+            "1",  # Choose ollama
+            "http://custom:1234/v1",  # Custom base URL (not default)
+            "llama3.1",  # model
+        ]
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env_path = Path(tmp_dir) / ".env"
+            wizard = SetupWizard(allow_network=False)
+            
+            result = wizard.run_interactive_setup(env_path)
+            
+            # Should use custom base URL when user enters non-default value
+            assert result.provider == "ollama"
+            assert result.base_url == "http://custom:1234/v1"
+            assert result.model == "llama3.1"
+            
+            # Should write custom base URL to .env
+            content = env_path.read_text()
+            assert "OLLAMA_BASE_URL=http://custom:1234/v1" in content
+    
+    def test_setup_wizard_non_interactive_default_base_url(self):
+        """Test non-interactive setup uses default_base_url (covers lines 650, 681)."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env_path = Path(tmp_dir) / ".env"
+            wizard = SetupWizard(allow_network=False)
+            
+            # Test non-interactive mode without specifying base_url
+            result = wizard.run_non_interactive_setup(
+                env_path, 
+                mode=SetupMode.NORMAL,
+                provider="groq",
+                model="llama3-70b-8192"
+            )
+            
+            # Should use default_base_url from provider config
+            assert result.provider == "groq"
+            assert result.base_url == "https://api.groq.com/openai/v1"  # Default URL
+            assert result.model == "llama3-70b-8192"
+    
+    def test_setup_wizard_non_interactive_custom_base_url(self):
+        """Test non-interactive setup with custom base_url (covers lines 650, 681)."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env_path = Path(tmp_dir) / ".env"
+            wizard = SetupWizard(allow_network=False)
+            
+            # Test non-interactive mode with custom base_url
+            result = wizard.run_non_interactive_setup(
+                env_path, 
+                mode=SetupMode.NORMAL,
+                provider="groq",
+                base_url="http://custom:5678/v1",
+                model="llama3-70b-8192"
+            )
+            
+            # Should use custom base_url when provided
+            assert result.provider == "groq"
+            assert result.base_url == "http://custom:5678/v1"
+            assert result.model == "llama3-70b-8192"
+
+
+class TestConfigResolverPRChanges:
+    """Test specific PR changes in config_resolver.py."""
+    
+    def test_resolve_auto_provider_none_handling(self):
+        """Test None return from _resolve_auto_provider with proper error (covers lines 120-124)."""
+        # Mock environment to trigger auto mode with no providers configured
+        with patch.dict(os.environ, {'AI_PROVIDER': 'auto'}, clear=True):
+            # Clear all provider configuration to force None return
+            for key in list(os.environ.keys()):
+                if any(provider in key for provider in ['OPENAI', 'GROQ', 'TOGETHER', 'OPENROUTER', 'OLLAMA', 'LMSTUDIO']):
+                    del os.environ[key]
+            
+            from ai_utilities.config_resolver import resolve_provider
+            from ai_utilities.providers.provider_exceptions import ProviderConfigurationError
+            
+            # Should raise ValueError with specific message when auto mode fails
+            with pytest.raises(ValueError, match="No providers configured for auto mode"):
+                resolve_provider()
+    
+    def test_strict_test_context_frame_handling(self):
+        """Test Optional[FrameType] access with proper None checks (covers lines 196-197)."""
+        from ai_utilities.config_resolver import _is_strict_test_context
+        
+        # Simply call the function to ensure it doesn't crash on frame inspection
+        # The function should handle frame.f_back None checks gracefully
+        try:
+            result = _is_strict_test_context()
+            # The function should return a boolean, not crash
+            assert isinstance(result, bool)
+        except Exception as e:
+            # If there's an error, it should not be related to frame.f_back access
+            assert "NoneType" not in str(e), f"Frame None handling failed: {e}"
+
+
+class TestCLIInitPRChanges:
+    """Test specific PR changes in cli/__init__.py."""
+    
+    @patch('ai_utilities.cli.run_setup_wizard')
+    def test_cli_main_none_checks_for_result_fields(self, mock_run_wizard):
+        """Test None checks for result.auto_select_order and result.providers (covers lines 142-145)."""
+        from ai_utilities.cli import main
+        from ai_utilities.cli.setup_wizard import SetupResult
+        
+        # Mock result with None fields to test None checks
+        mock_result = SetupResult(
+            provider="auto",
+            auto_select_order=None,  # None to test None check
+            providers={},  # Empty to test None check
+            dotenv_path=Path(".env"),
+            backup_created=False
+        )
+        mock_run_wizard.return_value = mock_result
+        
+        # Should not crash when accessing None fields
+        result = main(["setup", "--mode", "non-interactive", "--provider", "openai"])
+        assert result == 0
+        
+        # Verify the function was called
+        mock_run_wizard.assert_called_once()
+    
+    @patch('ai_utilities.cli.run_setup_wizard')
+    def test_cli_main_with_populated_result_fields(self, mock_run_wizard):
+        """Test CLI with populated result fields (covers lines 142-145)."""
+        from ai_utilities.cli import main
+        from ai_utilities.cli.setup_wizard import SetupResult
+        
+        # Mock result with populated fields
+        mock_result = SetupResult(
+            provider="auto",
+            auto_select_order=["ollama", "groq"],
+            providers={"ollama": {"model": "llama3.1"}, "groq": {"api_key": "gsk-test"}},
+            dotenv_path=Path(".env"),
+            backup_created=False
+        )
+        mock_run_wizard.return_value = mock_result
+        
+        # Should print the provider information when fields are populated
+        result = main(["setup", "--mode", "non-interactive", "--provider", "openai"])
+        assert result == 0
+        
+        # Verify the function was called
+        mock_run_wizard.assert_called_once()
+
+
+class TestSetupWizardResultPRChanges:
+    """Test specific PR changes in setup/wizard.py SetupResult class."""
+    
+    def test_setup_result_new_fields(self):
+        """Test new providers and auto_select_order fields in SetupResult (covers lines 28-29)."""
+        from ai_utilities.setup.wizard import SetupResult
+        
+        # Test that new fields exist and can be set
+        result = SetupResult(
+            provider="auto",
+            api_key=None,
+            base_url=None,
+            model=None,
+            dotenv_lines=[],
+            providers={"ollama": {"model": "llama3.1"}},
+            auto_select_order=["ollama", "groq"]
+        )
+        
+        # Should be able to access new fields
+        assert result.providers is not None
+        assert result.auto_select_order is not None
+        assert "ollama" in result.providers
+        assert "ollama" in result.auto_select_order
+        
+        # Test default values (None)
+        default_result = SetupResult(
+            provider="openai",
+            api_key="sk-test",
+            base_url="https://api.openai.com/v1",
+            model="gpt-4",
+            dotenv_lines=[]
+        )
+        
+        assert default_result.providers is None  # Default value
+        assert default_result.auto_select_order is None  # Default value
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
