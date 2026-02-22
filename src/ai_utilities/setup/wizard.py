@@ -25,6 +25,8 @@ class SetupResult:
     dotenv_lines: List[str]
     dotenv_path: Optional[str] = None
     backup_created: bool = False
+    providers: Optional[Dict[str, Dict[str, str]]] = None
+    auto_select_order: Optional[List[str]] = None
 
 
 class SetupWizard:

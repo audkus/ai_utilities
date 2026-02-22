@@ -139,8 +139,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             
             if result.provider == "auto":
                 print(f"Mode: Multi-provider with auto-selection")
-                print(f"Auto-select order: {', '.join(result.auto_select_order)}")
-                print(f"Configured providers: {', '.join(result.providers.keys())}")
+                if result.auto_select_order:
+                    print(f"Auto-select order: {', '.join(result.auto_select_order)}")
+                if result.providers:
+                    print(f"Configured providers: {', '.join(result.providers.keys())}")
             else:
                 print(f"Provider: {result.provider}")
                 # For mocks in tests, use direct attributes; for real results, use properties
