@@ -80,6 +80,53 @@ Managing multiple AI providers is complex and error-prone. Each provider has dif
 pip install ai-utilities[openai]
 ```
 
+### Quick Setup (Recommended)
+
+Run the interactive setup wizard to configure your provider:
+
+```bash
+ai-utilities setup
+```
+
+The setup wizard will:
+- Guide you through provider selection (OpenAI, Groq, Ollama, etc.)
+- Create or update your `.env` file with proper configuration
+- Detect missing optional dependencies and provide install commands
+- Support both single-provider and multi-provider auto-selection modes
+
+**Setup modes:**
+- **Single provider**: Configure one AI provider (e.g., just OpenAI)
+- **Multi-provider**: Configure multiple providers with auto-selection
+- **Non-interactive**: Use command-line flags for automation
+
+**Examples:**
+```bash
+# Interactive setup (recommended)
+ai-utilities setup
+
+# Non-interactive single provider
+ai-utilities setup --mode single-provider --provider ollama --model llama3.1
+
+# Multi-provider with custom order
+ai-utilities setup --mode multi-provider
+```
+
+The setup creates a `.env` file with provider-specific variables like:
+```bash
+# Single provider example
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1
+
+# Multi-provider example  
+AI_PROVIDER=auto
+AI_AUTO_SELECT_ORDER=ollama,lmstudio,groq,openai
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1
+GROQ_API_KEY=your-groq-key
+OPENAI_API_KEY=your-openai-key
+```
+
 ## 5-minute Tour
 
 Get started immediately with these copy-pasteable examples. Each runs independently after setting environment variables.
@@ -202,6 +249,37 @@ print(response)
 ```
 
 Programmatic `AiSettings(provider=...)` overrides environment auto-selection for that client instance only.
+
+### Provider Auto-Selection (v1.0.1+)
+
+When `AI_PROVIDER=auto` (default in v1.0.1+), the library automatically selects the first available provider based on:
+
+1. **Custom order** (if `AI_AUTO_SELECT_ORDER` is set)
+2. **Default order** (local providers first, then hosted)
+
+**Default auto-selection order:**
+```
+ollama, lmstudio, groq, openrouter, together, deepseek, openai, fastchat, text-generation-webui
+```
+
+**Example configuration:**
+```bash
+# Auto-select with custom order
+AI_PROVIDER=auto
+AI_AUTO_SELECT_ORDER=ollama,groq,openai
+
+# Configure multiple providers
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1
+GROQ_API_KEY=your-groq-key
+OPENAI_API_KEY=your-openai-key
+```
+
+**Behavior:**
+- Tries providers in order until one is configured and accessible
+- Local providers (Ollama, LM Studio) are tried before hosted providers by default
+- Raises clear error if no providers are configured (no silent OpenAI fallback)
+- Use `ai-utilities setup` to configure providers easily
 
 ### Structured JSON output
 
