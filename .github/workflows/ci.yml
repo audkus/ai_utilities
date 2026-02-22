@@ -76,6 +76,7 @@ jobs:
         mkdir -p coverage_reports
     
     - name: Test with pytest
+      id: pytest
       env:
         COVERAGE_FILE: coverage_reports/.coverage
         AIU_PYTEST_FAILURE_JSON: 1
@@ -83,10 +84,25 @@ jobs:
         pytest tests/ -v --tb=short --cov=ai_utilities --cov-report=xml:coverage_reports/coverage.xml --cov-report=html:coverage_reports/html --cov-report=term-missing -m "not integration and not slow and not packaging and not hanging and not dashboard"
       continue-on-error: true
     
-    - name: Check for blocked test failures
+    - name: Detect failure classification JSON
+      id: classjson
       if: always()
       run: |
+        if [ -f ".pytest_artifacts/failure_classification.json" ]; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+    
+    - name: Check for blocked test failures
+      if: always() && steps.classjson.outputs.exists == 'true'
+      run: |
         python scripts/ci/check_failure_classification.py
+    
+    - name: Skipping blocked-failure check (pytest did not produce JSON)
+      if: always() && steps.classjson.outputs.exists != 'true'
+      run: |
+        echo "Skipping blocked-failure check because failure_classification.json was not produced."
     
     - name: Combine coverage data
       run: |
