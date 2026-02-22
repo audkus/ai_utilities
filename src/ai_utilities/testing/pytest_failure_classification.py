@@ -18,7 +18,8 @@ class FailureClassificationPlugin:
         self.blocked_nodeids: List[str] = []
         self.real_nodeids: List[str] = []
         self.teardown_nodeids: List[str] = []
-        self.json_enabled = os.getenv("AIU_PYTEST_FAILURE_JSON") == "1"
+        env_val = os.getenv("AIU_PYTEST_FAILURE_JSON", "").lower()
+        self.json_enabled = env_val in ("1", "true")
         self.json_path = Path(".pytest_artifacts/failure_classification.json")
         self.pytest_exitstatus: Optional[int] = None
     
