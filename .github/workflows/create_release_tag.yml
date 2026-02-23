@@ -1,61 +1,124 @@
+# Create Release Tag (Manual)
+#
+# PURPOSE
+# - Manual "release button" that tags *main* as v<pyproject.toml version>.
+# - Works for BOTH stable and pre-release versions (a/b/rc).
+# - Pushing the tag will trigger your existing publish workflows:
+#   - publish.yml (stable only)
+#   - publish-prerelease-pypi.yml (pre-releases only)
+#
+# SAFETY
+# - Refuses to run unless triggered on branch "main"
+# - Requires explicit confirmation input
+# - Refuses if tag already exists (local or remote)
+# - Runs unit tests before tagging
+# - Creates an annotated tag
+
 name: Create Release Tag
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "YES" to confirm you want to create and push a tag from main'
+        required: true
+        default: "NO"
 
 permissions:
   contents: write
 
 jobs:
   tag:
+    name: Create and push tag v<version> from main
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Validate confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "YES" ]; then
+            echo "Refusing to run: confirm must be YES"
+            exit 1
+          fi
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Checkout main (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-    - name: Read version from pyproject.toml
-      id: ver
-      run: |
-        python - << 'PY' >> "$GITHUB_OUTPUT"
-        import tomllib
-        from pathlib import Path
+      - name: Ensure branch is main
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "Branch: $BRANCH"
+          test "$BRANCH" = "main"
 
-        data = tomllib.loads(Path("pyproject.toml").read_bytes())
-        version = data["project"]["version"]
-        print(f"version={version}")
-        PY
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Validate version is stable
-      run: |
-        VERSION="${{ steps.ver.outputs.version }}"
-        echo "Version: $VERSION"
-        python - << 'PY'
-        import os, re
-        v = os.environ["VERSION"]
-        # Reject pre-releases: a, b, rc and local versions
-        if re.search(r"(a|b|rc)\d+|[-+]", v):
-          raise SystemExit(f"Not a stable version: {v}")
-        PY
-      env:
-        VERSION: ${{ steps.ver.outputs.version }}
+      - name: Read version from pyproject.toml
+        id: ver
+        run: |
+          VERSION="$(python - << 'PY'
+          import tomllib
+          from pathlib import Path
 
-    - name: Run unit tests
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install -e ".[dev]"
-        python -m pytest -m "not integration and not slow and not packaging and not hanging and not dashboard"
+          data = tomllib.loads(Path("pyproject.toml").read_bytes())
+          print(data["project"]["version"])
+          PY
+          )"
+          if [ -z "$VERSION" ]; then
+            echo "Empty version read from pyproject.toml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
 
-    - name: Create and push tag
-      run: |
-        VERSION="${{ steps.ver.outputs.version }}"
-        TAG="v$VERSION"
-        echo "Creating tag $TAG"
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git tag -a "$TAG" -m "$TAG"
-        git push origin "$TAG"
+      - name: Compute tag name
+        id: tag
+        run: |
+          TAG="v${{ steps.ver.outputs.version }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Tag: $TAG"
+
+      - name: Fail if tag already exists (local or remote)
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          git fetch --tags origin
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists locally: $TAG"
+            exit 1
+          fi
+
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            echo "Tag already exists on origin: $TAG"
+            exit 1
+          fi
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,openai]"
+
+      - name: Run unit tests (CI selection)
+        run: |
+          python -m pytest -m "not integration and not slow and not packaging and not hanging and not dashboard"
+
+      - name: Create annotated tag
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+
+      - name: Push tag to origin
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          echo "Created and pushed tag: ${{ steps.tag.outputs.tag }}"
+          echo "This will trigger your publish workflow(s) that listen for tag pushes."

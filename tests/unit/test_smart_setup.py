@@ -201,9 +201,15 @@ class TestSmartSetup:
             import sys
             original_module = sys.modules.get('ai_utilities.providers.openai_provider')
             
-            # Create a mock module
+            # Create a mock module with required attributes
             mock_module = MagicMock()
             mock_module.OpenAIProvider = MagicMock(return_value=fake_provider)
+            
+            # Add the attributes that tests might patch to avoid AttributeError
+            mock_module._get_openai = lambda: None
+            mock_module.OpenAI = None
+            mock_module.ChatCompletion = None
+            
             sys.modules['ai_utilities.providers.openai_provider'] = mock_module
             
             try:

@@ -240,6 +240,11 @@ class TestProvidersInitErrorHandling:
             mock_module = types.ModuleType('mock_openai_provider')
             mock_module.__spec__ = None  # This will cause ImportError on import
             
+            # Add the attributes that tests might patch to avoid AttributeError
+            mock_module._get_openai = lambda: None
+            mock_module.OpenAI = None
+            mock_module.ChatCompletion = None
+            
             # Put the mock module in sys.modules to trigger ImportError on relative import
             sys.modules['ai_utilities.providers.openai_provider'] = mock_module
             
@@ -284,6 +289,11 @@ class TestProvidersInitErrorHandling:
             def mock_create_client(**kwargs):
                 raise ImportError("OpenAI package not available")
             mock_module._create_openai_sdk_client = mock_create_client
+            
+            # Add the attributes that tests might patch to avoid AttributeError
+            mock_module._get_openai = lambda: None
+            mock_module.OpenAI = None
+            mock_module.ChatCompletion = None
             
             # Put the mock module in sys.modules to trigger ImportError on relative import
             sys.modules['ai_utilities.providers.openai_compatible_provider'] = mock_module

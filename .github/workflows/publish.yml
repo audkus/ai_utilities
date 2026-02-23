@@ -1,16 +1,16 @@
 # PyPI Publishing via Trusted Publishing
 #
-# PURPOSE: Automatically publish packages to PyPI when version tags are pushed
-# TRIGGER: Git tags matching pattern v* (e.g., v1.0.0, v1.0.0b1, v1.0.0rc1)
+# PURPOSE: Automatically publish stable packages to PyPI when version tags are pushed
+# TRIGGER: Git tags matching pattern v* (e.g., v1.0.0, v1.0.1)
 # AUTHENTICATION: Uses PyPI Trusted Publishing (OIDC) - no secrets stored
-# PUBLISHES: Both stable releases and pre-releases
+# PUBLISHES: Stable releases only (pre-releases handled by publish-prerelease-pypi.yml)
 
 name: Publish to PyPI
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   id-token: write  # Required for OIDC trusted publishing
@@ -20,82 +20,62 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    
+
     # Only run for stable tags (not pre-release tags)
     if: >
-      startsWith(github.ref, 'refs/tags/') && 
+      startsWith(github.ref, 'refs/tags/') &&
       !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc')) &&
       !contains(github.ref_name, '-')
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'  # Use latest stable Python
-    
-    - name: Upgrade build tooling
-      run: |
-        python3 -m pip install --upgrade pip build
-    
-    - name: Clean previous build artifacts
-      run: |
-        rm -rf dist/ build/ *.egg-info
-        echo "Cleaned previous build artifacts"
-    
-    - name: Build package
-      run: |
-        python3 -m build
-        echo "Built package with version:"
-        python3 - << 'PY'
-        try:
-            import tomllib
-            with open('pyproject.toml', 'rb') as f:
-                data = tomllib.load(f)
-        except ImportError:
-            import tomli as tomllib
-            with open('pyproject.toml', 'r') as f:
-                data = tomllib.load(f)
-        print(data['project']['version'])
-        PY
-    
-    - name: Verify tag matches built version
-      run: |
-        TAG="${GITHUB_REF_NAME#v}"
-        PYPROJECT_VERSION="$(python3 - << 'PY'
-        try:
-            import tomllib
-            with open('pyproject.toml', 'rb') as f:
-                data = tomllib.load(f)
-        except ImportError:
-            import tomli as tomllib
-            with open('pyproject.toml', 'r') as f:
-                data = tomllib.load(f)
-        print(data['project']['version'])
-        PY)"
-        echo "Tag version: $TAG"
-        echo "pyproject.toml version: $PYPROJECT_VERSION"
-        test "$TAG" = "$PYPROJECT_VERSION"
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        echo "Built dist:"
-        ls -la dist/
-        python3 - << 'PY'
-        import os
-        import glob
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-        ref = os.environ["GITHUB_REF_NAME"]
-        tag = ref[1:] if ref.startswith("v") else ref
-        files = glob.glob("dist/*")
-        assert any(tag in f for f in files), f"Expected version {tag} in dist files, got: {files}"
-        PY
-    
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      # No username/password/token needed - uses OIDC trusted publishing
-      with:
-        # Publish to the main PyPI repository (not TestPyPI)
-        # Both stable and pre-release versions are accepted
-        verbose: true
-        skip-existing: true
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build
+
+      - name: Clean previous build artifacts
+        run: |
+          rm -rf dist/ build/ *.egg-info
+          echo "Cleaned previous build artifacts"
+
+      - name: Build package
+        run: python -m build
+
+      - name: Verify tag matches pyproject version and dist filenames
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+
+          PYPROJECT_VERSION="$(python - << 'PY'
+          import tomllib
+          with open('pyproject.toml', 'rb') as f:
+              data = tomllib.load(f)
+          print(data['project']['version'])
+          PY
+          )"
+
+          echo "Tag version: $TAG"
+          echo "pyproject.toml version: $PYPROJECT_VERSION"
+          test "$TAG" = "$PYPROJECT_VERSION"
+
+          echo "Built dist:"
+          ls -la dist/
+
+          python - << 'PY'
+          import os, glob
+          tag = os.environ["GITHUB_REF_NAME"][1:]  # strip leading 'v'
+          files = glob.glob("dist/*")
+          assert files, "dist/ is empty"
+          assert any(tag in f for f in files), f"Expected version {tag} in dist files, got: {files}"
+          PY
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          skip-existing: true

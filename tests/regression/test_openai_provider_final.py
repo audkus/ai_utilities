@@ -20,14 +20,14 @@ class TestOpenAIProviderFinal:
         self.mock_settings.temperature = 0.7
         self.mock_settings.max_tokens = 1000
     
-    def test_ask_json_response_unsupported_model_line_107(self):
+    def test_ask_json_response_unsupported_model_line_107(self, force_openai_missing):
         """Test OpenAI provider raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         
         with pytest.raises(MissingOptionalDependencyError, match="OpenAI package is required"):
             OpenAIProvider(self.mock_settings)
     
-    def test_provider_name_property_exists(self):
+    def test_provider_name_property_exists(self, force_openai_missing):
         """Test OpenAI provider raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         

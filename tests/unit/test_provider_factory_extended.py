@@ -20,7 +20,7 @@ class TestProviderFactoryExtended:
         with pytest.raises(Exception):  # Should raise error for None settings
             create_provider(None)
     
-    def test_create_provider_with_minimal_openai_settings(self) -> None:
+    def test_create_provider_with_minimal_openai_settings(self, force_openai_missing) -> None:
         """Test creating OpenAI provider with minimal settings."""
         settings = AiSettings(api_key="test-key")  # No model specified
         
@@ -33,7 +33,7 @@ class TestProviderFactoryExtended:
         assert "openai" in error_msg.lower()
         assert "install" in error_msg.lower()
     
-    def test_create_provider_with_custom_timeout(self) -> None:
+    def test_create_provider_with_custom_timeout(self, force_openai_missing) -> None:
         """Test creating provider with custom timeout."""
         settings = AiSettings(
             provider="openai",
@@ -50,7 +50,7 @@ class TestProviderFactoryExtended:
         assert "openai" in error_msg.lower()
         assert "install" in error_msg.lower()
     
-    def test_create_provider_with_temperature_and_max_tokens(self) -> None:
+    def test_create_provider_with_temperature_and_max_tokens(self, force_openai_missing) -> None:
         """Test creating provider with temperature and max_tokens."""
         settings = AiSettings(
             provider="openai",
@@ -392,7 +392,7 @@ class TestProviderFactoryExtended:
         with pytest.raises(Exception):
             provider.ask("Test prompt")
     
-    def test_provider_factory_lazy_imports(self) -> None:
+    def test_provider_factory_lazy_imports(self, force_openai_missing) -> None:
         """Test that provider factory uses lazy imports correctly."""
         # This test verifies that the factory handles missing OpenAI gracefully
         settings = AiSettings(
@@ -409,7 +409,7 @@ class TestProviderFactoryExtended:
         assert "openai" in error_msg.lower()
         assert "install" in error_msg.lower()
     
-    def test_provider_factory_caching(self) -> None:
+    def test_provider_factory_caching(self, force_openai_missing) -> None:
         """Test that provider factory consistently raises MissingOptionalDependencyError for OpenAI providers."""
         # Test with OpenAI provider to verify consistent MissingOptionalDependencyError behavior
         settings = AiSettings(

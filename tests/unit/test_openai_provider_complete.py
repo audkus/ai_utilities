@@ -34,7 +34,7 @@ class TestOpenAIProviderComplete:
         return openai_provider_mod.OpenAIProvider(self.mock_settings, client=mock_client)
     
     
-    def test_initialization_success(self):
+    def test_initialization_success(self, force_openai_missing):
         """Test initialization raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         
@@ -42,7 +42,7 @@ class TestOpenAIProviderComplete:
             OpenAIProvider(self.mock_settings)
 
     
-    def test_initialization_with_custom_settings(self):
+    def test_initialization_with_custom_settings(self, force_openai_missing):
         """Test initialization raises MissingOptionalDependencyError when openai is missing."""
         from ai_utilities.providers.openai_provider import OpenAIProvider
         
