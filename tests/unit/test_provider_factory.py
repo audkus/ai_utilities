@@ -15,7 +15,7 @@ from ai_utilities.providers.provider_exceptions import MissingOptionalDependency
 class TestProviderFactory:
     """Test the provider factory functionality."""
     
-    def test_create_openai_provider_default(self):
+    def test_create_openai_provider_default(self, force_openai_missing):
         """Test creating OpenAI provider raises MissingOptionalDependencyError without openai package."""
         settings = AiSettings(
             provider="openai",

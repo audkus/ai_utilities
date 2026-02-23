@@ -44,7 +44,10 @@ def openai_provider_mod(openai_mocks: Tuple[MagicMock, MagicMock]) -> ModuleType
 
     This prevents stale 'OpenAI = ...' alias bindings from earlier imports.
     """
-    sys.modules.pop("ai_utilities.providers.openai_provider", None)
+    # Instead of removing from sys.modules, just force a reload if the module exists
+    module_name = "ai_utilities.providers.openai_provider"
+    if module_name in sys.modules:
+        importlib.reload(sys.modules[module_name])
     return importlib.import_module("ai_utilities.providers.openai_provider")
 
 
@@ -1581,6 +1584,61 @@ def ensure_coverage_reports_directory():
         except OSError:
             # Ignore cleanup errors
             pass
+
+
+@pytest.fixture
+def force_openai_missing():
+    """
+    Fixture to deterministically simulate missing OpenAI dependency.
+    
+    This fixture ensures that OpenAIProvider and create_provider raise
+    MissingOptionalDependencyError even when openai package is installed
+    in the test environment.
+    
+    Usage:
+        def test_openai_missing(force_openai_missing):
+            with pytest.raises(MissingOptionalDependencyError):
+                OpenAIProvider(settings)
+    """
+    import sys
+    import importlib.abc
+    import importlib.machinery
+    
+    # Store original state for cleanup
+    original_meta_path = sys.meta_path.copy()
+    original_modules = {}
+    
+    # Remove openai modules from sys.modules
+    keys_to_remove = [k for k in sys.modules.keys() if k == "openai" or k.startswith("openai.")]
+    for key in keys_to_remove:
+        original_modules[key] = sys.modules.pop(key)
+    
+    class OpenAIBlockFinder(importlib.abc.MetaPathFinder):
+        """MetaPathFinder that blocks openai imports."""
+        
+        def find_spec(self, fullname, path, target=None):
+            if fullname == "openai" or fullname.startswith("openai."):
+                raise ModuleNotFoundError(f"No module named '{fullname}' (OpenAI blocked for testing)")
+            return None
+    
+    # Insert the blocker at the front of meta_path
+    blocker = OpenAIBlockFinder()
+    sys.meta_path.insert(0, blocker)
+    
+    try:
+        yield
+    finally:
+        # Cleanup: remove the blocker
+        if blocker in sys.meta_path:
+            sys.meta_path.remove(blocker)
+        
+        # Restore original meta_path order
+        sys.meta_path[:] = original_meta_path
+        
+        # Restore original modules (only if they don't exist)
+        for key, module in original_modules.items():
+            if key not in sys.modules:
+                sys.modules[key] = module
 
 
 @pytest.fixture
